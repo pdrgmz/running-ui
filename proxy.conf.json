@@ -1,0 +1,8 @@
+{
+  "/api": {
+    "target": "https://running-api.pdrgmz.uk",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "warn"
+  }
+}

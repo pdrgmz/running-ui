@@ -1,0 +1,66 @@
+<article class="card-panel">
+  <div class="card-header-bar">
+    <span class="card-title-mono">Estadísticas Acumuladas</span>
+    <span class="card-tag-badge">/STATS/SUMMARY</span>
+  </div>
+
+  @if (summary(); as s) {
+    <div class="stat-tiles-grid">
+      <div class="stat-tile stat-tile--highlight">
+        <span class="stat-tile-label">Total actividades</span>
+        <span class="stat-tile-value">{{ s.totalActivities | number }}</span>
+        <span class="stat-tile-sub">sesiones importadas</span>
+      </div>
+
+      <div class="stat-tile stat-tile--highlight">
+        <span class="stat-tile-label">Distancia total</span>
+        <span class="stat-tile-value">{{ s.totalDistanceMeters | km }}</span>
+        <span class="stat-tile-sub">{{ s.totalDistanceMeters | number: '1.0-0' }} m</span>
+      </div>
+
+      <div class="stat-tile stat-tile--highlight">
+        <span class="stat-tile-label">Tiempo total</span>
+        <span class="stat-tile-value">{{ s.totalTimeFormatted || (s.totalTimeSeconds | duration) }}</span>
+        <span class="stat-tile-sub">{{ s.totalTimeSeconds | number: '1.0-0' }} s en movimiento</span>
+      </div>
+
+      <div class="stat-tile">
+        <span class="stat-tile-label">Desnivel positivo D+</span>
+        <span class="stat-tile-value">{{ s.totalElevationGain | number: '1.0-0' }} m</span>
+        <span class="stat-tile-sub">acumulado</span>
+      </div>
+
+      <div class="stat-tile">
+        <span class="stat-tile-label">Calorías totales</span>
+        <span class="stat-tile-value">{{ s.totalCalories | number }}</span>
+        <span class="stat-tile-sub">kcal registradas</span>
+      </div>
+
+      <div class="stat-tile">
+        <span class="stat-tile-label">Media por actividad</span>
+        <span class="stat-tile-value">{{ s.avgDistanceKm | number: '1.2-2' }} km</span>
+        <span class="stat-tile-sub">distancia / sesión</span>
+      </div>
+
+      <div class="stat-tile">
+        <span class="stat-tile-label">FC máxima global</span>
+        <span class="stat-tile-value">{{ s.maxHeartRateGlobal | number }} bpm</span>
+        <span class="stat-tile-sub">histórico</span>
+      </div>
+
+      <div class="stat-tile">
+        <span class="stat-tile-label">Ritmo medio global</span>
+        <span class="stat-tile-value">{{ avgPaceMinPerKm() | pace }}</span>
+        <span class="stat-tile-sub">{{ avgSpeedMps() | kmh }}</span>
+      </div>
+
+      <div class="stat-tile">
+        <span class="stat-tile-label">Maratones equivalentes</span>
+        <span class="stat-tile-value">{{ marathonEquivalents() | number: '1.1-1' }}×</span>
+        <span class="stat-tile-sub">42.195 km por unidad</span>
+      </div>
+    </div>
+  } @else {
+    <p class="loading-text">CARGANDO RESUMEN ACUMULADO…</p>
+  }
+</article>

@@ -1,0 +1,159 @@
+<div class="dashboard-container login-container">
+  <!-- Cabecera de marca -->
+  <header class="panel-header-row">
+    <div class="hero-identity">
+      <h1>Running Tracker</h1>
+      <div class="role-subtitle">
+        <span>PANEL DE ANALÍTICA DEL CORREDOR</span>
+        <span>| API v1.3.0</span>
+      </div>
+    </div>
+
+    <div class="status-module-badge login-endpoint-badge">
+      <span class="status-dot-active"></span>
+      <div class="status-module-info">
+        <span class="status-module-name">SERVIDOR API</span>
+        <span class="status-module-val">{{ apiBaseUrl() || 'MISMO ORIGEN' }}</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="dashboard-grid">
+    <!-- Columna de presentación -->
+    <section class="col-left-6 login-hero-card">
+      <h2 class="login-hero-title">
+        RUNNING<br />
+        TRACKER <span class="accent">&amp;</span> ANALYTICS
+      </h2>
+      <p class="login-hero-desc">
+        Ingesta de TCX, GPX y FIT, analítica fisiológica avanzada, récords personales,
+        exportación geoespacial y respaldo de archivos… todo sobre tu propia cuenta.
+        Cada usuario solo puede acceder a sus propios datos.
+      </p>
+
+      <div class="hero-specs-list">
+        <div class="hero-spec-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+          </svg>
+          JWT BEARER + REFRESH
+        </div>
+        <div class="hero-spec-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+          </svg>
+          PMC · ACWR · VO2MAX
+        </div>
+        <div class="hero-spec-item">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+          </svg>
+          TCX · GPX · FIT
+        </div>
+      </div>
+
+      <div class="terminal-panel">
+        <div class="terminal-header">
+          <span>SYSTEM BOOT</span>
+          <span>STATUS: READY</span>
+        </div>
+        <div class="terminal-lines-container">
+          <div><span class="t-ok">$</span> running-tracker --auth=jwt</div>
+          <div>[INFO] Esquema OpenAPI 3.0.1 cargado (v1.3.0)</div>
+          <div>[INFO] Endpoints del usuario: /auth · /stats · /analytics · /activities</div>
+          <div>[READY] Introduce tus credenciales para abrir el panel del corredor…</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Columna de formulario -->
+    <section class="col-right-6">
+      <article class="card-panel">
+        <div class="card-header-bar">
+          <span class="card-title-mono">{{ mode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta' }}</span>
+          <span class="card-tag-badge">AUTH</span>
+        </div>
+
+        <form class="login-form" (ngSubmit)="submit($event)" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="login-email">Email del corredor</label>
+            <input
+              id="login-email"
+              name="email"
+              type="email"
+              class="form-control"
+              autocomplete="email"
+              placeholder="runner@example.com"
+              [(ngModel)]="email"
+              required
+            />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="login-password">Contraseña</label>
+            <input
+              id="login-password"
+              name="password"
+              type="password"
+              class="form-control"
+              [attr.autocomplete]="mode === 'login' ? 'current-password' : 'new-password'"
+              placeholder="Mínimo 8 caracteres"
+              [(ngModel)]="password"
+              required
+            />
+          </div>
+
+          @if (inlineError()) {
+            <p class="login-error">✖ {{ inlineError() }}</p>
+          }
+
+          <div class="panel-actions-row">
+            <button type="submit" class="btn-pill-header" [disabled]="busy()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
+                <polyline points="10 17 15 12 10 7" />
+                <line x1="15" y1="12" x2="3" y2="12" />
+              </svg>
+              {{ busy() ? 'AUTENTICANDO…' : mode === 'login' ? 'ACCEDER AL PANEL' : 'REGISTRAR Y ACCEDER' }}
+            </button>
+
+            <button
+              type="button"
+              class="btn-outline-pill"
+              (click)="setMode(mode === 'login' ? 'register' : 'login')"
+            >
+              {{ mode === 'login' ? 'Crear cuenta nueva' : 'Ya tengo cuenta' }}
+            </button>
+          </div>
+        </form>
+
+        <details class="login-server-details" open>
+          <summary>Configuración del servidor (avanzado)</summary>
+          <div class="form-group">
+            <label class="form-label" for="login-server">URL base de la API</label>
+            <div class="login-server-row">
+              <input
+                id="login-server"
+                name="serverUrl"
+                type="url"
+                class="form-control"
+                placeholder="https://running-api.pdrgmz.uk"
+                [(ngModel)]="serverUrl"
+              />
+              <button type="button" class="btn-outline-pill btn-compact" (click)="applyServerUrl()">
+                Aplicar
+              </button>
+            </div>
+            <p class="login-server-hint">
+              Vacío = mismo origen (usa el proxy de desarrollo de <code>ng serve</code>).
+              Se guarda en este navegador.
+            </p>
+          </div>
+        </details>
+      </article>
+    </section>
+  </main>
+</div>

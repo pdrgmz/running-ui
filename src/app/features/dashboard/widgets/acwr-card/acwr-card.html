@@ -1,0 +1,54 @@
+<article class="card-panel">
+  <div class="card-header-bar">
+    <span class="card-title-mono">Carga Aguda : Crónica (ACWR)</span>
+    <span class="card-tag-badge">/ANALYTICS/ACWR</span>
+  </div>
+
+  @if (acwr(); as a) {
+    <div class="kv-row acwr-headline">
+      <span class="acwr-value">{{ a.acwr | number: '1.2-2' }}</span>
+      <span class="card-tag-badge" [class]="zoneClass()">{{ zoneLabel() }}</span>
+    </div>
+
+    <div class="gauge-wrap">
+      <div class="gauge-track">
+        <div class="gauge-marker" [style.left.%]="markerPercent()"></div>
+      </div>
+      <div class="gauge-scale">
+        <span>0.0 · BAJA</span>
+        <span>0.8</span>
+        <span>1.3</span>
+        <span>1.5</span>
+        <span>2.0 · ALTA</span>
+      </div>
+    </div>
+
+    <p class="acwr-recommendation">{{ a.recommendation }}</p>
+
+    <div class="stat-tiles-grid">
+      <div class="stat-tile">
+        <span class="stat-tile-label">Carga aguda (ATL 7d)</span>
+        <span class="stat-tile-value">{{ a.acuteLoad | number: '1.1-1' }}</span>
+        <span class="stat-tile-sub">fatiga acumulada</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Carga crónica (CTL 42d)</span>
+        <span class="stat-tile-value">{{ a.chronicLoad | number: '1.1-1' }}</span>
+        <span class="stat-tile-sub">aptitud física</span>
+      </div>
+    </div>
+
+    <div class="kv-list">
+      <div class="kv-row">
+        <span class="kv-key">Fecha de evaluación</span>
+        <span class="kv-val">{{ a.date }}</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-key">Zona de riesgo</span>
+        <span class="kv-val">{{ a.zone }}</span>
+      </div>
+    </div>
+  } @else {
+    <p class="loading-text">CALCULANDO ACWR…</p>
+  }
+</article>

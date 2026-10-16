@@ -1,0 +1,9 @@
+.pagination-bar button[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.pagination-bar button[disabled]:hover {
+  background: transparent;
+  color: var(--text-main);
+}

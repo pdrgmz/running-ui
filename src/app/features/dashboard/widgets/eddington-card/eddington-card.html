@@ -1,0 +1,51 @@
+<article class="card-panel">
+  <div class="card-header-bar">
+    <span class="card-title-mono">Número de Eddington</span>
+    <span class="card-tag-badge">/ANALYTICS/EDDINGTON</span>
+  </div>
+
+  @if (eddington(); as e) {
+    <div class="seniority-meter-wrapper">
+      <div class="seniority-hero-header">
+        <div class="seniority-hero-number">{{ e.eddingtonNumber }}</div>
+        <div class="seniority-hero-text">
+          <span class="seniority-hero-title">E = {{ e.eddingtonNumber }} KM EN {{ e.eddingtonNumber }} DÍAS</span>
+          <span class="seniority-hero-sub">Métrica de consistencia del corredor</span>
+        </div>
+      </div>
+
+      <div class="progress-segments">
+        @for (index of segments; track index) {
+          <div
+            class="segment-block"
+            [class.active]="index < activeSegments()"
+            [class.glow]="index === activeSegments() - 1"
+          ></div>
+        }
+      </div>
+
+      <div class="seniority-milestone-labels">
+        <span>E = {{ e.eddingtonNumber }}</span>
+        <span>PROGRESO A E + 1 · {{ progressPercent() }}%</span>
+        <span>E + 1 = {{ e.nextTargetKm }} KM</span>
+      </div>
+    </div>
+
+    <div class="kv-list">
+      <div class="kv-row">
+        <span class="kv-key">Días ≥ {{ e.eddingtonNumber }} km</span>
+        <span class="kv-val">{{ e.currentCountForNumber }} días</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-key">Carreras ≥ {{ e.nextTargetKm }} km necesarias</span>
+        <span class="kv-val">{{ e.runsNeededForNext }}</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-key">Siguiente meta</span>
+        <span class="kv-val">{{ e.nextTargetKm }} km</span>
+      </div>
+    </div>
+  } @else {
+    <p class="loading-text">CALCULANDO NÚMERO DE EDDINGTON…</p>
+  }
+</article>

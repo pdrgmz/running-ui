@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Smart Dashboard UI Kit &amp; Component Demo Showcase</title>
+  <meta name="description" content="Showcase interactivo de todos los componentes y estilos del UI Kit Smart Dashboard / Control Panel.">
+  <link rel="stylesheet" href="smart-dashboard-ds.css">
+  <style>
+    .demo-section-title {
+      font-family: var(--font-mono);
+      font-size: 1.1rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      border-bottom: 2px dashed var(--border-color);
+      padding-bottom: 8px;
+      margin-top: 16px;
+      margin-bottom: 8px;
+      grid-column: span 12;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .demo-section-title span.tag {
+      font-size: 0.7rem;
+      background: var(--border-color);
+      color: var(--bg-main);
+      padding: 2px 8px;
+      border-radius: var(--radius-pill);
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="dashboard-container">
+
+    <!-- HEADER / BRAND DEMO -->
+    <header class="panel-header-row">
+      <div class="hero-identity">
+        <h1>Smart Dashboard UI Kit</h1>
+        <div class="role-subtitle">
+          <span>DESIGN SYSTEM DEMO SHOWCASE</span>
+          <span style="font-weight: 700; color: var(--text-main);">| v1.0.0</span>
+        </div>
+        <div class="hero-specs-list">
+          <div class="hero-spec-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
+            </svg>
+            Pure CSS3 &amp; HTML5
+          </div>
+          <div class="hero-spec-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10" />
+              <path d="M12 6v6l4 2" />
+            </svg>
+            Zero Dependencies
+          </div>
+          <div class="hero-spec-item">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="3" width="20" height="14" rx="2" ry="2" />
+              <line x1="8" y1="21" x2="16" y2="21" />
+              <line x1="12" y1="17" x2="12" y2="21" />
+            </svg>
+            Responsive Grid System
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <button class="btn-pill-header" onclick="triggerToast('¡Componente de botón accionado!')">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="7 10 12 15 17 10" />
+            <line x1="12" y1="15" x2="12" y2="3" />
+          </svg>
+          Exportar Estilos CSS
+        </button>
+      </div>
+    </header>
+
+    <!-- NAVIGATION TABS DEMO -->
+    <nav class="nav-tabs-bar">
+      <button class="nav-tab-item active" onclick="switchTab(this)">BOTONES Y BADGES</button>
+      <button class="nav-tab-item" onclick="switchTab(this)">PANELES Y TARJETAS</button>
+      <button class="nav-tab-item" onclick="switchTab(this)">MÉTRICAS Y GRÁFICOS</button>
+      <button class="nav-tab-item" onclick="switchTab(this)">FORMULARIOS Y TERMINAL</button>
+      <a href="STYLE_GUIDE.md" target="_blank" class="nav-tab-item" style="text-decoration: none; color: #00E676; font-weight: 800;">📖 VER GUÍA DE ESTILO (.MD)</a>
+    </nav>
+
+    <!-- MAIN GRID DEMO Showcase -->
+    <main class="dashboard-grid">
+
+      <!-- SECTION 1: BUTTONS & BADGES -->
+      <div class="demo-section-title">
+        <span>1. Botones, Badges e Indicadores de Estado</span>
+        <span class="tag">UI Elements</span>
+      </div>
+
+      <article class="card-panel col-6">
+        <div class="card-header-bar">
+          <span class="card-title-mono">Estilos de Botones</span>
+          <span class="card-tag-badge">BUTTONS</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">Botones encapsulados tipo píldora con transiciones suaves y soporte de iconos SVG.</p>
+        <div style="display: flex; gap: 12px; flex-wrap: wrap; align-items: center;">
+          <button class="btn-pill-cta" onclick="triggerToast('Acción Primaria CTA')">Primary CTA Button</button>
+          <button class="btn-pill-header" onclick="triggerToast('Acción Header Píldora')">Header Button</button>
+          <button class="btn-outline-pill" onclick="triggerToast('Acción Outline Píldora')">Outline Button</button>
+        </div>
+      </article>
+
+      <article class="card-panel col-6">
+        <div class="card-header-bar">
+          <span class="card-title-mono">Badges &amp; Status Indicators</span>
+          <span class="card-tag-badge">BADGES</span>
+        </div>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">Módulos con punto incandescente LED (glow effect) y etiquetas monocromáticas.</p>
+        <div class="status-modules-row">
+          <div class="status-module-badge">
+            <span class="status-dot-active"></span>
+            <div class="status-module-info">
+              <span class="status-module-name">SYSTEM STATUS</span>
+              <span class="status-module-val">ONLINE (100%)</span>
+            </div>
+          </div>
+          <div class="status-module-badge">
+            <span class="status-dot-active"></span>
+            <div class="status-module-info">
+              <span class="status-module-name">NODE CLUSTER</span>
+              <span class="status-module-val">ACTIVE RUNTIME</span>
+            </div>
+          </div>
+        </div>
+        <div style="display: flex; gap: 8px; align-items: center; margin-top: 6px;">
+          <span class="badge-tag">HIGH PRIORITY</span>
+          <span class="card-tag-badge">DARK BADGE</span>
+          <span class="edu-badge-tag">OUTLINE BADGE</span>
+          <span class="service-tag">TAG CATEGORY</span>
+        </div>
+      </article>
+
+      <!-- SECTION 2: METRICS & CHARTS -->
+      <div class="demo-section-title">
+        <span>2. Medidores Segmentados y Gráficos Técnico-Visuales</span>
+        <span class="tag">Data Viz</span>
+      </div>
+
+      <!-- Segmented Meter Card -->
+      <article class="card-panel col-6">
+        <div class="card-header-bar">
+          <span class="card-title-mono">Medidor de Nivel Segmentado</span>
+          <span class="card-tag-badge">METER</span>
+        </div>
+        <div class="seniority-meter-wrapper">
+          <div class="seniority-hero-header">
+            <div class="seniority-hero-number">98%</div>
+            <div class="seniority-hero-text">
+              <span class="seniority-hero-title">CAPACIDAD DEL SISTEMA</span>
+              <span class="seniority-hero-sub">Rendimiento óptimo de infraestructura</span>
+            </div>
+          </div>
+
+          <div class="seniority-segmented-bar">
+            <div class="segment-block active"></div>
+            <div class="segment-block active"></div>
+            <div class="segment-block active"></div>
+            <div class="segment-block active"></div>
+            <div class="segment-block active"></div>
+            <div class="segment-block active"></div>
+            <div class="segment-block active"></div>
+            <div class="segment-block active"></div>
+            <div class="segment-block active"></div>
+            <div class="segment-block active glow"></div>
+          </div>
+
+          <div class="seniority-milestone-labels">
+            <span>LOW (0%)</span>
+            <span>MEDIUM (50%)</span>
+            <span>PEAK (100%)</span>
+          </div>
+        </div>
+      </article>
+
+      <!-- Bar Chart Card -->
+      <article class="card-panel col-6">
+        <div class="card-header-bar">
+          <span class="card-title-mono">Gráfico de Barras Industrial</span>
+          <span class="card-tag-badge">BAR CHART</span>
+        </div>
+        <div class="bar-chart-container">
+          <div class="chart-bars-row">
+            <div class="chart-bar-group">
+              <span class="chart-val-tag">95%</span>
+              <div class="chart-bar-stick" style="height: 95px;"></div>
+              <span class="chart-label">API</span>
+            </div>
+            <div class="chart-bar-group">
+              <span class="chart-val-tag">88%</span>
+              <div class="chart-bar-stick" style="height: 88px;"></div>
+              <span class="chart-label">DB</span>
+            </div>
+            <div class="chart-bar-group">
+              <span class="chart-val-tag">75%</span>
+              <div class="chart-bar-stick" style="height: 75px;"></div>
+              <span class="chart-label">CACHE</span>
+            </div>
+            <div class="chart-bar-group">
+              <span class="chart-val-tag">90%</span>
+              <div class="chart-bar-stick" style="height: 90px;"></div>
+              <span class="chart-label">MQ</span>
+            </div>
+            <div class="chart-bar-group">
+              <span class="chart-val-tag">82%</span>
+              <div class="chart-bar-stick" style="height: 82px;"></div>
+              <span class="chart-label">AUTH</span>
+            </div>
+          </div>
+        </div>
+      </article>
+
+      <!-- SECTION 3: CARDS & GRIDS -->
+      <div class="demo-section-title">
+        <span>3. Tarjetas de Servicios y Grilla de Stack</span>
+        <span class="tag">Layouts</span>
+      </div>
+
+      <!-- Service Card Showcase -->
+      <div class="col-12 services-grid-3">
+        <article class="service-card-panel">
+          <div class="service-icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="2" y="2" width="20" height="8" rx="2" />
+              <rect x="2" y="14" width="20" height="8" rx="2" />
+              <line x1="6" y1="6" x2="6.01" y2="6" />
+              <line x1="6" y1="18" x2="6.01" y2="18" />
+            </svg>
+          </div>
+          <h3>Microservicios &amp; APIs</h3>
+          <p>Diseño e implementación de APIs RESTful escalables con arquitecturas desacopladas y de alta velocidad.</p>
+          <div class="service-tags-list">
+            <span class="service-tag">Java</span>
+            <span class="service-tag">Spring Boot</span>
+            <span class="service-tag">Docker</span>
+          </div>
+        </article>
+
+        <article class="service-card-panel">
+          <div class="service-icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z" />
+            </svg>
+          </div>
+          <h3>Arquitectura Cloud</h3>
+          <p>Despliegue e integración en entornos AWS con colas asíncronas de mensajes e infraestructura como código.</p>
+          <div class="service-tags-list">
+            <span class="service-tag">AWS</span>
+            <span class="service-tag">RabbitMQ</span>
+            <span class="service-tag">SQS</span>
+          </div>
+        </article>
+
+        <article class="service-card-panel">
+          <div class="service-icon-box">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="22 12 18 12 15 21 9 3 6 12 2 12" />
+            </svg>
+          </div>
+          <h3>Optimización SQL &amp; Data</h3>
+          <p>Tuning de bases de datos relacionales, indexación avanzada y modelado de datos para alta concurrencia.</p>
+          <div class="service-tags-list">
+            <span class="service-tag">PostgreSQL</span>
+            <span class="service-tag">Oracle</span>
+            <span class="service-tag">Redis</span>
+          </div>
+        </article>
+      </div>
+
+      <!-- Stack List Grid Component Showcase -->
+      <div class="col-12 stack-grid-4" style="margin-top: 10px;">
+        <div class="stack-box-card">
+          <div class="stack-box-title">LANGUAGES</div>
+          <div class="stack-list-items">
+            <div class="stack-row-item"><span>Java 17+</span><span class="badge-tag">EXPERT</span></div>
+            <div class="stack-row-item"><span>SQL</span><span class="badge-tag">ADVANCED</span></div>
+            <div class="stack-row-item"><span>JavaScript</span><span class="badge-tag">MID</span></div>
+          </div>
+        </div>
+        <div class="stack-box-card">
+          <div class="stack-box-title">FRAMEWORKS</div>
+          <div class="stack-list-items">
+            <div class="stack-row-item"><span>Spring Boot</span><span class="badge-tag">EXPERT</span></div>
+            <div class="stack-row-item"><span>Spring Data JPA</span><span class="badge-tag">EXPERT</span></div>
+            <div class="stack-row-item"><span>Hibernate</span><span class="badge-tag">ADVANCED</span></div>
+          </div>
+        </div>
+        <div class="stack-box-card">
+          <div class="stack-box-title">CLOUD &amp; DEVOPS</div>
+          <div class="stack-list-items">
+            <div class="stack-row-item"><span>AWS Lambda/EC2</span><span class="badge-tag">ADVANCED</span></div>
+            <div class="stack-row-item"><span>Docker / K8s</span><span class="badge-tag">ADVANCED</span></div>
+            <div class="stack-row-item"><span>CI/CD Pipelines</span><span class="badge-tag">ADVANCED</span></div>
+          </div>
+        </div>
+        <div class="stack-box-card">
+          <div class="stack-box-title">MESSAGING &amp; DB</div>
+          <div class="stack-list-items">
+            <div class="stack-row-item"><span>RabbitMQ</span><span class="badge-tag">EXPERT</span></div>
+            <div class="stack-row-item"><span>PostgreSQL</span><span class="badge-tag">EXPERT</span></div>
+            <div class="stack-row-item"><span>Redis Cache</span><span class="badge-tag">ADVANCED</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- SECTION 4: FORM & TERMINAL -->
+      <div class="demo-section-title">
+        <span>4. Formularios e Interfaz Terminal de Monitoreo</span>
+        <span class="tag">Interactive</span>
+      </div>
+
+      <!-- Form Inputs Showcase -->
+      <article class="card-panel col-6">
+        <div class="card-header-bar">
+          <span class="card-title-mono">Form Controls &amp; Input Fields</span>
+          <span class="card-tag-badge">INPUTS</span>
+        </div>
+        <form style="display: flex; flex-direction: column; gap: 14px;" onsubmit="event.preventDefault(); triggerToast('Formulario enviado!');">
+          <div class="form-group">
+            <label class="form-label">Nombre del Servidor / Proyecto</label>
+            <input type="text" class="form-control" placeholder="ej. prod-api-cluster-01" value="smart-dashboard-node">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Dirección de Email</label>
+            <input type="email" class="form-control" placeholder="usuario@dominio.com" value="developer@controlpanel.io">
+          </div>
+          <div style="display: flex; gap: 10px; margin-top: 4px;">
+            <button type="submit" class="btn-pill-header">Guardar Configuración</button>
+            <button type="button" class="btn-outline-pill" onclick="triggerToast('Acción cancelada')">Cancelar</button>
+          </div>
+        </form>
+      </article>
+
+      <!-- Terminal Simulator Showcase -->
+      <article class="card-panel col-6" style="gap: 12px;">
+        <div class="card-header-bar">
+          <span class="card-title-mono">Terminal Telemetry Console</span>
+          <span class="card-tag-badge">TERMINAL</span>
+        </div>
+        <div class="terminal-panel">
+          <div class="terminal-header">
+            <span>SYSTEM CONSOLE v2.4</span>
+            <span>STATUS: ACTIVE</span>
+          </div>
+          <div class="terminal-lines-container" id="demo-terminal">
+            <div><span style="color: var(--accent-green);">$</span> init_component_suite --mode=all</div>
+            <div>[INFO] Loading Smart Dashboard CSS Tokens...</div>
+            <div>[SUCCESS] Custom design system loaded cleanly.</div>
+            <div>[MONITOR] Listening on http://localhost:8080</div>
+            <div><span style="color: var(--accent-green);">$</span> _</div>
+          </div>
+        </div>
+        <button class="btn-outline-pill" style="align-self: flex-start; font-size: 0.75rem;" onclick="appendTerminalLine()">+ Simular Log Event</button>
+      </article>
+
+      <!-- SECTION 5: FOOTER CTA PANEL -->
+      <div class="demo-section-title">
+        <span>5. Panel de Pie de Página / CTA Banner</span>
+        <span class="tag">Footer Component</span>
+      </div>
+
+      <div class="col-12">
+        <div class="footer-contact-panel">
+          <h2>¿Listo para integrar este Design System en tus aplicaciones y proyectos?</h2>
+          <p style="color: var(--text-muted); max-width: 600px; font-size: 0.9rem;">
+            Copia el archivo <code>smart-dashboard-ds.css</code> a cualquier proyecto HTML/React/Vue y utiliza los nombres de clase estándar para mantener una interfaz elegante y moderna.
+          </p>
+          <button class="btn-pill-cta" onclick="triggerToast('¡Estilos copiados listos para usar!')">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
+              <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
+            </svg>
+            Copiar Estilos CSS
+          </button>
+
+          <div class="footer-meta-text">
+            <span>UI KIT VERSION: 1.0.0</span>
+            <span>THEME: SAGE / OLIVE CREAM DASHBOARD</span>
+            <span>DESIGN SYSTEM: SMART CONTROL PANEL</span>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Toast Notification System Component -->
+  <div id="toast" class="toast-notice">Notificación del sistema</div>
+
+  <script>
+    function triggerToast(message) {
+      const toast = document.getElementById('toast');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
+    function switchTab(element) {
+      document.querySelectorAll('.nav-tab-item').forEach(tab => tab.classList.remove('active'));
+      element.classList.add('active');
+      triggerToast('Pestaña cambiada a: ' + element.textContent);
+    }
+
+    function appendTerminalLine() {
+      const terminal = document.getElementById('demo-terminal');
+      const times = new Date().toLocaleTimeString();
+      const newDiv = document.createElement('div');
+      newDiv.innerHTML = `<span style="color: var(--accent-green);">[${times}]</span> Event triggered: OK (200)`;
+      terminal.appendChild(newDiv);
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+  </script>
+</body>
+
+</html>

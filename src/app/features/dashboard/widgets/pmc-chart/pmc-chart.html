@@ -1,0 +1,125 @@
+<article class="card-panel">
+  <div class="card-header-bar">
+    <span class="card-title-mono">Performance Management Chart (PMC)</span>
+    <span class="card-tag-badge">/ANALYTICS/PMC</span>
+  </div>
+
+  @if (points().length > 0) {
+    <div class="stat-tiles-grid pmc-tiles">
+      <div class="stat-tile">
+        <span class="stat-tile-label">CTL · Aptitud (42d)</span>
+        <span class="stat-tile-value">{{ latest()?.ctl | number: '1.1-1' }}</span>
+        <span class="stat-tile-sub">{{ delta('ctl') }}</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">ATL · Fatiga (7d)</span>
+        <span class="stat-tile-value">{{ latest()?.atl | number: '1.1-1' }}</span>
+        <span class="stat-tile-sub">{{ delta('atl') }}</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">TSB · Forma</span>
+        <span class="stat-tile-value">{{ latest()?.tsb | number: '1.1-1' }}</span>
+        <span class="stat-tile-sub">{{ delta('tsb') }}</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">ACWR del día</span>
+        <span class="stat-tile-value">{{ latest()?.acwr | number: '1.2-2' }}</span>
+        <span class="stat-tile-sub">{{ delta('acwr') }}</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">TRIMP diario</span>
+        <span class="stat-tile-value">{{ latest()?.dailyTrimp | number: '1.0-0' }}</span>
+        <span class="stat-tile-sub">{{ latest()?.date }}</span>
+      </div>
+    </div>
+
+    <div class="legend-row">
+      <span class="legend-item">
+        <span class="legend-swatch" style="background: #1a1a1a"></span> CTL (aptitud)
+      </span>
+      <span class="legend-item">
+        <span class="legend-swatch" style="background: #555c52"></span> ATL (fatiga)
+      </span>
+      <span class="legend-item">
+        <span class="legend-swatch" style="background: #00e676"></span> TSB (forma)
+      </span>
+      <span class="legend-item muted">ÚLTIMOS {{ points().length }} DÍAS</span>
+    </div>
+
+    <div class="chart-svg-shell">
+      <svg [attr.viewBox]="viewBox" role="img" aria-label="Gráfico PMC de CTL, ATL y TSB">
+        @for (tick of geometry().yTicks; track tick.pos) {
+          <line
+            [attr.x1]="50"
+            [attr.x2]="viewWidth - 18"
+            [attr.y1]="tick.pos"
+            [attr.y2]="tick.pos"
+            stroke="rgba(26, 26, 26, 0.12)"
+            stroke-dasharray="2 4"
+          />
+          <text
+            [attr.x]="44"
+            [attr.y]="tick.pos + 3"
+            text-anchor="end"
+            font-family="JetBrains Mono, monospace"
+            font-size="10"
+            font-weight="700"
+            fill="#555c52"
+          >
+            {{ tick.label }}
+          </text>
+        }
+
+        @if (geometry().zeroY !== null) {
+          <line
+            [attr.x1]="50"
+            [attr.x2]="viewWidth - 18"
+            [attr.y1]="geometry().zeroY"
+            [attr.y2]="geometry().zeroY"
+            stroke="rgba(26, 26, 26, 0.45)"
+            stroke-dasharray="6 4"
+          />
+        }
+
+        <polyline
+          [attr.points]="geometry().atlPolyline"
+          fill="none"
+          stroke="#555c52"
+          stroke-width="1.8"
+          stroke-dasharray="5 4"
+          stroke-linejoin="round"
+        />
+        <polyline
+          [attr.points]="geometry().ctlPolyline"
+          fill="none"
+          stroke="#1a1a1a"
+          stroke-width="2.4"
+          stroke-linejoin="round"
+        />
+        <polyline
+          [attr.points]="geometry().tsbPolyline"
+          fill="none"
+          stroke="#00e676"
+          stroke-width="2.4"
+          stroke-linejoin="round"
+        />
+
+        @for (tick of geometry().xTicks; track tick.pos) {
+          <text
+            [attr.x]="tick.pos"
+            [attr.y]="viewHeight - 8"
+            [attr.text-anchor]="$index === 0 ? 'start' : $index === geometry().xTicks.length - 1 ? 'end' : 'middle'"
+            font-family="JetBrains Mono, monospace"
+            font-size="10"
+            font-weight="700"
+            fill="#555c52"
+          >
+            {{ tick.label }}
+          </text>
+        }
+      </svg>
+    </div>
+  } @else {
+    <p class="loading-text">CARGANDO HISTÓRICO PMC…</p>
+  }
+</article>

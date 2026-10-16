@@ -1,0 +1,50 @@
+.acwr-headline {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border-bottom: none;
+  padding: 0;
+}
+
+.acwr-value {
+  font-family: var(--font-mono);
+  font-size: 2.6rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.zone-ok {
+  background: var(--accent-green) !important;
+  color: var(--border-color) !important;
+}
+
+.zone-warn {
+  background: var(--accent-amber) !important;
+  color: #fff !important;
+}
+
+.zone-risk {
+  background: var(--accent-red) !important;
+  color: #fff !important;
+}
+
+.zone-low {
+  background: var(--accent-charcoal-soft) !important;
+}
+
+.gauge-wrap {
+  display: flex;
+  flex-direction: column;
+  padding: 4px 2px 0;
+}
+
+.acwr-recommendation {
+  font-size: 0.85rem;
+  color: var(--text-muted);
+  line-height: 1.5;
+  background: var(--bg-main);
+  border: 1px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+}

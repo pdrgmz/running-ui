@@ -1,0 +1,76 @@
+.records-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .records-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 620px) {
+  .records-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.record-card {
+  background: var(--bg-main);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transition: background-color var(--transition-smooth);
+}
+
+.record-card:hover {
+  background: var(--bg-card-hover);
+}
+
+.record-card--empty {
+  border-style: dashed;
+}
+
+.record-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.record-card-top .edu-badge-tag {
+  text-transform: uppercase;
+}
+
+.record-card .kv-val--token {
+  max-width: 150px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.record-badge-muted {
+  opacity: 0.35;
+}
+
+.record-time {
+  font-family: var(--font-mono);
+  font-size: 1.9rem;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.5px;
+}
+
+.record-time--empty {
+  font-size: 1rem;
+  color: var(--text-muted);
+}
+
+.record-empty-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+}

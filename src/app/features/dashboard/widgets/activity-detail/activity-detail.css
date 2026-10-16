@@ -1,0 +1,134 @@
+.detail-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.detail-subtitle {
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.detail-tabs {
+  gap: 18px;
+  margin-top: 0;
+  padding-bottom: 2px;
+}
+
+.detail-section {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.detail-columns {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+@media (max-width: 860px) {
+  .detail-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+.detail-block {
+  background: var(--bg-main);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.block-title {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  border-bottom: 1px dashed var(--border-subtle);
+  padding-bottom: 8px;
+}
+
+.block-title--sub {
+  margin-top: 4px;
+}
+
+.detail-value-sm {
+  font-size: 1.05rem;
+}
+
+.race-predictions {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 10px;
+}
+
+@media (max-width: 620px) {
+  .race-predictions {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.race-prediction-item {
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.race-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.race-time {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 800;
+}
+
+.extra-json {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  line-height: 1.55;
+  max-height: 260px;
+  overflow: auto;
+  color: #d9e6cd;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.detail-table-max {
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+.row-static {
+  cursor: default;
+}
+
+.row-static:hover {
+  background: transparent;
+}
+
+.gps-caption {
+  font-size: 0.72rem;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}

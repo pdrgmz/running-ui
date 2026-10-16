@@ -1,0 +1,52 @@
+<article class="card-panel">
+  <div class="card-header-bar">
+    <span class="card-title-mono">Récords Personales (PB)</span>
+    <span class="card-tag-badge">/STATS/RECORDS</span>
+  </div>
+
+  <div class="records-grid">
+    @for (card of cards(); track card.category) {
+      <div class="record-card" [class.record-card--empty]="!card.record">
+        <div class="record-card-top">
+          <span class="edu-badge-tag">{{ card.category }}</span>
+          @if (card.record) {
+            <span class="badge-tag">PB</span>
+          } @else {
+            <span class="badge-tag record-badge-muted">—</span>
+          }
+        </div>
+
+        @if (card.record; as r) {
+          <span class="record-time">{{ r.bestTimeFormatted }}</span>
+          <div class="kv-list">
+            <div class="kv-row">
+              <span class="kv-key">Ritmo</span>
+              <span class="kv-val">{{ r.avgPaceMinPerKm | pace }}</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-key">Velocidad</span>
+              <span class="kv-val">{{ r.avgSpeed | kmh }}</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-key">Distancia</span>
+              <span class="kv-val">{{ r.targetDistanceMeters | number: '1.0-0' }} m</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-key">Fecha</span>
+              <span class="kv-val">{{ r.activityDate | date: 'dd/MM/yyyy' }}</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-key">Actividad</span>
+              <span class="kv-val kv-val--token" [title]="r.activityId">{{ r.activityId }}</span>
+            </div>
+          </div>
+        } @else {
+          <span class="record-time record-time--empty">SIN REGISTRO</span>
+          <p class="record-empty-hint">
+            Sube una actividad de al menos {{ card.category }} para registrar esta marca.
+          </p>
+        }
+      </div>
+    }
+  </div>
+</article>

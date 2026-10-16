@@ -1,0 +1,410 @@
+<div class="modal-overlay" (click)="onOverlayClick($event)">
+  <div class="modal-panel">
+    <div class="modal-header-bar">
+      <div class="detail-title-block">
+        <span class="card-title-mono">{{ activity().name || 'Carrera' }}</span>
+        <span class="detail-subtitle">
+          {{ activity().startTime | date: 'EEEE d MMM y, HH:mm' }} ·
+          <span class="kv-val--token">{{ activity().id }}</span>
+        </span>
+      </div>
+      <div class="panel-actions-row">
+        <span class="card-tag-badge">{{ activity().sourceFileType || 'RAW' }}</span>
+        <button type="button" class="btn-outline-pill btn-compact" (click)="close.emit()">✕ CERRAR</button>
+      </div>
+    </div>
+
+    <nav class="nav-tabs-bar detail-tabs">
+      <button
+        type="button"
+        class="nav-tab-item"
+        [class.active]="activeTab() === 'summary'"
+        (click)="activeTab.set('summary')"
+      >
+        Resumen
+      </button>
+      <button
+        type="button"
+        class="nav-tab-item"
+        [class.active]="activeTab() === 'splits'"
+        (click)="activeTab.set('splits')"
+      >
+        Splits / Km
+      </button>
+      <button
+        type="button"
+        class="nav-tab-item"
+        [class.active]="activeTab() === 'zones'"
+        (click)="activeTab.set('zones')"
+      >
+        Zonas FC
+      </button>
+      <button
+        type="button"
+        class="nav-tab-item"
+        [class.active]="activeTab() === 'load'"
+        (click)="activeTab.set('load')"
+      >
+        Carga y Desacople
+      </button>
+      <button
+        type="button"
+        class="nav-tab-item"
+        [class.active]="activeTab() === 'gps'"
+        (click)="activeTab.set('gps')"
+      >
+        Ruta GPS
+      </button>
+    </nav>
+
+    <!-- RESUMEN -->
+    @if (activeTab() === 'summary') {
+      <section class="detail-section">
+        <div class="stat-tiles-grid">
+          <div class="stat-tile stat-tile--highlight">
+            <span class="stat-tile-label">Duración</span>
+            <span class="stat-tile-value">{{ activity().totalTimeSeconds | duration }}</span>
+          </div>
+          <div class="stat-tile stat-tile--highlight">
+            <span class="stat-tile-label">Distancia</span>
+            <span class="stat-tile-value">{{ activity().distanceMeters | km }}</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-tile-label">Ritmo medio</span>
+            <span class="stat-tile-value">{{ activity().avgPaceMinPerKm | pace }}</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-tile-label">Ritmo más rápido</span>
+            <span class="stat-tile-value">{{ activity().maxPaceMinPerKm | pace }}</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-tile-label">Velocidad media</span>
+            <span class="stat-tile-value">{{ activity().avgSpeed | kmh }}</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-tile-label">Velocidad máxima</span>
+            <span class="stat-tile-value">{{ activity().maxSpeed | kmh }}</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-tile-label">FC media</span>
+            <span class="stat-tile-value">{{ activity().avgHeartRate ?? '—' }} bpm</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-tile-label">FC máxima</span>
+            <span class="stat-tile-value">{{ activity().maxHeartRate ?? '—' }} bpm</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-tile-label">Cadencia media</span>
+            <span class="stat-tile-value">{{ activity().avgCadence ?? '—' }} spm</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-tile-label">Cadencia máxima</span>
+            <span class="stat-tile-value">{{ activity().maxCadence ?? '—' }} spm</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-tile-label">D+ / D-</span>
+            <span class="stat-tile-value">
+              {{ activity().elevationGain | number: '1.0-0' }} / {{ activity().elevationLoss | number: '1.0-0' }} m
+            </span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-tile-label">Calorías</span>
+            <span class="stat-tile-value">{{ activity().totalCalories ?? '—' }}</span>
+          </div>
+        </div>
+
+        <div class="detail-columns">
+          <div class="detail-block">
+            <span class="block-title">Ficha del registro</span>
+            <div class="kv-list">
+              <div class="kv-row">
+                <span class="kv-key">ID actividad</span>
+                <span class="kv-val kv-val--token">{{ activity().id }}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Usuario propietario</span>
+                <span class="kv-val">#{{ activity().userId }}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Inicio</span>
+                <span class="kv-val">{{ activity().startTime | date: 'dd/MM/yyyy HH:mm:ss' }}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Fin estimado</span>
+                <span class="kv-val">{{ endTime() ? (endTime() | date: 'dd/MM/yyyy HH:mm:ss') : '—' }}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Registrada</span>
+                <span class="kv-val">{{ activity().createdAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Archivo fuente</span>
+                <span class="kv-val">{{ activity().sourceFileType || '—' }}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Respaldo</span>
+                <span class="kv-val kv-val--token">{{ activity().backupFilePath || '—' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="detail-block">
+            <span class="block-title">Estimación fisiológica (VO2Max / VAM)</span>
+            @if (vo2(); as v) {
+              <div class="stat-tiles-grid">
+                <div class="stat-tile">
+                  <span class="stat-tile-label">VO2Max estimado</span>
+                  <span class="stat-tile-value">{{ v.vo2MaxEstimated | number: '1.1-1' }}</span>
+                  <span class="stat-tile-sub">mL/kg/min</span>
+                </div>
+                <div class="stat-tile">
+                  <span class="stat-tile-label">VAM</span>
+                  <span class="stat-tile-value">{{ v.vamKmH | number: '1.2-2' }}</span>
+                  <span class="stat-tile-sub">km/h aeróbico máx</span>
+                </div>
+                <div class="stat-tile">
+                  <span class="stat-tile-label">Categoría</span>
+                  <span class="stat-tile-value detail-value-sm">{{ v.fitnessCategory }}</span>
+                </div>
+              </div>
+
+              @if (racePredictions().length > 0) {
+                <span class="block-title block-title--sub">Predicción de tiempos de carrera</span>
+                <div class="race-predictions">
+                  @for (race of racePredictions(); track race.label) {
+                    <div class="race-prediction-item">
+                      <span class="race-label">{{ race.label }}</span>
+                      <span class="race-time">{{ race.value }}</span>
+                    </div>
+                  }
+                </div>
+              }
+            } @else {
+              <p class="loading-text">CALCULANDO VO2MAX / VAM…</p>
+            }
+          </div>
+        </div>
+
+        @if (prettyExtraData(); as extra) {
+          <div class="detail-block">
+            <span class="block-title">Datos extra del formato de origen (extraData)</span>
+            <div class="terminal-panel">
+              <div class="terminal-header">
+                <span>EXTRA_DATA.JSON</span>
+                <span>RAW</span>
+              </div>
+              <pre class="extra-json">{{ extra }}</pre>
+            </div>
+          </div>
+        }
+      </section>
+    }
+
+    <!-- SPLITS -->
+    @if (activeTab() === 'splits') {
+      <section class="detail-section">
+        @if (splits(); as splitList) {
+          @if (splitList.length > 0) {
+            <div class="data-table-wrap detail-table-max">
+              <table class="data-table">
+                <thead>
+                  <tr>
+                    <th>Km</th>
+                    <th>Distancia parcial</th>
+                    <th>Tiempo</th>
+                    <th>Ritmo</th>
+                    <th>FC media</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  @for (split of splitList; track split.km) {
+                    <tr class="row-static">
+                      <td class="cell-strong">KM {{ split.km }}</td>
+                      <td>{{ split.distanceMeters | number: '1.0-0' }} m</td>
+                      <td>{{ split.timeSeconds | duration }}</td>
+                      <td>{{ split.paceMinPerKm | pace }}</td>
+                      <td>{{ split.avgHeartRate }} bpm</td>
+                    </tr>
+                  }
+                </tbody>
+              </table>
+            </div>
+          } @else {
+            <div class="empty-state">No hay splits disponibles para esta actividad.</div>
+          }
+        } @else {
+          <p class="loading-text">CALCULANDO SPLITS POR KILÓMETRO…</p>
+        }
+      </section>
+    }
+
+    <!-- ZONAS FC -->
+    @if (activeTab() === 'zones') {
+      <section class="detail-section">
+        @if (hrZones(); as zones) {
+          <div class="detail-block">
+            <span class="block-title">Tiempo en zonas · FC máxima de referencia {{ zones.maxHrUsed }} bpm</span>
+            @if (zoneRows().length > 0) {
+              <div class="hbar-list">
+                @for (row of zoneRows(); track row.label) {
+                  <div class="hbar-row">
+                    <span class="hbar-name">{{ row.label }}</span>
+                    <div class="hbar-track">
+                      <div class="hbar-fill" [class]="row.cls" [style.width.%]="row.percentage"></div>
+                    </div>
+                    <span class="hbar-value">{{ row.percentage | number: '1.1-1' }}% · {{ row.seconds | duration }}</span>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div class="empty-state">Sin datos de zonas cardíacas.</div>
+            }
+          </div>
+        } @else {
+          <p class="loading-text">DISTRIBUYENDO TIEMPO EN ZONAS DE FC…</p>
+        }
+      </section>
+    }
+
+    <!-- CARGA Y DESACOPLE -->
+    @if (activeTab() === 'load') {
+      <section class="detail-section">
+        <div class="detail-columns">
+          <div class="detail-block">
+            <span class="block-title">Carga de entrenamiento (TRIMP / HRSS)</span>
+            @if (trainingLoad(); as load) {
+              <div class="stat-tiles-grid">
+                <div class="stat-tile stat-tile--highlight">
+                  <span class="stat-tile-label">Carga principal</span>
+                  <span class="stat-tile-value">{{ load.trainingLoad | number: '1.1-1' }}</span>
+                </div>
+                <div class="stat-tile">
+                  <span class="stat-tile-label">Edwards TRIMP</span>
+                  <span class="stat-tile-value">{{ load.edwardsTrimp | number: '1.1-1' }}</span>
+                </div>
+                <div class="stat-tile">
+                  <span class="stat-tile-label">Banister TRIMP</span>
+                  <span class="stat-tile-value">{{ load.banisterTrimp | number: '1.1-1' }}</span>
+                </div>
+                <div class="stat-tile">
+                  <span class="stat-tile-label">HRSS</span>
+                  <span class="stat-tile-value">{{ load.hrss | number: '1.1-1' }}</span>
+                </div>
+              </div>
+              <div class="kv-list">
+                <div class="kv-row">
+                  <span class="kv-key">Nivel de esfuerzo</span>
+                  <span class="kv-val">{{ load.effortLevel }}</span>
+                </div>
+              </div>
+            } @else {
+              <p class="loading-text">CALCULANDO CARGA DE ENTRENAMIENTO…</p>
+            }
+          </div>
+
+          <div class="detail-block">
+            <span class="block-title">Desacople aeróbico (Cardiac Drift)</span>
+            @if (drift(); as d) {
+              @if (d.status) {
+                <div class="empty-state">{{ d.status }}</div>
+              } @else {
+                <div class="stat-tiles-grid">
+                  <div class="stat-tile stat-tile--highlight">
+                    <span class="stat-tile-label">Desacople</span>
+                    <span class="stat-tile-value">{{ d.cardiacDriftPercentage ?? '—' }}%</span>
+                  </div>
+                  <div class="stat-tile">
+                    <span class="stat-tile-label">Ratio 1ª mitad</span>
+                    <span class="stat-tile-value">{{ d.firstHalfEfficiencyRatio | number: '1.3-3' }}</span>
+                  </div>
+                  <div class="stat-tile">
+                    <span class="stat-tile-label">Ratio 2ª mitad</span>
+                    <span class="stat-tile-value">{{ d.secondHalfEfficiencyRatio | number: '1.3-3' }}</span>
+                  </div>
+                </div>
+                <div class="kv-list">
+                  <div class="kv-row">
+                    <span class="kv-key">Diagnóstico</span>
+                    <span class="kv-val">{{ d.decouplingStatus ?? '—' }}</span>
+                  </div>
+                </div>
+              }
+            } @else {
+              <p class="loading-text">ANALIZANDO DESACOPLE AERÓBICO…</p>
+            }
+          </div>
+        </div>
+      </section>
+    }
+
+    <!-- GPS -->
+    @if (activeTab() === 'gps') {
+      <section class="detail-section">
+        @if (trackpoints(); as track) {
+          @if (gpsGeometry(); as gps) {
+            <div class="chart-svg-shell">
+              <svg [attr.viewBox]="gpsViewBox" role="img" aria-label="Trazado de la ruta GPS de la actividad">
+                <polyline
+                  [attr.points]="gps.polyline"
+                  fill="none"
+                  stroke="#1a1a1a"
+                  stroke-width="2.6"
+                  stroke-linejoin="round"
+                  stroke-linecap="round"
+                />
+                <circle [attr.cx]="gps.start.x" [attr.cy]="gps.start.y" r="6" fill="#00e676" stroke="#1a1a1a" stroke-width="2" />
+                <circle [attr.cx]="gps.end.x" [attr.cy]="gps.end.y" r="6" fill="#1a1a1a" stroke="#00e676" stroke-width="2" />
+              </svg>
+            </div>
+            <p class="gps-caption mono muted">
+              {{ gps.count }} puntos GPS representados ·
+              <span class="legend-item"><span class="legend-swatch" style="background: #00e676"></span> INICIO</span>
+              <span class="legend-item"><span class="legend-swatch" style="background: #1a1a1a"></span> FINAL</span>
+            </p>
+
+            @if (trackStats(); as stats) {
+              <div class="stat-tiles-grid">
+                <div class="stat-tile">
+                  <span class="stat-tile-label">Puntos de telemetría</span>
+                  <span class="stat-tile-value">{{ stats.count | number }}</span>
+                </div>
+                <div class="stat-tile">
+                  <span class="stat-tile-label">Distancia de traza</span>
+                  <span class="stat-tile-value">{{ stats.distanceMeters | km }}</span>
+                </div>
+                <div class="stat-tile">
+                  <span class="stat-tile-label">FC media / mín / máx</span>
+                  <span class="stat-tile-value detail-value-sm">
+                    {{ stats.hrAvg !== null ? (stats.hrAvg | number: '1.0-0') : '—' }} /
+                    {{ stats.hrMin ?? '—' }} /
+                    {{ stats.hrMax ?? '—' }} bpm
+                  </span>
+                </div>
+                <div class="stat-tile">
+                  <span class="stat-tile-label">Altitud mín / máx</span>
+                  <span class="stat-tile-value detail-value-sm">
+                    {{ stats.altMin !== null ? (stats.altMin | number: '1.0-0') : '—' }} /
+                    {{ stats.altMax !== null ? (stats.altMax | number: '1.0-0') : '—' }} m
+                  </span>
+                </div>
+                <div class="stat-tile">
+                  <span class="stat-tile-label">Velocidad máxima</span>
+                  <span class="stat-tile-value">{{ stats.speedMax | kmh }}</span>
+                </div>
+                <div class="stat-tile">
+                  <span class="stat-tile-label">Muestras descargadas</span>
+                  <span class="stat-tile-value">{{ track.length | number }}</span>
+                  <span class="stat-tile-sub">resolución medium</span>
+                </div>
+              </div>
+            }
+          } @else {
+            <div class="empty-state">Sin coordenadas GPS suficientes para dibujar la ruta.</div>
+          }
+        } @else {
+          <p class="loading-text">DESCARGANDO TRACKPOINTS GPS…</p>
+        }
+      </section>
+    }
+  </div>
+</div>

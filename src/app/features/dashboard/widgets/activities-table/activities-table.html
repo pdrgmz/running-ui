@@ -1,0 +1,77 @@
+<article class="card-panel">
+  <div class="card-header-bar">
+    <span class="card-title-mono">Historial de Carreras</span>
+    <span class="card-tag-badge">/ACTIVITIES</span>
+  </div>
+
+  @if (loading()) {
+    <p class="loading-text">CONSULTANDO ACTIVIDADES…</p>
+  } @else if (page(); as p) {
+    @if (p.content.length > 0) {
+      <div class="data-table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th>Fecha</th>
+              <th>Nombre</th>
+              <th>Distancia</th>
+              <th>Tiempo</th>
+              <th>Ritmo</th>
+              <th>FC med/máx</th>
+              <th>Cadencia</th>
+              <th>D+ / D-</th>
+              <th>Calorías</th>
+              <th>TRIMP</th>
+              <th>VO2Max</th>
+              <th>VAM</th>
+              <th>Fuente</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (activity of p.content; track activity.id) {
+              <tr (click)="selectActivity.emit(activity)" [title]="'ID: ' + activity.id">
+                <td>{{ activity.startTime | date: 'dd/MM/yy HH:mm' }}</td>
+                <td class="cell-strong">{{ activity.name || 'Carrera' }}</td>
+                <td>{{ activity.distanceMeters | km }}</td>
+                <td>{{ activity.totalTimeSeconds | duration }}</td>
+                <td>{{ activity.avgPaceMinPerKm | pace }}</td>
+                <td>
+                  {{ activity.avgHeartRate ?? '—' }} / {{ activity.maxHeartRate ?? '—' }}
+                </td>
+                <td>{{ activity.avgCadence ?? '—' }} spm</td>
+                <td>{{ activity.elevationGain | number: '1.0-0' }} / {{ activity.elevationLoss | number: '1.0-0' }} m</td>
+                <td>{{ activity.totalCalories ?? '—' }}</td>
+                <td>{{ activity.trainingLoad !== null ? (activity.trainingLoad | number: '1.0-0') : '—' }}</td>
+                <td>{{ activity.vo2MaxEstimated !== null ? (activity.vo2MaxEstimated | number: '1.1-1') : '—' }}</td>
+                <td>{{ activity.vamKmH !== null ? (activity.vamKmH | number: '1.1-1') + ' km/h' : '—' }}</td>
+                <td>{{ activity.sourceFileType ? (activity.sourceFileType | uppercase) : '—' }}</td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination-bar">
+        <span>
+          PÁGINA {{ p.number + 1 }} / {{ p.totalPages || 1 }} · {{ p.totalElements }} ACTIVIDADES ·
+          {{ p.numberOfElements }} EN PANTALLA
+        </span>
+        <div class="pagination-actions">
+          <button type="button" class="btn-outline-pill btn-compact" [disabled]="p.first" (click)="goToPage(p.number - 1)">
+            ← ANTERIOR
+          </button>
+          <button type="button" class="btn-outline-pill btn-compact" [disabled]="p.last" (click)="goToPage(p.number + 1)">
+            SIGUIENTE →
+          </button>
+        </div>
+      </div>
+    } @else {
+      <div class="empty-state">
+        Sin actividades registradas todavía.<br />
+        Importa archivos TCX, GPX o FIT para empezar a generar analítica.
+      </div>
+    }
+  } @else {
+    <div class="empty-state">No se pudo cargar el historial de actividades.</div>
+  }
+</article>
