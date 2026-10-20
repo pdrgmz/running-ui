@@ -14,6 +14,7 @@ interface ChartGeometry {
   yTicks: ChartTick[];
   xTicks: ChartTick[];
   zeroY: number | null;
+  single: { x: number; ctl: number; atl: number; tsb: number } | null;
 }
 
 const VIEW_W = 860;
@@ -22,6 +23,7 @@ const PAD_L = 50;
 const PAD_R = 18;
 const PAD_T = 18;
 const PAD_B = 30;
+const Y_TARGET_TICKS = 6;
 
 /**
  * Gráfico de líneas del Performance Management Chart (CTL / ATL / TSB)
@@ -59,11 +61,12 @@ export class PmcChart {
     if (!last || !prev) {
       return '';
     }
+    const digits = field === 'acwr' ? 2 : 1;
     const diff = (last[field] ?? 0) - (prev[field] ?? 0);
-    if (Math.abs(diff) < 0.05) {
-      return '≈ 0.0';
+    if (Math.abs(diff) < (field === 'acwr' ? 0.005 : 0.05)) {
+      return `≈ ${(0).toFixed(digits)}`;
     }
-    return `${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(1)}`;
+    return `${diff > 0 ? '▲' : '▼'} ${Math.abs(diff).toFixed(digits)}`;
   }
 }
 
@@ -75,6 +78,7 @@ function buildGeometry(points: PmcPointDto[]): ChartGeometry {
     yTicks: [],
     xTicks: [],
     zeroY: null,
+    single: null,
   };
   if (points.length === 0) {
     return empty;
@@ -99,13 +103,17 @@ function buildGeometry(points: PmcPointDto[]): ChartGeometry {
   const polyline = (picker: (p: PmcPointDto) => number): string =>
     points.map((p, i) => `${x(i).toFixed(1)},${y(picker(p) ?? 0).toFixed(1)}`).join(' ');
 
-  const yTickCount = 4;
-  const yTicks: ChartTick[] = Array.from({ length: yTickCount + 1 }, (_, i) => {
-    const value = yMin + ((yMax - yMin) * i) / yTickCount;
-    return { pos: y(value), label: value.toFixed(0) };
-  });
+  // Ticks "bonitos": múltiplos de un paso redondeado (1/2/2.5/5 × 10ⁿ) dentro del rango visible.
+  const step = niceStep((yMax - yMin) / Y_TARGET_TICKS);
+  const yTicks: ChartTick[] = [];
+  for (let value = Math.ceil(yMin / step) * step; value <= yMax + step / 100; value += step) {
+    yTicks.push({ pos: y(value), label: tickLabel(value, step) });
+  }
+  if (yTicks.length === 0) {
+    yTicks.push({ pos: y(0), label: tickLabel(0, step) });
+  }
 
-  const xTickIndexes = n === 1 ? [0] : [0, Math.floor((n - 1) / 2), n - 1];
+  const xTickIndexes = n === 1 ? [0] : [...new Set([0, Math.floor((n - 1) / 2), n - 1])];
   const xTicks: ChartTick[] = xTickIndexes.map((i) => ({
     pos: x(i),
     label: shortDate(points[i].date),
@@ -120,7 +128,34 @@ function buildGeometry(points: PmcPointDto[]): ChartGeometry {
     yTicks,
     xTicks,
     zeroY,
+    single:
+      n === 1
+        ? {
+            x: x(0),
+            ctl: y(points[0].ctl ?? 0),
+            atl: y(points[0].atl ?? 0),
+            tsb: y(points[0].tsb ?? 0),
+          }
+        : null,
   };
+}
+
+/** Redondea un rango al paso "bonito" más cercano: 1, 2, 2.5, 5 o 10 × 10ⁿ. */
+function niceStep(range: number): number {
+  if (!Number.isFinite(range) || range <= 0) {
+    return 1;
+  }
+  const exponent = Math.floor(Math.log10(range));
+  const fraction = range / 10 ** exponent;
+  const nice = fraction <= 1 ? 1 : fraction <= 2 ? 2 : fraction <= 2.5 ? 2.5 : fraction <= 5 ? 5 : 10;
+  return nice * 10 ** exponent;
+}
+
+function tickLabel(value: number, step: number): string {
+  if (Number.isInteger(step) && Math.abs(step) >= 1) {
+    return value.toFixed(0);
+  }
+  return step >= 0.1 ? value.toFixed(1) : value.toFixed(2);
 }
 
 function shortDate(date: string): string {

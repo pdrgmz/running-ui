@@ -1,0 +1,147 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+}
+
+.profiles {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* Lectura del punto activo, común a los cuatro perfiles */
+.profile-readout {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 6px 18px;
+  min-height: 36px;
+  padding: 8px 12px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+}
+
+.profile-readout--idle {
+  color: var(--text-muted);
+  font-size: 0.58rem;
+  font-weight: 600;
+  letter-spacing: 0.5px;
+  align-items: center;
+}
+
+.readout-item {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.readout-key {
+  color: var(--text-muted);
+  font-size: 0.56rem;
+  letter-spacing: 0.5px;
+}
+
+.readout-value {
+  color: var(--text-main);
+}
+
+/* Pila de perfiles: una sola zona de puntero para mantener el cursor alineado */
+.profile-stack {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  cursor: crosshair;
+}
+
+.profile-row {
+  flex: 1 1 0;
+  min-height: 72px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.profile-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 10px;
+  font-family: var(--font-mono);
+}
+
+.profile-name {
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.profile-unit {
+  font-size: 0.54rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.profile-plot {
+  position: relative;
+  flex: 1 1 0;
+  min-height: 44px;
+  overflow: hidden;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+
+.profile-plot svg {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.profile-area {
+  fill: rgba(26, 26, 26, 0.07);
+}
+
+.profile-line {
+  fill: none;
+  stroke: var(--text-main);
+  stroke-width: 1.6;
+  stroke-linejoin: round;
+}
+
+.profile-crosshair {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 0;
+  border-left: 1.5px dashed var(--border-color);
+  transform: translateX(-0.75px);
+  pointer-events: none;
+}
+
+.profile-dot {
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--accent-green);
+  border: 1.5px solid var(--border-color);
+  box-shadow: 0 0 0 2px var(--bg-card);
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}

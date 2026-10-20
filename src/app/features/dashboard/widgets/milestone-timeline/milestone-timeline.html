@@ -1,0 +1,39 @@
+<div class="milestone-timeline">
+  @for (group of groups(); track group.key) {
+    <div class="timeline-item">
+      <time class="timeline-date">
+        <span class="timeline-day">{{ group.date | date: 'dd' }}</span>
+        <span class="timeline-month">{{ group.date | date: 'MM/yyyy' }}</span>
+      </time>
+      <div class="timeline-rail">
+        <span class="timeline-dot"></span>
+      </div>
+      <div class="timeline-card">
+        @for (milestone of group.items; track milestone.id) {
+          @if (milestone.unlockedActivityId; as activityId) {
+            <button
+              type="button"
+              class="timeline-entry timeline-entry--link"
+              title="Abrir detalle de la actividad"
+              (click)="openActivity.emit(activityId)"
+            >
+              <span class="timeline-entry-head">
+                <span class="timeline-entry-title">{{ milestone.title }}</span>
+                <span class="timeline-entry-category">{{ categoryLabel(milestone.category) }}</span>
+              </span>
+              <span class="timeline-entry-value">{{ targetLabel(milestone) }}</span>
+            </button>
+          } @else {
+            <div class="timeline-entry">
+              <div class="timeline-entry-head">
+                <span class="timeline-entry-title">{{ milestone.title }}</span>
+                <span class="timeline-entry-category">{{ categoryLabel(milestone.category) }}</span>
+              </div>
+              <span class="timeline-entry-value">{{ targetLabel(milestone) }}</span>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  }
+</div>

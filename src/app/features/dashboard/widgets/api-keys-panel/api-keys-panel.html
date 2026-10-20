@@ -1,0 +1,223 @@
+<article class="card-panel">
+  <div class="card-header-bar">
+    <div class="apikey-header-actions">
+      @if (keys(); as list) {
+        <span class="card-tag-badge">{{ list.length }} {{ list.length === 1 ? 'CLAVE' : 'CLAVES' }}</span>
+      } @else {
+        <span class="card-tag-badge">/AUTH/API-KEYS</span>
+      }
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact btn-icon-only"
+        [disabled]="keys() === null"
+        title="Refrescar"
+        aria-label="Refrescar"
+        (click)="load()"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <!-- GENERACIÓN DE CLAVES -->
+  <div class="apikey-create-shell">
+    <div class="form-group">
+      <label class="form-label" for="apikey-name">Nombre de la clave</label>
+      <input
+        id="apikey-name"
+        name="apiKeyName"
+        type="text"
+        class="form-control"
+        placeholder="n8n, cron-backup, script-python…"
+        maxlength="100"
+        autocomplete="off"
+        [(ngModel)]="newName"
+        (keydown.enter)="createKey()"
+      />
+    </div>
+    <div class="form-group">
+      <label class="form-label" for="apikey-days">Vigencia (días)</label>
+      <input
+        id="apikey-days"
+        name="apiKeyDays"
+        type="number"
+        class="form-control"
+        placeholder="Sin caducidad"
+        min="1"
+        [max]="maxExpiryDays"
+        [(ngModel)]="newExpiresInDays"
+        (keydown.enter)="createKey()"
+      />
+    </div>
+    <button
+      type="button"
+      class="btn-pill-header btn-compact btn-icon-only apikey-submit"
+      [disabled]="creating()"
+      [title]="creating() ? 'Generando clave…' : 'Generar clave'"
+      [attr.aria-label]="creating() ? 'Generando clave…' : 'Generar clave'"
+      (click)="createKey()"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+      </svg>
+    </button>
+  </div>
+  <p class="account-hint">
+    La clave tiene acceso completo a tus datos y se envía en la cabecera <code>X-Api-Key</code> en lugar del
+    JWT. El valor completo solo se muestra una vez, al crearla; sin vigencia indicada, no caduca.
+  </p>
+
+  <!-- CLAVE RECIÉN CREADA: ÚNICA VISUALIZACIÓN DEL VALOR -->
+  @if (createdKey(); as created) {
+    <div class="apikey-reveal">
+      <div class="apikey-reveal-head">
+        <span class="apikey-reveal-title">CLAVE «{{ created.name }}» CREADA CORRECTAMENTE</span>
+        <span class="card-tag-badge">VISIBLE UNA SOLA VEZ</span>
+      </div>
+      <code class="apikey-reveal-value">{{ created.key }}</code>
+      <div class="panel-actions-row">
+        <button
+          type="button"
+          class="btn-pill-header btn-compact btn-icon-only"
+          title="Copiar clave"
+          aria-label="Copiar clave"
+          (click)="copyKey(created.key)"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" />
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="btn-outline-pill btn-compact btn-icon-only"
+          title="Ocultar"
+          aria-label="Ocultar"
+          (click)="dismissCreated()"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+            <line x1="1" y1="1" x2="23" y2="23" />
+          </svg>
+        </button>
+      </div>
+      <p class="account-hint">
+        Guárdala ahora en tu gestor de secretos o herramienta de automatización. Si la pierdes, revócala y
+        genera otra: la API solo conserva el prefijo.
+      </p>
+    </div>
+  }
+
+  <!-- LISTADO DE CLAVES -->
+  @if (keys(); as list) {
+    @if (list.length > 0) {
+      <div class="data-table-wrap">
+        <table class="data-table apikey-table">
+          <thead>
+            <tr>
+              <th>Nombre</th>
+              <th>Prefijo</th>
+              <th>Creada</th>
+              <th>Caduca</th>
+              <th>Último uso</th>
+              <th>Estado</th>
+              <th class="text-right">Acciones</th>
+            </tr>
+          </thead>
+          <tbody>
+            @for (row of rows(); track row.key.id) {
+              <tr>
+                <td class="cell-strong">{{ row.key.name }}</td>
+                <td class="apikey-prefix">{{ row.key.keyPrefix }}…</td>
+                <td>{{ row.key.createdAt | date: 'dd/MM/yy HH:mm' }}</td>
+                <td>{{ row.key.expiresAt ? (row.key.expiresAt | date: 'dd/MM/yy HH:mm') : 'SIN CADUCIDAD' }}</td>
+                <td>{{ row.key.lastUsedAt ? (row.key.lastUsedAt | date: 'dd/MM/yy HH:mm') : 'NUNCA USADA' }}</td>
+                <td>
+                  <span class="apikey-status" [class.apikey-status--expired]="row.expired">
+                    <span class="apikey-dot" [class.apikey-dot--expired]="row.expired"></span>
+                    {{ row.expired ? 'CADUCADA' : 'ACTIVA' }}
+                  </span>
+                </td>
+                <td>
+                  <div class="apikey-actions">
+                    @if (confirmingId() === row.key.id) {
+                      <button
+                        type="button"
+                        class="btn-pill-header btn-compact btn-icon-only apikey-danger-fill"
+                        [disabled]="revokingId() === row.key.id"
+                        [title]="revokingId() === row.key.id ? 'Revocando…' : 'Confirmar revocación'"
+                        [attr.aria-label]="revokingId() === row.key.id ? 'Revocando…' : 'Confirmar revocación'"
+                        (click)="revoke(row)"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <line x1="10" y1="11" x2="10" y2="17" />
+                          <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn-outline-pill btn-compact btn-icon-only"
+                        [disabled]="revokingId() === row.key.id"
+                        title="Cancelar"
+                        aria-label="Cancelar"
+                        (click)="cancelRevoke()"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <line x1="18" y1="6" x2="6" y2="18" />
+                          <line x1="6" y1="6" x2="18" y2="18" />
+                        </svg>
+                      </button>
+                    } @else {
+                      <button
+                        type="button"
+                        class="btn-outline-pill btn-compact btn-icon-only apikey-danger"
+                        [disabled]="revokingId() !== null"
+                        title="Revocar clave"
+                        aria-label="Revocar clave"
+                        (click)="requestRevoke(row.key.id)"
+                      >
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <polyline points="3 6 5 6 21 6" />
+                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          <line x1="10" y1="11" x2="10" y2="17" />
+                          <line x1="14" y1="11" x2="14" y2="17" />
+                        </svg>
+                      </button>
+                    }
+                  </div>
+                </td>
+              </tr>
+            }
+          </tbody>
+        </table>
+      </div>
+    } @else {
+      <div class="empty-state">
+        <p>SIN CLAVES DE API — GENERA LA PRIMERA PARA TUS AUTOMATIZACIONES (N8N, SCRIPTS, CRON).</p>
+      </div>
+    }
+  } @else if (loadError()) {
+    <div class="empty-state">
+      <p>NO SE PUDIERON CARGAR LAS CLAVES DE API.</p>
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact btn-icon-only"
+        title="Reintentar"
+        aria-label="Reintentar"
+        (click)="load()"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+        </svg>
+      </button>
+    </div>
+  } @else {
+    <p class="loading-text">CARGANDO CLAVES DE API…</p>
+  }
+</article>

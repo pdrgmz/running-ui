@@ -54,12 +54,6 @@ export class AuthService {
     return s ? s.issuedAt + s.refreshExpiresInSeconds * 1000 : null;
   });
 
-  /** Segundos restantes de validez del access token (aprox., sin refetch). */
-  readonly accessTokenSecondsLeft = computed(() => {
-    const expiresAt = this.accessExpiresAt();
-    return expiresAt === null ? 0 : Math.max(0, Math.round((expiresAt - Date.now()) / 1000));
-  });
-
   /** Claims decodificados del access token (sin verificar firma). */
   readonly accessTokenClaims = computed<JwtPayload | null>(() => {
     const token = this.token();

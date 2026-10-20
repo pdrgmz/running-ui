@@ -1,5 +1,5 @@
 /**
- * DTOs generados a partir de `api-docs.json` (Running Tracker & Analytics API v1.3.0).
+ * DTOs generados a partir de `api-docs.json` (Running Tracker & Analytics API v1.4.0).
  * Los campos marcados como opcionales pueden no venir informados por el servidor.
  */
 
@@ -51,6 +51,32 @@ export interface JwtPayload {
   exp?: number;
   type?: string;
   [key: string]: unknown;
+}
+
+/* ------------------------------------------------------------------ */
+/* Claves de API                                                       */
+/* ------------------------------------------------------------------ */
+
+export interface CreateApiKeyRequestDto {
+  /** Nombre descriptivo para identificar la clave (ej. "n8n"). */
+  name: string;
+  /** Días de vigencia (1–3650). Si se omite, la clave no caduca. */
+  expiresInDays?: number;
+}
+
+/** Metadatos de una clave de API (sin su valor secreto). */
+export interface ApiKeyResponseDto {
+  id: number;
+  name: string;
+  keyPrefix: string;
+  createdAt: string;
+  expiresAt: string | null;
+  lastUsedAt: string | null;
+}
+
+/** Clave recién creada: el campo `key` solo se muestra en esta respuesta. */
+export interface ApiKeyCreatedResponseDto extends ApiKeyResponseDto {
+  key: string;
 }
 
 /* ------------------------------------------------------------------ */

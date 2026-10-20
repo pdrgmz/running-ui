@@ -1,0 +1,52 @@
+<article class="card-panel">
+  <div class="card-header-bar">
+    <span class="card-tag-badge">GUÍA DINÁMICA</span>
+  </div>
+
+  @if (hasData()) {
+    <div class="stat-tiles-grid pmc-reading-tiles">
+      <div class="stat-tile">
+        <span class="stat-tile-label">Forma actual · TSB</span>
+        <span class="stat-tile-value">{{ latest()?.tsb | number: '1.1-1' }}</span>
+        <span [class]="'chip chip--' + tsbBand().tone">{{ tsbBand().id }}</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Carga semanal · TRIMP</span>
+        <span class="stat-tile-value">{{ weeklyTrimp() | number: '1.0-0' }}</span>
+        <span class="stat-tile-sub">ÚLTIMOS 7 DÍAS</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Aptitud · Δ 7 días</span>
+        <span class="stat-tile-value">{{ signedDelta(ctlDelta()) }}</span>
+        <span [class]="'chip chip--' + ctlVerdict().tone">{{ ctlVerdict().label }}</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Fatiga · Δ 7 días</span>
+        <span class="stat-tile-value">{{ signedDelta(atlDelta()) }}</span>
+        <span [class]="'chip chip--' + atlVerdict().tone">{{ atlVerdict().label }}</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Riesgo de carga · ACWR</span>
+        <span class="stat-tile-value">{{ acwr()?.acwr | number: '1.2-2' }}</span>
+        <span [class]="'chip chip--' + acwrZone().tone">{{ acwrZone().label }}</span>
+      </div>
+    </div>
+
+    <div class="tsb-strip">
+      @for (band of bands(); track band.id) {
+        <div [class]="'tsb-band tsb-band--' + band.tone + (band.active ? ' tsb-band--active' : '')">
+          <span class="tsb-band-range">{{ band.range }}</span>
+          <span class="tsb-band-label">{{ band.id }}</span>
+        </div>
+      }
+    </div>
+
+    <ul class="reading-list">
+      @for (line of insights(); track $index) {
+        <li>{{ line }}</li>
+      }
+    </ul>
+  } @else {
+    <p class="loading-text">CARGANDO LECTURA DEL PMC…</p>
+  }
+</article>

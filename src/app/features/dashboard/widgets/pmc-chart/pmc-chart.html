@@ -1,6 +1,5 @@
 <article class="card-panel">
   <div class="card-header-bar">
-    <span class="card-title-mono">Performance Management Chart (PMC)</span>
     <span class="card-tag-badge">/ANALYTICS/PMC</span>
   </div>
 
@@ -38,7 +37,7 @@
         <span class="legend-swatch" style="background: #1a1a1a"></span> CTL (aptitud)
       </span>
       <span class="legend-item">
-        <span class="legend-swatch" style="background: #555c52"></span> ATL (fatiga)
+        <span class="legend-swatch legend-swatch--dashed"></span> ATL (fatiga)
       </span>
       <span class="legend-item">
         <span class="legend-swatch" style="background: #00e676"></span> TSB (forma)
@@ -103,6 +102,12 @@
           stroke-width="2.4"
           stroke-linejoin="round"
         />
+
+        @if (geometry().single; as only) {
+          <circle [attr.cx]="only.x" [attr.cy]="only.atl" r="3.4" fill="#555c52" />
+          <circle [attr.cx]="only.x" [attr.cy]="only.ctl" r="3.4" fill="#1a1a1a" />
+          <circle [attr.cx]="only.x" [attr.cy]="only.tsb" r="3.4" fill="#00e676" />
+        }
 
         @for (tick of geometry().xTicks; track tick.pos) {
           <text

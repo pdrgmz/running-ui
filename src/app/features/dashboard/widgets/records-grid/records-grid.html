@@ -1,23 +1,23 @@
 <article class="card-panel">
   <div class="card-header-bar">
-    <span class="card-title-mono">Récords Personales (PB)</span>
     <span class="card-tag-badge">/STATS/RECORDS</span>
   </div>
 
   <div class="records-grid">
     @for (card of cards(); track card.category) {
-      <div class="record-card" [class.record-card--empty]="!card.record">
-        <div class="record-card-top">
-          <span class="edu-badge-tag">{{ card.category }}</span>
-          @if (card.record) {
+      @if (card.record; as r) {
+        <button
+          type="button"
+          class="record-card"
+          title="Abrir detalle de la actividad"
+          (click)="openActivity.emit(r.activityId)"
+        >
+          <div class="record-card-top">
+            <span class="edu-badge-tag">{{ card.category }}</span>
             <span class="badge-tag">PB</span>
-          } @else {
-            <span class="badge-tag record-badge-muted">—</span>
-          }
-        </div>
+          </div>
 
-        @if (card.record; as r) {
-          <span class="record-time">{{ r.bestTimeFormatted }}</span>
+          <span class="record-time">{{ r.bestTimeSeconds | duration }}</span>
           <div class="kv-list">
             <div class="kv-row">
               <span class="kv-key">Ritmo</span>
@@ -40,13 +40,19 @@
               <span class="kv-val kv-val--token" [title]="r.activityId">{{ r.activityId }}</span>
             </div>
           </div>
-        } @else {
+        </button>
+      } @else {
+        <div class="record-card record-card--empty">
+          <div class="record-card-top">
+            <span class="edu-badge-tag">{{ card.category }}</span>
+            <span class="badge-tag record-badge-muted">—</span>
+          </div>
           <span class="record-time record-time--empty">SIN REGISTRO</span>
           <p class="record-empty-hint">
             Sube una actividad de al menos {{ card.category }} para registrar esta marca.
           </p>
-        }
-      </div>
+        </div>
+      }
     }
   </div>
 </article>

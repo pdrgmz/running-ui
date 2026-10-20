@@ -1,0 +1,191 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+/* --- Bloque de mes --- */
+.cal-month {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px 16px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-main);
+}
+
+.cal-month-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-bottom: 8px;
+  border-bottom: 1.5px dashed var(--border-subtle);
+}
+
+.cal-month-title {
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+}
+
+.cal-month-stats {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+/* --- Rejilla semanal --- */
+.cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.cal-weekday {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: 2px 0;
+}
+
+.cal-day {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 64px;
+  padding: 6px 6px 8px;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}
+
+.cal-day--pad {
+  background: transparent;
+  border-color: transparent;
+}
+
+.cal-day--today {
+  border-color: var(--border-color);
+}
+
+.cal-day-num {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.cal-day--today .cal-day-num {
+  align-self: flex-start;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: var(--text-main);
+  color: var(--bg-main);
+}
+
+.cal-chip {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  color: var(--text-main);
+  background: var(--bg-main);
+  border: 1.5px solid var(--border-color);
+  border-radius: 6px;
+  padding: 2px 6px;
+  cursor: pointer;
+  text-align: center;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.cal-chip:hover {
+  background: var(--text-main);
+  color: var(--bg-main);
+}
+
+.cal-more {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.cal-sentinel {
+  height: 1px;
+}
+
+.cal-error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 0 2px;
+}
+
+.cal-error-text {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+}
+
+.cal-retry {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--text-main);
+  background: var(--bg-main);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  padding: 4px 14px;
+  cursor: pointer;
+  transition:
+    background 0.15s ease,
+    color 0.15s ease;
+}
+
+.cal-retry:hover {
+  background: var(--text-main);
+  color: var(--bg-main);
+}
+
+.cal-end {
+  margin: 0;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.6px;
+  color: var(--text-muted);
+}
+
+@media (max-width: 720px) {
+  .cal-month {
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .cal-day {
+    min-height: 52px;
+    padding: 4px;
+  }
+
+  .cal-chip {
+    font-size: 0.53rem;
+    padding: 1px 4px;
+  }
+}

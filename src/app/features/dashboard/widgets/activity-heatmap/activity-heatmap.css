@@ -1,0 +1,102 @@
+/* Pestaña "Mapa de calor": progreso, controles y lienzo Leaflet */
+
+.heat-loading {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 42px 4px 50px;
+  max-width: 620px;
+}
+
+.heat-loading-text {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  animation: blink-soft 1.1s steps(2, start) infinite;
+}
+
+.heat-progress {
+  height: 12px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 999px;
+  background: var(--bg-main);
+  overflow: hidden;
+}
+
+.heat-progress-fill {
+  height: 100%;
+  background: var(--accent-green);
+  transition: width 0.25s ease;
+}
+
+.heat-loading-sub {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  line-height: 1.6;
+}
+
+.heat-stats {
+  margin-bottom: 16px;
+}
+
+.heat-period {
+  font-size: 1.05rem;
+}
+
+.heat-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.heat-control-label {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.heat-range {
+  accent-color: var(--accent-green);
+  width: 220px;
+}
+
+.heat-opacity-value {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.heat-hint {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--text-muted);
+}
+
+/* Lienzo del mapa: mismo blindaje que el detalle (recorte propio) */
+.heatmap-map {
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
+  height: min(62vh, 560px);
+  min-height: 380px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+}
+
+.heat-caption {
+  margin: 10px 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  color: var(--text-muted);
+}

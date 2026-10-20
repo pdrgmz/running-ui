@@ -35,6 +35,8 @@
 .gauge-wrap {
   display: flex;
   flex-direction: column;
+  justify-content: center;
+  flex: 1;
   padding: 4px 2px 0;
 }
 

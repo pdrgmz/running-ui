@@ -1,0 +1,69 @@
+@if (profile().entries.length > 1) {
+  <div class="profiles">
+    <div class="profile-readout" [class.profile-readout--idle]="hoverEntry() === null">
+      @if (hoverEntry(); as entry) {
+        <span class="readout-item">
+          <span class="readout-key">KM</span>
+          <span class="readout-value">{{ entry.distanceMeters / 1000 | number: '1.2-2' }}</span>
+        </span>
+        <span class="readout-item">
+          <span class="readout-key">RITMO</span>
+          <span class="readout-value">{{ entry.pace | pace }}</span>
+        </span>
+        <span class="readout-item">
+          <span class="readout-key">CAD</span>
+          <span class="readout-value">{{ entry.cadence !== null ? (entry.cadence | number: '1.0-0') : '—' }} spm</span>
+        </span>
+        <span class="readout-item">
+          <span class="readout-key">FC</span>
+          <span class="readout-value">{{ entry.heartRate !== null ? (entry.heartRate | number: '1.0-0') : '—' }} bpm</span>
+        </span>
+        <span class="readout-item">
+          <span class="readout-key">ALT</span>
+          <span class="readout-value">{{ entry.altitude !== null ? (entry.altitude | number: '1.0-0') : '—' }} m</span>
+        </span>
+      } @else {
+        PASA EL RATÓN POR LOS PERFILES O LA RUTA PARA INSPECCIONAR LA CARRERA
+      }
+    </div>
+
+    <div
+      class="profile-stack"
+      (pointermove)="onPointerMove($event)"
+      (pointerleave)="onPointerLeave()"
+    >
+      @for (chart of profile().charts; track chart.key) {
+        <div class="profile-row">
+          <div class="profile-head">
+            <span class="profile-name">{{ chart.label }}</span>
+            <span class="profile-unit">{{ chart.unit }}</span>
+          </div>
+          <div
+            class="profile-plot"
+            role="img"
+            [attr.aria-label]="chart.label + ' a lo largo de la carrera'"
+          >
+            <svg viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+              <path [attr.d]="chart.area" class="profile-area" />
+              <path
+                [attr.d]="chart.path"
+                class="profile-line"
+                vector-effect="non-scaling-stroke"
+              />
+            </svg>
+            @if (yPct(chart) !== null) {
+              <span class="profile-crosshair" [style.left.%]="xPct(chart)"></span>
+              <span
+                class="profile-dot"
+                [style.left.%]="xPct(chart)"
+                [style.top.%]="yPct(chart)"
+              ></span>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+} @else {
+  <div class="empty-state">SIN PUNTOS SUFICIENTES PARA DIBUJAR LOS PERFILES.</div>
+}

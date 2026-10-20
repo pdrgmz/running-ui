@@ -1,15 +1,22 @@
 # Running Tracker UI
 
 Panel de analítica del corredor construido en **Angular 20** sobre la
-**Running Tracker & Analytics API v1.3.0** (ver [`api-docs.json`](api-docs.json)),
+**Running Tracker & Analytics API v1.4.0** (ver [`api-docs.json`](api-docs.json)),
 con el sistema de diseño **Smart Dashboard UI Kit** (carpeta
 [`smart-dashboard-ui-kit/`](smart-dashboard-ui-kit)).
 
 La aplicación muestra **toda la información que la API expone para el usuario
-autenticado**: perfil, resumen acumulado, récords personales (PB), PMC
-(CTL/ATL/TSB), ACWR, número de Eddington, historial de actividades y analítica
-detallada por sesión (splits, zonas de FC, carga TRIMP/HRSS, VO2Max/VAM,
-predicción de marcas, desacople aeróbico y ruta GPS).
+autenticado**: perfil, resumen acumulado, récords personales (PB), logros
+automáticos en un timeline cronológico calculados sobre el historial completo
+(volumen, sesiones, desnivel, tiempo, distancias largas, constancia semanal,
+Eddington y récords),
+PMC (CTL/ATL/TSB), ACWR, número de Eddington, historial de actividades, mapa de
+calor global con las trazas GPS de **todas** las sesiones (estilo Strava,
+carga por lotes con progreso), analítica detallada por sesión (splits, zonas
+de FC, carga TRIMP/HRSS, VO2Max/VAM, predicción de marcas, desacople aeróbico
+y ruta GPS sobre mapa **Leaflet + OpenStreetMap** con tiles desaturados a
+juego con el sistema de diseño) y **gestión de claves de API**
+(`X-Api-Key`) para automatizaciones como n8n, scripts o cron.
 
 ## Puesta en marcha
 
@@ -41,6 +48,85 @@ entra con cualquier email/contraseña para ver todo el panel con datos de ejempl
 npm run build      # genera dist/running-ui
 ```
 
+## Despliegue con Docker / Portainer
+
+Archivos incluidos:
+
+| Archivo | Descripción |
+| --- | --- |
+| [`Dockerfile`](Dockerfile) | Build multi-stage: Angular 20 + Nginx |
+| [`nginx/default.conf.template`](nginx/default.conf.template) | SPA fallback, caché de assets y proxy `/api/*` |
+| [`docker-compose.yml`](docker-compose.yml) | Stack listo para Portainer |
+| [`.env.example`](.env.example) | Variables `APP_PORT` y `API_UPSTREAM` |
+
+Nginx sirve la SPA y reenvía `/api/*` al `API_UPSTREAM` configurado
+(`https://running-api.pdrgmz.uk` por defecto). Por eso la **URL base de la API
+puede dejarse vacía** en el login: frontend y API comparten origen y no hay
+problemas de CORS. Si en el navegador se guardó una URL absoluta anteriormente,
+bórrala para volver a usar el proxy.
+
+### Docker Compose local
+
+```bash
+cp .env.example .env    # opcional: ajusta APP_PORT / API_UPSTREAM
+docker compose up -d --build
+```
+
+La UI queda en `http://localhost:3000` (o el `APP_PORT` configurado).
+
+```bash
+docker compose ps
+curl http://localhost:3000/healthz   # responde "ok"
+docker compose logs -f running-ui
+docker compose down
+```
+
+### Portainer
+
+**Opción A — Stack desde el repositorio Git (recomendada)**
+
+1. Portainer → **Stacks** → **Add stack** → **Git repository**.
+2. Repository URL: `https://github.com/pdrgmz/running-ui.git` (o tu fork),
+   referencia `main`.
+3. Compose path: `docker-compose.yml`.
+4. En **Environment variables** ajusta, si hace falta:
+   - `APP_PORT`: puerto del host (por defecto `3000`).
+   - `API_UPSTREAM`: servidor de la API, **sin barra final**.
+5. **Deploy the stack**. En Docker Standalone, Portainer construye la imagen
+   con el `Dockerfile` y arranca el contenedor.
+
+> En un entorno **Swarm**, `docker stack deploy` no construye imágenes: usa la
+> opción B con una imagen ya publicada.
+
+**Opción B — Imagen publicada en un registry**
+
+```bash
+docker build -t TU_USUARIO/running-ui:latest .
+docker push TU_USUARIO/running-ui:latest
+```
+
+En Portainer → **Stacks** → **Add stack** → **Web editor**, pega:
+
+```yaml
+services:
+  running-ui:
+    image: TU_USUARIO/running-ui:latest
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    environment:
+      API_UPSTREAM: https://running-api.pdrgmz.uk
+```
+
+El contenedor solo necesita el puerto interno `80`; el healthcheck consulta
+`GET /healthz`. Si la API corre como otro servicio de la misma red Docker, usa
+su nombre como upstream (por ejemplo `http://running-api:8080`).
+
+Para actualizar, vuelve a desplegar el stack o ejecuta
+`docker compose up -d --build` en local. Si Portainer reutiliza la imagen en
+caché tras un redespliegue, elimina la imagen `running-ui:latest` del entorno y
+vuelve a desplegar (o publica la imagen con CI y usa la opción B).
+
 ## Arquitectura
 
 ```
@@ -52,7 +138,9 @@ src/app/
 │   └── services/
 │       ├── api-config.service.ts     # URL base configurable (localStorage)
 │       ├── auth.service.ts           # login/registro/refresh/me + claims JWT
+│       ├── api-keys.service.ts       # claves de API (X-Api-Key) del usuario
 │       ├── stats.service.ts          # summary, records, pmc, eddington, acwr
+│       ├── milestones.service.ts     # logros automáticos sobre /activities
 │       ├── activities.service.ts     # actividades + analíticas por sesión
 │       ├── telemetry.service.ts      # registro de tráfico HTTP para la consola
 │       └── toast.service.ts          # notificaciones
@@ -67,8 +155,12 @@ src/app/
 │           ├── acwr-card/            # /analytics/acwr/current
 │           ├── eddington-card/       # /analytics/eddington
 │           ├── records-grid/         # /stats/records
-│           ├── activities-table/     # /activities (paginada)
-│           └── activity-detail/      # modal con splits, zonas, carga, GPS
+│           ├── milestone-timeline/   # timeline de logros con fecha, recientes primero
+│           ├── milestones-panel/     # logros: resumen, filtros y próximos objetivos
+│           ├── activity-calendar/    # historial en calendario con scroll infinito
+│           ├── activity-detail/      # modal bento con splits, zonas, carga, mapa GPS
+│           ├── activity-heatmap/     # mapa de calor con todas las trazas GPS
+│           └── api-keys-panel/       # generar/revocar claves de API (X-Api-Key)
 └── shared/
     ├── pipes/format.pipes.ts         # duration, km, pace, kmh
     └── terminal-console/             # consola de telemetría estilo terminal
@@ -79,8 +171,10 @@ src/app/
 | Vista | Endpoint |
 | --- | --- |
 | Acceso / registro / sesión | `POST /api/v1/auth/login`, `/register`, `/refresh`, `GET /auth/me` |
+| Claves de API | `GET` · `POST /api/v1/auth/api-keys` · `DELETE /auth/api-keys/{id}` |
 | Resumen acumulado | `GET /api/v1/stats/summary` |
 | Récords (PB) | `GET /api/v1/stats/records` · `POST /stats/recalculate` |
+| Logros automáticos | Timeline cronológico derivado de `GET /api/v1/activities` (historial completo) + `records` + `eddington` |
 | PMC | `GET /api/v1/analytics/pmc?startDate&endDate` |
 | ACWR | `GET /api/v1/analytics/acwr/current` |
 | Eddington | `GET /api/v1/analytics/eddington` |

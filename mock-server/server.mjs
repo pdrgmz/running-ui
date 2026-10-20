@@ -59,6 +59,43 @@ function route(req, path, url, body, res) {
     return send(res, 401, error(401, 'Unauthorized', 'No autenticado o token inválido'));
   }
 
+  // --- Claves de API ---
+  if (method === 'GET' && path === '/api/v1/auth/api-keys') {
+    return send(res, 200, apiKeyList());
+  }
+  if (method === 'POST' && path === '/api/v1/auth/api-keys') {
+    const name = typeof body?.name === 'string' ? body.name.trim() : '';
+    if (!name) {
+      return send(res, 400, error(400, 'Bad Request', 'El nombre de la clave es obligatorio'));
+    }
+    const days = body?.expiresInDays;
+    if (days !== undefined && days !== null && (!Number.isInteger(days) || days < 1 || days > 3650)) {
+      return send(res, 400, error(400, 'Bad Request', 'expiresInDays debe estar entre 1 y 3650'));
+    }
+    const key = generateApiKey();
+    const created = {
+      id: apiKeySeq++,
+      name,
+      key,
+      keyPrefix: key.slice(0, 10),
+      createdAt: new Date().toISOString(),
+      expiresAt: days ? new Date(Date.now() + days * 86400000).toISOString() : null,
+      lastUsedAt: null,
+    };
+    apiKeys.unshift(created);
+    return send(res, 201, created);
+  }
+  const keyMatch = path.match(/^\/api\/v1\/auth\/api-keys\/(\d+)$/);
+  if (method === 'DELETE' && keyMatch) {
+    const id = Number(keyMatch[1]);
+    const index = apiKeys.findIndex((k) => k.id === id);
+    if (index === -1) {
+      return send(res, 404, error(404, 'Not Found', `Clave de API no encontrada: ${id}`));
+    }
+    apiKeys.splice(index, 1);
+    return send(res, 204, null);
+  }
+
   // --- Estadísticas ---
   if (method === 'GET' && path === '/api/v1/stats/summary') {
     return send(res, 200, summary());
@@ -133,7 +170,7 @@ function route(req, path, url, body, res) {
     const id = decodeURIComponent(match[1]);
     const kind = match[2];
     if (kind === 'splits') return send(res, 200, splits(id));
-    if (kind === 'hr-zones') return send(res, 200, hrZones());
+    if (kind === 'hr-zones') return send(res, 200, hrZones(id));
     if (kind === 'training-load') {
       return send(res, 200, { activityId: id, trainingLoad: 120.5, edwardsTrimp: 120.5, banisterTrimp: 115.2, hrss: 50.2, effortLevel: 'Moderado' });
     }
@@ -163,6 +200,51 @@ function route(req, path, url, body, res) {
 
 let userEmail = 'runner@example.com';
 
+/* Claves de API en memoria (el valor `key` solo se devuelve al crearlas). */
+let apiKeySeq = 4;
+const apiKeys = [
+  {
+    id: 1,
+    name: 'n8n',
+    key: 'rk_N8nAutomation7Fq2LmXp0RtYvBc4DeHjKw',
+    keyPrefix: 'rk_N8nAuto',
+    createdAt: '2026-08-02T09:14:00.000Z',
+    expiresAt: null,
+    lastUsedAt: '2026-10-15T07:02:11.000Z',
+  },
+  {
+    id: 2,
+    name: 'cron-backup',
+    key: 'rk_CronBackup5Zs8QwEr1Ty3UiOp2AsDfGh',
+    keyPrefix: 'rk_CronBa',
+    createdAt: '2026-09-20T18:40:00.000Z',
+    expiresAt: '2026-12-19T18:40:00.000Z',
+    lastUsedAt: null,
+  },
+  {
+    id: 3,
+    name: 'script-antiguo',
+    key: 'rk_ScriptOld9Pl4KjHg6Fd3Sa10MzXcVbNm',
+    keyPrefix: 'rk_ScriptO',
+    createdAt: '2025-01-10T10:00:00.000Z',
+    expiresAt: '2025-12-31T10:00:00.000Z',
+    lastUsedAt: '2025-06-01T09:00:00.000Z',
+  },
+];
+
+function apiKeyList() {
+  return apiKeys.map(({ key, ...meta }) => meta);
+}
+
+function generateApiKey() {
+  const alphabet = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  let secret = '';
+  for (let i = 0; i < 40; i++) {
+    secret += alphabet[Math.floor(Math.random() * alphabet.length)];
+  }
+  return `rk_${secret}`;
+}
+
 function authPayload(email) {
   userEmail = email;
   const now = Math.floor(Date.now() / 1000);
@@ -179,9 +261,18 @@ function authPayload(email) {
 
 function authorized(req) {
   const header = req.headers['authorization'] ?? '';
-  if (!header.startsWith('Bearer ')) return false;
-  const payload = decodeJwt(header.slice(7));
-  return !!payload && (payload.exp ?? 0) > Date.now() / 1000;
+  if (header.startsWith('Bearer ')) {
+    const payload = decodeJwt(header.slice(7));
+    if (payload && (payload.exp ?? 0) > Date.now() / 1000) {
+      return true;
+    }
+  }
+  // Alternativa al JWT: cabecera X-Api-Key con una clave vigente.
+  const apiKey = req.headers['x-api-key'];
+  return (
+    typeof apiKey === 'string' &&
+    apiKeys.some((k) => k.key === apiKey && (!k.expiresAt || new Date(k.expiresAt).getTime() > Date.now()))
+  );
 }
 
 function activities() {
@@ -194,48 +285,72 @@ function activities() {
     'Recuperación suave',
     'Fartlek junto al río',
     'Tempo run 6K',
+    'Cuestas cortas',
+    'Rodaje nocturno',
   ];
   const sources = ['tcx', 'gpx', 'fit'];
   const list = [];
-  for (let i = 0; i < 28; i++) {
-    const rand = mulberry32(1000 + i);
-    const start = new Date(Date.now() - i * 1.5 * 86400000);
-    start.setHours(7 + (i % 12), (i * 7) % 60, 0, 0);
-    const distance = 5000 + rand() * 20000; // 5–25 km
-    const pace = 4.6 + rand() * 1.1; // min/km
-    const timeSeconds = pace * 60 * (distance / 1000);
-    const elevationGain = Math.round(rand() * 320);
-    const avgHr = Math.round(138 + rand() * 26);
-    const maxHr = avgHr + Math.round(6 + rand() * 14);
-    const id = start.toISOString().replace(/\.\d{3}Z$/, 'Z');
-    list.push({
-      id,
-      userId: 1,
-      name: names[i % names.length],
-      startTime: id,
-      distanceMeters: Math.round(distance),
-      totalTimeSeconds: Math.round(timeSeconds),
-      avgSpeed: 1000 / (pace * 60),
-      maxSpeed: 1000 / ((pace - 0.9 - rand() * 0.4) * 60),
-      avgHeartRate: avgHr,
-      maxHeartRate: maxHr,
-      avgCadence: Math.round(168 + rand() * 12),
-      maxCadence: Math.round(184 + rand() * 8),
-      avgPaceMinPerKm: Number(pace.toFixed(2)),
-      maxPaceMinPerKm: Number((pace - 0.9 - rand() * 0.4).toFixed(2)),
-      trainingLoad: Math.round(40 + rand() * 140),
-      vo2MaxEstimated: Number((44 + rand() * 8).toFixed(1)),
-      vamKmH: Number((12 + rand() * 4).toFixed(2)),
-      totalCalories: Math.round(distance / 1000 * 62),
-      elevationGain,
-      elevationLoss: elevationGain - Math.round(rand() * 40),
-      backupFilePath: `storage/${id.slice(0, 10)}.${sources[i % 3]}`,
-      sourceFileType: sources[i % 3],
-      extraData: JSON.stringify({ device: 'Garmin Forerunner 965', sport: 'RUNNING', manufacturer: 'GARMIN' }),
-      createdAt: id,
-    });
+  const today = new Date();
+  today.setHours(21, 0, 0, 0);
+
+  // ~10 meses de historial con patrón realista: descansos, dobles sesiones y tiradas largas.
+  for (let back = 0; back < 320; back++) {
+    const day = addDays(today, -back);
+    const dayRand = mulberry32(90401 + back * 7919);
+    const dow = day.getDay(); // 0 domingo … 6 sábado
+    const runProbability = dow === 0 ? 0.82 : dow === 6 ? 0.88 : dow === 1 ? 0.35 : 0.66;
+    if (dayRand() > runProbability) continue;
+
+    const runs = dayRand() > 0.94 ? 2 : 1;
+    for (let r = 0; r < runs; r++) {
+      const rand = mulberry32(1337 + back * 131 + r * 17);
+      const isLong = runs === 1 && rand() > 0.84;
+      const distance = isLong ? 17000 + rand() * 13000 : 5000 + rand() * 11000;
+      const pace = 4.5 + rand() * 1.25; // min/km
+      const timeSeconds = pace * 60 * (distance / 1000);
+      const elevationGain = Math.round(rand() * (isLong ? 420 : 240)) + 20;
+      const avgHr = Math.round(136 + rand() * 28);
+      const maxHr = avgHr + Math.round(6 + rand() * 14);
+      const start = new Date(day);
+      start.setHours(
+        r === 0 ? 7 + Math.floor(rand() * 3) : 18 + Math.floor(rand() * 2),
+        Math.floor(rand() * 60),
+        Math.floor(rand() * 60),
+        0,
+      );
+      const id = start.toISOString().replace(/\.\d{3}Z$/, 'Z');
+      const i = back + r;
+      list.push({
+        id,
+        userId: 1,
+        name: names[i % names.length],
+        startTime: id,
+        distanceMeters: Math.round(distance),
+        totalTimeSeconds: Math.round(timeSeconds),
+        avgSpeed: 1000 / (pace * 60),
+        maxSpeed: 1000 / ((pace - 0.9 - rand() * 0.4) * 60),
+        avgHeartRate: avgHr,
+        maxHeartRate: maxHr,
+        avgCadence: Math.round(168 + rand() * 12),
+        maxCadence: Math.round(184 + rand() * 8),
+        avgPaceMinPerKm: Number(pace.toFixed(2)),
+        maxPaceMinPerKm: Number((pace - 0.9 - rand() * 0.4).toFixed(2)),
+        trainingLoad: Math.round(40 + rand() * 140),
+        vo2MaxEstimated: Number((44 + rand() * 8).toFixed(1)),
+        vamKmH: Number((12 + rand() * 4).toFixed(2)),
+        totalCalories: Math.round((distance / 1000) * 62),
+        elevationGain,
+        elevationLoss: elevationGain - Math.round(rand() * 40),
+        backupFilePath: `storage/${id.slice(0, 10)}.${sources[i % 3]}`,
+        sourceFileType: sources[i % 3],
+        extraData: JSON.stringify({ device: 'Garmin Forerunner 965', sport: 'RUNNING', manufacturer: 'GARMIN' }),
+        createdAt: id,
+      });
+    }
   }
-  return list;
+
+  // Orden descendente por fecha (el más reciente primero).
+  return list.sort((a, b) => (a.startTime < b.startTime ? 1 : a.startTime > b.startTime ? -1 : 0));
 }
 
 function summary() {
@@ -311,17 +426,25 @@ function splits(id) {
   return list;
 }
 
-function hrZones() {
-  return {
-    maxHrUsed: 185,
-    zones: {
-      Z1_Recovery: { seconds: 350, percentage: 18.5 },
-      Z2_Endurance: { seconds: 820, percentage: 43.4 },
-      Z3_Tempo: { seconds: 420, percentage: 22.2 },
-      Z4_Threshold: { seconds: 220, percentage: 11.6 },
-      Z5_Anaerobic: { seconds: 80, percentage: 4.3 },
-    },
-  };
+function hrZones(id) {
+  const activity = activities().find((a) => a.id === id) ?? activities()[0];
+  const total = activity.totalTimeSeconds;
+  const defs = [
+    ['Z1_Recovery', 18.5],
+    ['Z2_Endurance', 43.4],
+    ['Z3_Tempo', 22.2],
+    ['Z4_Threshold', 11.6],
+    ['Z5_Anaerobic', 4.3],
+  ];
+  const zones = {};
+  let assigned = 0;
+  defs.forEach(([key, percentage], index) => {
+    const seconds =
+      index === defs.length - 1 ? total - assigned : Math.round((total * percentage) / 100);
+    assigned += seconds;
+    zones[key] = { seconds, percentage };
+  });
+  return { maxHrUsed: 185, zones };
 }
 
 function trackpoints(id, resolution) {
@@ -329,20 +452,34 @@ function trackpoints(id, resolution) {
   const activity = activities().find((a) => a.id === id) ?? activities()[0];
   const seed = hashString(id);
   const rand = mulberry32(seed);
-  const centerLat = 40.4168;
-  const centerLon = -3.7038;
+  // Firma espacial por actividad: cada salida recorre una zona distinta
+  // alrededor de Madrid (centro, rotación, radio, estiramiento y lóbulos
+  // derivados del seed), para que el mapa de calor agregado tenga riqueza.
+  const centerLat = 40.4168 + (rand() - 0.5) * 0.045;
+  const centerLon = -3.7038 + (rand() - 0.5) * 0.06;
+  const rotation = rand() * Math.PI * 2;
+  const radius = 0.004 + rand() * 0.009;
+  const stretch = 1.15 + rand() * 0.85;
+  const lobes = 2 + Math.floor(rand() * 3);
+  const phase = rand() * Math.PI * 2;
+  const cosRot = Math.cos(rotation);
+  const sinRot = Math.sin(rotation);
   const totalDistance = activity.distanceMeters;
   const baseHr = activity.avgHeartRate ?? 150;
   const start = new Date(activity.startTime).getTime();
   const points = [];
   for (let i = 0; i < count; i++) {
     const t = (i / count) * Math.PI * 2;
-    const r = 0.0075 * (0.8 + 0.2 * Math.sin(3 * t + 1));
+    const r = radius * (0.75 + 0.25 * Math.sin(lobes * t + phase));
+    const x = r * Math.sin(t);
+    const y = r * stretch * Math.cos(t);
+    const dLat = x * cosRot - y * sinRot;
+    const dLon = x * sinRot + y * cosRot;
     points.push({
       id: i + 1,
       timestamp: new Date(start + (i / count) * activity.totalTimeSeconds * 1000).toISOString(),
-      latitude: Number((centerLat + r * Math.sin(t) + (rand() - 0.5) * 0.0003).toFixed(6)),
-      longitude: Number((centerLon + r * 1.35 * Math.cos(t) + (rand() - 0.5) * 0.0003).toFixed(6)),
+      latitude: Number((centerLat + dLat + (rand() - 0.5) * 0.0003).toFixed(6)),
+      longitude: Number((centerLon + dLon + (rand() - 0.5) * 0.0003).toFixed(6)),
       altitudeMeters: Number((650 + 25 * Math.sin(2 * t) + rand() * 6).toFixed(1)),
       distanceMeters: Number(((i / count) * totalDistance).toFixed(1)),
       heartRate: Math.round(baseHr + 12 * Math.sin(t * 2) + (rand() - 0.5) * 8),
@@ -360,7 +497,7 @@ function trackpoints(id, resolution) {
 function send(res, status, data) {
   const headers = {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+    'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Api-Key',
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
     'Cache-Control': 'no-store',
   };

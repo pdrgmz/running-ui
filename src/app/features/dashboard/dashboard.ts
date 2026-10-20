@@ -1,9 +1,8 @@
 import { DatePipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
-import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { catchError, forkJoin, interval, of } from 'rxjs';
+import { catchError, forkJoin, of } from 'rxjs';
 import {
   AcwrStatusDto,
   Activity,
@@ -16,20 +15,27 @@ import {
 import { ActivitiesService } from '../../core/services/activities.service';
 import { ApiConfigService } from '../../core/services/api-config.service';
 import { AuthService } from '../../core/services/auth.service';
+import { MilestonesService } from '../../core/services/milestones.service';
 import { StatsService } from '../../core/services/stats.service';
 import { ToastService } from '../../core/services/toast.service';
 import { DurationPipe, KmPipe, PacePipe } from '../../shared/pipes/format.pipes';
 import { TerminalConsole } from '../../shared/terminal-console/terminal-console';
-import { ActivitiesTable } from './widgets/activities-table/activities-table';
+import { ActivityCalendar } from './widgets/activity-calendar/activity-calendar';
 import { ActivityDetail } from './widgets/activity-detail/activity-detail';
+import { ActivityHeatmap } from './widgets/activity-heatmap/activity-heatmap';
 import { AcwrCard } from './widgets/acwr-card/acwr-card';
+import { ApiKeysPanel } from './widgets/api-keys-panel/api-keys-panel';
 import { EddingtonCard } from './widgets/eddington-card/eddington-card';
+import { MilestonesPanel } from './widgets/milestones-panel/milestones-panel';
 import { PmcChart } from './widgets/pmc-chart/pmc-chart';
-import { ProfileCard } from './widgets/profile-card/profile-card';
+import { PmcReading } from './widgets/pmc-reading/pmc-reading';
 import { RecordsGrid } from './widgets/records-grid/records-grid';
 import { SummaryStats } from './widgets/summary-stats/summary-stats';
 
-type Tab = 'overview' | 'analytics' | 'records' | 'activities' | 'account';
+type Tab = 'overview' | 'records' | 'activities' | 'heatmap' | 'account';
+
+/** Actividades por página en el calendario (cada página cubre ~3 semanas). */
+const CALENDAR_PAGE_SIZE = 15;
 
 interface TabDef {
   id: Tab;
@@ -47,14 +53,17 @@ interface TabDef {
     DatePipe,
     FormsModule,
     TerminalConsole,
-    ProfileCard,
     SummaryStats,
     PmcChart,
+    PmcReading,
     AcwrCard,
     EddingtonCard,
     RecordsGrid,
-    ActivitiesTable,
+    MilestonesPanel,
+    ActivityCalendar,
+    ActivityHeatmap,
     ActivityDetail,
+    ApiKeysPanel,
     DurationPipe,
     KmPipe,
     PacePipe,
@@ -68,22 +77,20 @@ export class Dashboard implements OnInit {
   protected readonly api = inject(ApiConfigService);
   private readonly stats = inject(StatsService);
   private readonly activities = inject(ActivitiesService);
+  private readonly milestones = inject(MilestonesService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
 
-  protected readonly apiVersion = 'v1.3.0';
-
   protected readonly tabs: TabDef[] = [
     { id: 'overview', label: 'Resumen' },
-    { id: 'analytics', label: 'Analítica' },
-    { id: 'records', label: 'Récords PB' },
+    { id: 'records', label: 'Récords & Logros' },
     { id: 'activities', label: 'Actividades' },
+    { id: 'heatmap', label: 'Mapa de calor' },
     { id: 'account', label: 'Cuenta & API' },
   ];
 
   protected readonly activeTab = signal<Tab>('overview');
   protected readonly loading = signal(true);
-  protected readonly activitiesLoading = signal(false);
   protected readonly recalibrating = signal(false);
 
   protected readonly summary = signal<SummaryStatsDto | null>(null);
@@ -94,26 +101,19 @@ export class Dashboard implements OnInit {
   protected readonly activitiesPage = signal<PageActivity | null>(null);
   protected readonly selectedActivity = signal<Activity | null>(null);
 
-  protected readonly recentActivity = computed(() => {
+  /* Calendario de actividades: carga incremental por scroll desde el mes actual. */
+  protected readonly calendarActivities = signal<Activity[]>([]);
+  protected readonly calendarLoading = signal(false);
+  protected readonly calendarHasMore = signal(true);
+  protected readonly calendarError = signal(false);
+  private calendarPage = 0;
+
+  protected readonly recentActivities = computed(() => {
     const page = this.activitiesPage();
-    return page && page.content.length > 0 ? page.content[0] : null;
-  });
-
-  private readonly clock = signal(Date.now());
-
-  /** Segundos restantes del access token, actualizado cada 15 s. */
-  protected readonly secondsLeft = computed(() => {
-    const expiresAt = this.auth.accessExpiresAt();
-    return expiresAt === null ? 0 : Math.max(0, Math.round((expiresAt - this.clock()) / 1000));
+    return page ? page.content.slice(0, 5) : [];
   });
 
   protected serverUrl = this.api.baseUrl();
-
-  constructor() {
-    interval(15_000)
-      .pipe(takeUntilDestroyed())
-      .subscribe(() => this.clock.set(Date.now()));
-  }
 
   ngOnInit(): void {
     this.loadAll();
@@ -122,6 +122,7 @@ export class Dashboard implements OnInit {
   /** Refresca en paralelo todos los recursos del usuario autenticado. */
   protected loadAll(): void {
     this.loading.set(true);
+    this.milestones.refreshIfLoaded();
     forkJoin({
       me: this.auth.loadMe().pipe(catchError(() => of(null))),
       summary: this.stats.summary().pipe(catchError(() => of(null))),
@@ -141,23 +142,50 @@ export class Dashboard implements OnInit {
     });
   }
 
-  protected loadActivities(page: number): void {
-    this.activitiesLoading.set(true);
-    this.activities.list(page, 10).subscribe({
-      next: (pageData) => {
-        this.activitiesPage.set(pageData);
-        this.activitiesLoading.set(false);
+  /** Carga la siguiente página de actividades para el calendario (scroll infinito). */
+  protected loadCalendarPage(): void {
+    if (this.calendarLoading() || !this.calendarHasMore() || this.calendarError()) {
+      return;
+    }
+    this.calendarLoading.set(true);
+    this.activities.list(this.calendarPage, CALENDAR_PAGE_SIZE).subscribe({
+      next: (page) => {
+        this.calendarActivities.update((list) => [...list, ...page.content]);
+        this.calendarPage += 1;
+        this.calendarHasMore.set(!page.last && page.number + 1 < page.totalPages);
+        this.calendarError.set(false);
+        this.calendarLoading.set(false);
       },
-      error: () => this.activitiesLoading.set(false),
+      error: () => {
+        this.calendarError.set(true);
+        this.calendarLoading.set(false);
+      },
     });
+  }
+
+  /** Reintenta la carga del calendario tras un error (botón REINTENTAR). */
+  protected retryCalendar(): void {
+    this.calendarError.set(false);
+    this.loadCalendarPage();
   }
 
   protected setTab(tab: Tab): void {
     this.activeTab.set(tab);
+    if (tab === 'activities' && this.calendarActivities().length === 0 && !this.calendarError()) {
+      this.loadCalendarPage();
+    }
   }
 
   protected openActivity(activity: Activity): void {
     this.selectedActivity.set(activity);
+  }
+
+  /** Abre el detalle de una actividad concreta por su id (récords y logros). */
+  protected openActivityById(id: string): void {
+    this.activities.byId(id).subscribe({
+      next: (activity) => this.selectedActivity.set(activity),
+      error: () => this.toast.show('NO SE PUDO ABRIR EL DETALLE DE LA ACTIVIDAD'),
+    });
   }
 
   protected closeActivity(): void {

@@ -1,0 +1,104 @@
+<article class="card-panel">
+  <div class="card-header-bar">
+    @if (heatmap.status() === 'ready' && heatmap.stats(); as stats) {
+      <span class="card-tag-badge">{{ stats.activities }} RUTAS · {{ stats.points | number }} PTS</span>
+    } @else if (heatmap.status() === 'loading') {
+      <span class="card-tag-badge">{{ heatmap.progress().done }}/{{ heatmap.progress().total }}</span>
+    } @else {
+      <span class="card-tag-badge">GPS</span>
+    }
+  </div>
+
+  @switch (heatmap.status()) {
+    @case ('loading') {
+      <div class="heat-loading">
+        <p class="heat-loading-text">
+          DESCARGANDO TRAZAS GPS DE TUS SESIONES… ({{ heatmap.progress().done }}/{{ heatmap.progress().total }})
+        </p>
+        <div class="heat-progress" role="progressbar" [attr.aria-valuenow]="percent()" aria-valuemin="0" aria-valuemax="100">
+          <div class="heat-progress-fill" [style.width.%]="percent()"></div>
+        </div>
+        <p class="heat-loading-sub">
+          Se agregan todas las rutas de tu historial; el mapa se dibujará al terminar. Puedes seguir
+          navegando por otras pestañas mientras se descarga.
+        </p>
+      </div>
+    }
+
+    @case ('error') {
+      <div class="empty-state">
+        <p>NO SE PUDIERON DESCARGAR LAS TRAZAS GPS DE TUS SESIONES.</p>
+        <button
+          type="button"
+          class="btn-outline-pill btn-compact btn-icon-only"
+          title="Reintentar"
+          aria-label="Reintentar"
+          (click)="retry()"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="23 4 23 10 17 10" />
+            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+          </svg>
+        </button>
+      </div>
+    }
+
+    @case ('ready') {
+      @if (heatmap.stats(); as stats) {
+        <div class="stat-tiles-grid heat-stats">
+          <div class="stat-tile stat-tile--highlight">
+            <span class="stat-tile-label">Sesiones en el mapa</span>
+            <span class="stat-tile-value">{{ stats.activities }}</span>
+            <span class="stat-tile-sub">
+              de {{ stats.activitiesTotal }} registradas@if (stats.activitiesTotal - stats.activities > 0) {
+                · {{ stats.activitiesTotal - stats.activities }} sin GPS
+              }
+            </span>
+          </div>
+          <div class="stat-tile stat-tile--highlight">
+            <span class="stat-tile-label">Kilómetros agregados</span>
+            <span class="stat-tile-value">{{ stats.distanceMeters | km }}</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-tile-label">Puntos GPS</span>
+            <span class="stat-tile-value">{{ stats.points | number }}</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-tile-label">Periodo</span>
+            <span class="stat-tile-value heat-period">
+              {{ stats.firstDate ? (stats.firstDate | date: 'd MMM y') : '—' }} →
+              {{ stats.lastDate ? (stats.lastDate | date: 'd MMM y') : '—' }}
+            </span>
+          </div>
+        </div>
+
+        <div class="heat-controls">
+          <label class="heat-control-label" for="heatOpacity">Intensidad de traza</label>
+          <input
+            id="heatOpacity"
+            class="heat-range"
+            type="range"
+            min="5"
+            max="80"
+            step="5"
+            [value]="opacity()"
+            (input)="setOpacity($event)"
+          />
+          <span class="heat-opacity-value">{{ opacity() }}%</span>
+          <span class="heat-hint">· las calles repetidas acumulan más color</span>
+        </div>
+
+        <div #heatMap class="heatmap-map" aria-label="Mapa de calor de recorridos GPS"></div>
+
+        <p class="heat-caption">
+          {{ stats.points | number }} puntos GPS · {{ stats.activities }} recorridos superpuestos ·
+          mapa OpenStreetMap
+        </p>
+      }
+    }
+
+    @default {
+      <p class="heat-loading-text">ESPERANDO DATOS GPS…</p>
+    }
+  }
+</article>

@@ -1,5 +1,20 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, input, output, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  ElementRef,
+  NgZone,
+  OnInit,
+  computed,
+  effect,
+  inject,
+  input,
+  output,
+  signal,
+  viewChild,
+} from '@angular/core';
+import * as L from 'leaflet';
 import { catchError, forkJoin, of } from 'rxjs';
 import {
   Activity,
@@ -11,9 +26,19 @@ import {
   Vo2MaxVamResponseDto,
 } from '../../../../core/models/api.models';
 import { ActivitiesService } from '../../../../core/services/activities.service';
-import { DurationPipe, KmPipe, KmhPipe, PacePipe } from '../../../../shared/pipes/format.pipes';
+import {
+  DurationPipe,
+  formatDuration,
+  KmPipe,
+  PacePipe,
+  parseTimeToSeconds,
+} from '../../../../shared/pipes/format.pipes';
+import { ActivityProfiles } from '../activity-profiles/activity-profiles';
 
-type DetailTab = 'summary' | 'splits' | 'zones' | 'load' | 'gps';
+interface DetailSection {
+  id: string;
+  label: string;
+}
 
 interface ZoneRow {
   cls: string;
@@ -22,16 +47,19 @@ interface ZoneRow {
   percentage: number;
 }
 
-interface GpsGeometry {
-  polyline: string;
-  start: { x: number; y: number };
-  end: { x: number; y: number };
-  count: number;
+interface RoutePoint {
+  lat: number;
+  lon: number;
 }
 
-const GPS_W = 640;
-const GPS_H = 340;
-const GPS_PAD = 18;
+interface SplitBar {
+  km: number;
+  pace: string;
+  seconds: number;
+  heartRate: number | null;
+  widthPct: number;
+  fastest: boolean;
+}
 
 const ZONE_DEFS: { key: keyof HrZonesResponseDto['zones']; label: string; cls: string }[] = [
   { key: 'Z1_Recovery', label: 'Z1 · Recuperación', cls: 'z1' },
@@ -42,12 +70,13 @@ const ZONE_DEFS: { key: keyof HrZonesResponseDto['zones']; label: string; cls: s
 ];
 
 /**
- * Detalle completo de una carrera: métricas consolidadas, splits por km,
- * zonas de FC, carga de entrenamiento, desacople aeróbico y traza GPS.
+ * Detalle completo de una carrera: mapa con perfiles sincronizados (ritmo,
+ * cadencia, FC y altitud), splits horizontales por km y tiempo en zonas de FC,
+ * resumen consolidado, estimación fisiológica y carga/desacople.
  */
 @Component({
   selector: 'app-activity-detail',
-  imports: [DatePipe, DecimalPipe, DurationPipe, KmPipe, PacePipe, KmhPipe],
+  imports: [DatePipe, DecimalPipe, DurationPipe, KmPipe, PacePipe, ActivityProfiles],
   templateUrl: './activity-detail.html',
   styleUrl: './activity-detail.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -59,21 +88,30 @@ export class ActivityDetail implements OnInit {
 
   private readonly activities = inject(ActivitiesService);
 
-  protected readonly activeTab = signal<DetailTab>('summary');
+  protected readonly sections: DetailSection[] = [
+    { id: 'det-route', label: 'Mapa y perfiles' },
+    { id: 'det-splits', label: 'Splits y zonas' },
+    { id: 'det-summary', label: 'Resumen y análisis' },
+  ];
+  protected readonly activeSection = signal('det-route');
+
+  private readonly detailBodyRef = viewChild<ElementRef<HTMLElement>>('detailBody');
+  private readonly gpsMapRef = viewChild<ElementRef<HTMLElement>>('gpsMap');
+  private readonly zone = inject(NgZone);
+  private gpsMap: L.Map | null = null;
+  private hoverMarker: L.CircleMarker | null = null;
+  private gpsResizeObserver: ResizeObserver | null = null;
+  private gpsWindowListener: (() => void) | null = null;
+  private gpsRefreshTimer: ReturnType<typeof setTimeout> | null = null;
+
   protected readonly splits = signal<SplitDto[] | null>(null);
   protected readonly hrZones = signal<HrZonesResponseDto | null>(null);
   protected readonly trainingLoad = signal<TrainingLoadResponseDto | null>(null);
   protected readonly vo2 = signal<Vo2MaxVamResponseDto | null>(null);
   protected readonly drift = signal<CardiacDriftResponseDto | null>(null);
   protected readonly trackpoints = signal<ActivityTrackpoint[] | null>(null);
-
-  protected readonly gpsViewBox = `0 0 ${GPS_W} ${GPS_H}`;
-
-  protected readonly endTime = computed(() => {
-    const a = this.activity();
-    const start = new Date(a.startTime).getTime();
-    return Number.isFinite(start) ? new Date(start + a.totalTimeSeconds * 1000) : null;
-  });
+  /** Trackpoint activo compartido entre el mapa y los perfiles. */
+  protected readonly hoverIndex = signal<number | null>(null);
 
   protected readonly zoneRows = computed<ZoneRow[]>(() => {
     const zones = this.hrZones()?.zones;
@@ -91,63 +129,73 @@ export class ActivityDetail implements OnInit {
     });
   });
 
-  protected readonly gpsGeometry = computed<GpsGeometry | null>(() => {
-    const list = this.trackpoints() ?? [];
-    const pts = list.filter(
-      (p): p is ActivityTrackpoint & { latitude: number; longitude: number } =>
-        p.latitude !== null && p.longitude !== null,
-    );
-    if (pts.length < 2) {
-      return null;
-    }
-
-    const lats = pts.map((p) => p.latitude);
-    const lons = pts.map((p) => p.longitude);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLon = Math.min(...lons);
-    const maxLon = Math.max(...lons);
-    const spanLat = Math.max(maxLat - minLat, 1e-6);
-    const spanLon = Math.max(maxLon - minLon, 1e-6);
-    const scale = Math.min((GPS_W - GPS_PAD * 2) / spanLon, (GPS_H - GPS_PAD * 2) / spanLat);
-    const offX = (GPS_W - spanLon * scale) / 2;
-    const offY = (GPS_H - spanLat * scale) / 2;
-
-    const project = (p: ActivityTrackpoint & { latitude: number; longitude: number }) => ({
-      x: offX + (p.longitude - minLon) * scale,
-      y: GPS_H - offY - (p.latitude - minLat) * scale,
-    });
-
-    const projected = pts.map(project);
-    return {
-      polyline: projected.map((p) => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(' '),
-      start: projected[0],
-      end: projected[projected.length - 1],
-      count: pts.length,
-    };
-  });
-
-  protected readonly trackStats = computed(() => {
-    const list = this.trackpoints() ?? [];
+  /** Barras del gráfico de splits por km: más corta = kilómetro más rápido. */
+  protected readonly splitBars = computed<SplitBar[]>(() => {
+    const list = this.splits() ?? [];
     if (list.length === 0) {
-      return null;
+      return [];
     }
-    const heartRates = list.map((p) => p.heartRate).filter((h): h is number => h !== null);
-    const altitudes = list.map((p) => p.altitudeMeters).filter((a): a is number => a !== null);
-    const distances = list.map((p) => p.distanceMeters).filter((d): d is number => d !== null);
-    const speeds = list.map((p) => p.speed).filter((s): s is number => s !== null);
-
-    return {
-      count: list.length,
-      distanceMeters: distances.length > 0 ? Math.max(...distances) - Math.min(...distances) : null,
-      hrAvg: heartRates.length > 0 ? heartRates.reduce((a, b) => a + b, 0) / heartRates.length : null,
-      hrMin: heartRates.length > 0 ? Math.min(...heartRates) : null,
-      hrMax: heartRates.length > 0 ? Math.max(...heartRates) : null,
-      altMin: altitudes.length > 0 ? Math.min(...altitudes) : null,
-      altMax: altitudes.length > 0 ? Math.max(...altitudes) : null,
-      speedMax: speeds.length > 0 ? Math.max(...speeds) : null,
-    };
+    const entries = list
+      .map((split) => ({ split, minutes: Number.parseFloat(split.paceMinPerKm) }))
+      .filter((entry) => Number.isFinite(entry.minutes) && entry.minutes > 0);
+    if (entries.length === 0) {
+      return [];
+    }
+    const fastest = Math.min(...entries.map((entry) => entry.minutes));
+    const slowest = Math.max(...entries.map((entry) => entry.minutes));
+    const span = slowest - fastest;
+    return entries.map(({ split, minutes }) => ({
+      km: split.km,
+      pace: split.paceMinPerKm,
+      seconds: split.timeSeconds,
+      heartRate: split.avgHeartRate ?? null,
+      widthPct: span > 0 ? 12 + ((minutes - fastest) / span) * 88 : 100,
+      fastest: minutes === fastest,
+    }));
   });
+
+  /** Puntos con coordenadas válidas y su índice original (para el hover). */
+  protected readonly routeIndexed = computed<{ src: number; lat: number; lon: number }[]>(() => {
+    const points: { src: number; lat: number; lon: number }[] = [];
+    (this.trackpoints() ?? []).forEach((point, src) => {
+      if (point.latitude !== null && point.longitude !== null) {
+        points.push({ src, lat: point.latitude, lon: point.longitude });
+      }
+    });
+    return points;
+  });
+
+  /** Puntos con coordenadas válidas para dibujar el mapa GPS. */
+  protected readonly routePoints = computed<RoutePoint[] | null>(() => {
+    const points = this.routeIndexed().map((point) => ({ lat: point.lat, lon: point.lon }));
+    return points.length < 2 ? null : points;
+  });
+
+  constructor() {
+    // Crea el mapa Leaflet en cuanto llegan los trackpoints y el contenedor existe.
+    effect(() => {
+      const el = this.gpsMapRef()?.nativeElement;
+      const pts = this.routePoints();
+      if (!el || !pts) {
+        return;
+      }
+      this.zone.runOutsideAngular(() => this.renderMap(el, pts));
+    });
+    inject(DestroyRef).onDestroy(() => {
+      this.gpsResizeObserver?.disconnect();
+      this.gpsResizeObserver = null;
+      if (this.gpsWindowListener) {
+        window.removeEventListener('resize', this.gpsWindowListener);
+        this.gpsWindowListener = null;
+      }
+      if (this.gpsRefreshTimer !== null) {
+        clearTimeout(this.gpsRefreshTimer);
+        this.gpsRefreshTimer = null;
+      }
+      this.gpsMap?.remove();
+      this.gpsMap = null;
+    });
+  }
 
   protected readonly racePredictions = computed(() => {
     const predictions = this.vo2()?.predictedRaceTimes;
@@ -155,10 +203,10 @@ export class ActivityDetail implements OnInit {
       return [];
     }
     return [
-      { label: '5K', value: predictions['5k'] },
-      { label: '10K', value: predictions['10k'] },
-      { label: '21K', value: predictions['21k'] },
-      { label: '42K', value: predictions['42k'] },
+      { label: '5K', value: formatDuration(parseTimeToSeconds(predictions['5k'])) },
+      { label: '10K', value: formatDuration(parseTimeToSeconds(predictions['10k'])) },
+      { label: '21K', value: formatDuration(parseTimeToSeconds(predictions['21k'])) },
+      { label: '42K', value: formatDuration(parseTimeToSeconds(predictions['42k'])) },
     ];
   });
 
@@ -193,9 +241,158 @@ export class ActivityDetail implements OnInit {
     });
   }
 
+  /** Dibuja la ruta sobre OpenStreetMap: traza, inicio (verde) y fin (oscuro). */
+  private renderMap(el: HTMLElement, pts: RoutePoint[]): void {
+    this.gpsMap?.remove();
+    this.hoverMarker = null;
+    const map = L.map(el, { scrollWheelZoom: false });
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      maxZoom: 19,
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>',
+    }).addTo(map);
+
+    const latlngs = pts.map((p) => [p.lat, p.lon] as L.LatLngTuple);
+    const route = L.polyline(latlngs, { color: '#1a1a1a', weight: 3.5, opacity: 0.9 }).addTo(map);
+    L.circleMarker(latlngs[0], {
+      radius: 7,
+      color: '#1a1a1a',
+      weight: 2.5,
+      fillColor: '#00e676',
+      fillOpacity: 1,
+    }).addTo(map);
+    L.circleMarker(latlngs[latlngs.length - 1], {
+      radius: 7,
+      color: '#00e676',
+      weight: 2.5,
+      fillColor: '#1a1a1a',
+      fillOpacity: 1,
+    }).addTo(map);
+    map.fitBounds(route.getBounds(), { padding: [20, 20] });
+
+    this.gpsMap = map;
+
+    // Sincronía inversa: el punto de la ruta bajo el ratón activa el mismo
+    // instante en los cuatro perfiles.
+    map.on('mousemove', (event: L.LeafletMouseEvent) => {
+      const nearest = this.nearestPointIndex(event.latlng.lat, event.latlng.lng);
+      if (nearest !== this.hoverIndex()) {
+        this.zone.run(() => this.setHoverIndex(nearest));
+      }
+    });
+    map.on('mouseout', () => {
+      this.zone.run(() => this.setHoverIndex(null));
+    });
+
+    // Reajusta el lienzo cuando el contenedor cambia de tamaño (redimensionar
+    // la ventana, aparición del scrollbar, reflujo del bento): sin esto Leaflet
+    // sigue dibujando con el tamaño anterior y los tiles/la ruta quedan
+    // descolgados o fuera del marco visible.
+    const refresh = () => {
+      if (this.gpsRefreshTimer !== null) {
+        clearTimeout(this.gpsRefreshTimer);
+      }
+      this.gpsRefreshTimer = setTimeout(() => {
+        this.gpsRefreshTimer = null;
+        map.invalidateSize();
+      }, 60);
+    };
+    if (typeof ResizeObserver !== 'undefined') {
+      this.gpsResizeObserver?.disconnect();
+      this.gpsResizeObserver = new ResizeObserver(refresh);
+      this.gpsResizeObserver.observe(el);
+    }
+    if (this.gpsWindowListener) {
+      window.removeEventListener('resize', this.gpsWindowListener);
+    }
+    this.gpsWindowListener = refresh;
+    window.addEventListener('resize', refresh);
+    if (this.gpsRefreshTimer !== null) {
+      clearTimeout(this.gpsRefreshTimer);
+    }
+    this.gpsRefreshTimer = setTimeout(refresh, 350);
+    refresh();
+  }
+
+  /** Actualiza el punto activo compartido por perfiles y mapa. */
+  protected setHoverIndex(index: number | null): void {
+    this.hoverIndex.set(index);
+    this.updateMapHover(index);
+  }
+
+  /** Mueve (o retira) el marcador de inspección sobre la ruta. */
+  private updateMapHover(index: number | null): void {
+    const map = this.gpsMap;
+    if (!map) {
+      return;
+    }
+    const point = index === null ? null : ((this.trackpoints() ?? [])[index] ?? null);
+    if (!point || point.latitude === null || point.longitude === null) {
+      this.hoverMarker?.remove();
+      this.hoverMarker = null;
+      return;
+    }
+    if (!this.hoverMarker) {
+      this.hoverMarker = L.circleMarker([point.latitude, point.longitude], {
+        radius: 8,
+        color: '#00e676',
+        weight: 3,
+        fillColor: '#00e676',
+        fillOpacity: 0.18,
+        className: 'map-hover-point',
+      }).addTo(map);
+    } else {
+      this.hoverMarker.setLatLng([point.latitude, point.longitude]);
+    }
+    this.hoverMarker.bringToFront();
+  }
+
+  /** Índice del trackpoint más cercano a un punto del mapa. */
+  private nearestPointIndex(lat: number, lon: number): number | null {
+    let best: { src: number; distance: number } | null = null;
+    const cosLat = Math.cos((lat * Math.PI) / 180);
+    for (const point of this.routeIndexed()) {
+      const dLat = point.lat - lat;
+      const dLon = (point.lon - lon) * cosLat;
+      const distance = dLat * dLat + dLon * dLon;
+      if (!best || distance < best.distance) {
+        best = { src: point.src, distance };
+      }
+    }
+    return best?.src ?? null;
+  }
+
   protected onOverlayClick(event: MouseEvent): void {
     if (event.target === event.currentTarget) {
       this.close.emit();
     }
+  }
+
+  /** Salta a una sección dentro del área con scroll del modal. */
+  protected jumpTo(id: string): void {
+    const container = this.detailBodyRef()?.nativeElement;
+    const target = container?.querySelector<HTMLElement>(`#${id}`);
+    if (!container || !target) {
+      return;
+    }
+    const containerRect = container.getBoundingClientRect();
+    container.scrollTop += target.getBoundingClientRect().top - containerRect.top;
+    this.activeSection.set(id);
+  }
+
+  /** Mantiene resaltada la sección visible mientras el usuario desplaza. */
+  protected onBodyScroll(event: Event): void {
+    const container = event.target as HTMLElement;
+    const containerTop = container.getBoundingClientRect().top;
+    let current = this.sections[0].id;
+    for (const section of this.sections) {
+      const el = container.querySelector<HTMLElement>(`#${section.id}`);
+      if (el && el.getBoundingClientRect().top - containerTop <= 110) {
+        current = section.id;
+      }
+    }
+    if (container.scrollTop + container.clientHeight >= container.scrollHeight - 8) {
+      current = this.sections[this.sections.length - 1].id;
+    }
+    this.activeSection.set(current);
   }
 }

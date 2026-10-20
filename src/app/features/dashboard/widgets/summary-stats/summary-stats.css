@@ -2,3 +2,20 @@
   display: block;
   min-width: 0;
 }
+
+/* Rejilla 3×3 que llena la altura de la tarjeta (celda bento completa) */
+.stat-tiles-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  flex: 1;
+  grid-auto-rows: minmax(84px, 1fr);
+}
+
+.stat-tile {
+  justify-content: center;
+}
+
+@media (max-width: 640px) {
+  .stat-tiles-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

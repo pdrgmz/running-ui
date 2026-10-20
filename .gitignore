@@ -11,6 +11,10 @@
 npm-debug.log
 yarn-error.log
 
+# Docker Compose local env
+.env
+stack.env
+
 # IDEs and editors
 .idea/
 .project

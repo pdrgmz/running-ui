@@ -1,80 +1,140 @@
-.detail-title-block {
+/* Perfiles sincronizados: ocupan el alto restante de la tarjeta */
+app-activity-profiles {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+/* La tarjeta de datos extra rellena la altura de su fila con el panel raw */
+.bento-card--extra .terminal-panel {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  min-width: 0;
+  min-height: 0;
 }
 
-.detail-subtitle {
-  font-family: var(--font-mono);
-  font-size: 0.74rem;
-  color: var(--text-muted);
-  overflow-wrap: anywhere;
+.bento-card--extra .extra-json {
+  flex: 1 1 auto;
+  max-height: none;
 }
 
-.detail-tabs {
-  gap: 18px;
-  margin-top: 0;
-  padding-bottom: 2px;
+/* --- Mapa de la ruta --- */
+.bento-card--route .gps-map {
+  flex: 1 1 auto;
+  height: auto;
+  min-height: 300px;
 }
 
-.detail-section {
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-}
-
-.detail-columns {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 18px;
-}
-
-@media (max-width: 860px) {
-  .detail-columns {
-    grid-template-columns: 1fr;
-  }
-}
-
-.detail-block {
-  background: var(--bg-main);
+.gps-map {
+  position: relative;
+  z-index: 0;
+  overflow: hidden; /* blindaje: recorta tiles/panes aunque leaflet.css tarde o falte */
   border: 1.5px solid var(--border-color);
   border-radius: var(--radius-md);
-  padding: 18px;
+  background: var(--bg-card);
+}
+
+.gps-map ::ng-deep .leaflet-control-attribution {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+}
+
+/* Marcador de inspección (sincronizado con los perfiles) */
+.gps-map ::ng-deep .map-hover-point {
+  filter: drop-shadow(0 0 4px rgba(0, 230, 118, 0.85));
+}
+
+.gps-caption {
+  font-size: 0.72rem;
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.gps-hint {
+  margin-left: auto;
+  font-size: 0.56rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+}
+
+/* --- Splits por km: barras horizontales, más corta = más rápido --- */
+.splits-rows {
   display: flex;
   flex-direction: column;
-  gap: 12px;
-  min-width: 0;
+  gap: 6px;
+  overflow-y: auto;
+  max-height: min(46vh, 430px);
+  padding-right: 4px;
 }
 
-.block-title {
+.split-row {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr) 84px;
+  align-items: center;
+  gap: 10px;
   font-family: var(--font-mono);
-  font-size: 0.72rem;
+}
+
+.split-km {
+  font-size: 0.62rem;
   font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-  border-bottom: 1px dashed var(--border-subtle);
-  padding-bottom: 8px;
+  color: var(--text-muted);
+  letter-spacing: 0.4px;
+  white-space: nowrap;
 }
 
-.block-title--sub {
-  margin-top: 4px;
+.split-track {
+  height: 16px;
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
 }
 
-.detail-value-sm {
-  font-size: 1.05rem;
+.split-bar {
+  height: 100%;
+  background: var(--text-main);
+  border-right: 1.5px solid var(--border-color);
+  transition: width var(--transition-smooth);
 }
 
+.split-bar--fastest {
+  background: var(--accent-green);
+}
+
+.split-pace {
+  font-size: 0.64rem;
+  font-weight: 700;
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* --- Notas y captions de gráficos --- */
+.chart-caption {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.chart-note {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+}
+
+/* Título de tarjeta */
 .race-predictions {
   display: grid;
-  grid-template-columns: repeat(4, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
   gap: 10px;
-}
-
-@media (max-width: 620px) {
-  .race-predictions {
-    grid-template-columns: repeat(2, 1fr);
-  }
 }
 
 .race-prediction-item {
@@ -101,34 +161,113 @@
   font-weight: 800;
 }
 
+/* --- Zonas de FC: barra apilada + leyenda compacta --- */
+.zone-panel {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-height: 0;
+}
+
+.zone-chart {
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr);
+  gap: 18px;
+  min-height: 220px;
+  padding: 4px 0;
+}
+
+.zone-stack {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  border: 1.5px solid var(--border-color);
+  border-radius: 4px;
+  overflow: hidden;
+  background: var(--bg-input);
+}
+
+.zone-stack-seg {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.zone-stack-seg.z1,
+.zone-dot.z1 {
+  background: #c2cab8;
+}
+
+.zone-stack-seg.z2,
+.zone-dot.z2 {
+  background: #98a68c;
+}
+
+.zone-stack-seg.z3,
+.zone-dot.z3 {
+  background: #6b7562;
+}
+
+.zone-stack-seg.z4,
+.zone-dot.z4 {
+  background: var(--accent-charcoal-soft);
+}
+
+.zone-stack-seg.z5,
+.zone-dot.z5 {
+  background: var(--accent-green);
+}
+
+.zone-legend {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  min-height: 0;
+}
+
+.zone-legend-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) max-content;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 0;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+}
+
+.zone-legend-row + .zone-legend-row {
+  border-top: 1px dashed var(--border-color);
+}
+
+.zone-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  border: 1px solid var(--border-color);
+}
+
+.zone-legend-name {
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  font-size: 0.58rem;
+  font-weight: 700;
+}
+
+.zone-legend-val {
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+/* --- Datos extra --- */
 .extra-json {
   font-family: var(--font-mono);
   font-size: 0.72rem;
   line-height: 1.55;
-  max-height: 260px;
+  max-height: min(38vh, 380px);
   overflow: auto;
   color: #d9e6cd;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
-}
-
-.detail-table-max {
-  max-height: 460px;
-  overflow-y: auto;
-}
-
-.row-static {
-  cursor: default;
-}
-
-.row-static:hover {
-  background: transparent;
-}
-
-.gps-caption {
-  font-size: 0.72rem;
-  display: flex;
-  gap: 14px;
-  align-items: center;
-  flex-wrap: wrap;
 }

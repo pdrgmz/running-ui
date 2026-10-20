@@ -36,6 +36,7 @@
 }
 
 .login-server-details {
+  margin-top: auto;
   border-top: 1.5px dashed var(--border-subtle);
   padding-top: 14px;
 }

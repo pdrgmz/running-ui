@@ -1,19 +1,55 @@
 import { Pipe, PipeTransform } from '@angular/core';
 
-/** Segundos → "H:MM:SS" (o "MM:SS" si dura menos de una hora). */
+/**
+ * Segundos → duración compacta omitiendo los segmentos a cero:
+ * "37m52s", "01h42m10s", "10d09h37m08s". Devuelve "—" si el valor no es válido.
+ */
+export function formatDuration(totalSeconds: number | null | undefined): string {
+  if (totalSeconds === null || totalSeconds === undefined || !isFinite(totalSeconds)) {
+    return '—';
+  }
+  const seconds = Math.max(0, Math.round(totalSeconds));
+  const days = Math.floor(seconds / 86_400);
+  const h = Math.floor((seconds % 86_400) / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  const s = seconds % 60;
+  const parts: string[] = [];
+  if (days > 0) {
+    parts.push(`${String(days).padStart(2, '0')}d`);
+  }
+  if (h > 0) {
+    parts.push(`${String(h).padStart(2, '0')}h`);
+  }
+  if (m > 0) {
+    parts.push(`${String(m).padStart(2, '0')}m`);
+  }
+  if (s > 0) {
+    parts.push(`${String(s).padStart(2, '0')}s`);
+  }
+  return parts.length > 0 ? parts.join('') : '0s';
+}
+
+/** "01:42:10" o "22:35" → segundos. Devuelve `null` si no es parseable. */
+export function parseTimeToSeconds(value: string | null | undefined): number | null {
+  if (!value) {
+    return null;
+  }
+  const parts = value.trim().split(':');
+  if (parts.length < 2 || parts.length > 3) {
+    return null;
+  }
+  const numbers = parts.map((part) => Number.parseInt(part, 10));
+  if (numbers.some((number) => !Number.isFinite(number) || number < 0)) {
+    return null;
+  }
+  return parts.length === 3 ? numbers[0] * 3600 + numbers[1] * 60 + numbers[2] : numbers[0] * 60 + numbers[1];
+}
+
+/** Segundos → "00d00h00m00s" omitiendo los segmentos a cero (ej. "37m52s"). */
 @Pipe({ name: 'duration' })
 export class DurationPipe implements PipeTransform {
   transform(totalSeconds: number | null | undefined): string {
-    if (totalSeconds === null || totalSeconds === undefined || !isFinite(totalSeconds)) {
-      return '—';
-    }
-    const seconds = Math.max(0, Math.round(totalSeconds));
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
-    const s = seconds % 60;
-    const mm = String(m).padStart(2, '0');
-    const ss = String(s).padStart(2, '0');
-    return h > 0 ? `${h}:${mm}:${ss}` : `${mm}:${ss}`;
+    return formatDuration(totalSeconds);
   }
 }
 

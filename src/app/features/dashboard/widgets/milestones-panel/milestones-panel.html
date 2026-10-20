@@ -1,0 +1,123 @@
+<article class="card-panel">
+  <div class="card-header-bar">
+    @if (service.status() === 'ready') {
+      <span class="card-tag-badge">{{ unlockedCount() }}/{{ totalCount() }} CONSEGUIDOS</span>
+    } @else {
+      <span class="card-tag-badge">MILESTONES</span>
+    }
+  </div>
+
+  @if (service.status() === 'ready') {
+    <!-- RESUMEN: PROGRESO GLOBAL Y PRÓXIMO OBJETIVO -->
+    <div class="milestones-hero">
+      <div class="milestones-summary">
+        <span class="milestones-summary-label">Progreso total</span>
+        <span class="milestones-summary-value">{{ completionPercent() }}%</span>
+        <div class="milestones-summary-track">
+          <div class="milestones-summary-fill" [style.width.%]="completionPercent()"></div>
+        </div>
+        <span class="milestones-summary-sub">
+          {{ unlockedCount() }} de {{ totalCount() }} logros · {{ service.activityCount() }} carreras analizadas
+        </span>
+      </div>
+
+      <div class="milestones-next">
+        <span class="milestones-next-label">Próximo logro</span>
+        @if (nextMilestone(); as next) {
+          <span class="milestones-next-title">{{ next.title }}</span>
+          <span class="milestones-next-values">{{ valueLabel(next) }} / {{ targetLabel(next) }}</span>
+          <div class="milestones-next-track">
+            <div class="milestones-next-fill" [style.width.%]="next.progress * 100"></div>
+          </div>
+        } @else {
+          <span class="milestones-next-title">Todos los logros conseguidos</span>
+          <span class="milestones-next-values">Sigue sumando kilómetros para los siguientes niveles</span>
+        }
+      </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="milestones-filters">
+      @for (category of categories(); track category.id) {
+        <button
+          type="button"
+          class="milestones-chip"
+          [class.milestones-chip--active]="categoryFilter() === category.id"
+          (click)="setCategory(category.id)"
+        >
+          {{ category.label }}
+        </button>
+      }
+      <button
+        type="button"
+        class="milestones-chip milestones-chip--toggle"
+        [class.milestones-chip--active]="onlyUnlocked()"
+        (click)="toggleOnlyUnlocked()"
+      >
+        Solo conseguidos
+      </button>
+    </div>
+
+    <!-- HISTORIAL CRONOLÓGICO DE LOGROS (MÁS RECIENTES PRIMERO) -->
+    @if (timelineMilestones().length > 0) {
+      <div class="milestones-section-head">
+        <span class="milestones-section-title">Historial de logros</span>
+        <span class="card-tag-badge">{{ timelineMilestones().length }}</span>
+      </div>
+      <app-milestone-timeline [milestones]="timelineMilestones()" (openActivity)="openActivity.emit($event)" />
+    }
+
+    <!-- PRÓXIMOS OBJETIVOS -->
+    @if (upcoming().length > 0) {
+      <div class="milestones-upcoming" [class.milestones-upcoming--separated]="timelineMilestones().length > 0">
+        <div class="milestones-section-head">
+          <span class="milestones-section-title">Próximos objetivos</span>
+          <span class="card-tag-badge">{{ upcoming().length }}</span>
+        </div>
+        <div class="milestones-upcoming-grid">
+          @for (milestone of upcoming(); track milestone.id) {
+            <article class="upcoming-card">
+              <div class="upcoming-head">
+                <span class="milestone-category">{{ categoryLabel(milestone.category) }}</span>
+                <span class="upcoming-percent">{{ progressLabel(milestone) }}</span>
+              </div>
+              <span class="upcoming-title">{{ milestone.title }}</span>
+              <div class="milestone-track">
+                <div class="milestone-fill" [style.width.%]="milestone.progress * 100"></div>
+              </div>
+              <div class="upcoming-values">
+                {{ valueLabel(milestone) }}
+                <span class="milestone-target">/ {{ targetLabel(milestone) }}</span>
+              </div>
+              <p class="milestone-foot">{{ remainingLabel(milestone) }}</p>
+            </article>
+          }
+        </div>
+      </div>
+    }
+
+    @if (!hasVisible()) {
+      <div class="empty-state">
+        {{ emptyMessage() }}
+      </div>
+    }
+  } @else if (service.status() === 'error') {
+    <div class="empty-state milestones-error">
+      <p>NO SE PUDIERON CALCULAR LOS LOGROS: FALLO AL DESCARGAR EL HISTORIAL.</p>
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact btn-icon-only"
+        title="Reintentar"
+        aria-label="Reintentar"
+        (click)="retry()"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+        </svg>
+      </button>
+    </div>
+  } @else {
+    <p class="loading-text">CALCULANDO LOGROS SOBRE TU HISTORIAL DE CARRERAS…</p>
+  }
+</article>

@@ -1,6 +1,5 @@
 <article class="card-panel">
   <div class="card-header-bar">
-    <span class="card-title-mono">Estadísticas Acumuladas</span>
     <span class="card-tag-badge">/STATS/SUMMARY</span>
   </div>
 
@@ -20,7 +19,7 @@
 
       <div class="stat-tile stat-tile--highlight">
         <span class="stat-tile-label">Tiempo total</span>
-        <span class="stat-tile-value">{{ s.totalTimeFormatted || (s.totalTimeSeconds | duration) }}</span>
+        <span class="stat-tile-value">{{ s.totalTimeSeconds | duration }}</span>
         <span class="stat-tile-sub">{{ s.totalTimeSeconds | number: '1.0-0' }} s en movimiento</span>
       </div>
 

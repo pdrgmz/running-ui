@@ -5,7 +5,6 @@
       <h1>Running Tracker</h1>
       <div class="role-subtitle">
         <span>PANEL DE ANALÍTICA DEL CORREDOR</span>
-        <span>| API v1.3.0</span>
       </div>
     </div>
 
@@ -62,7 +61,7 @@
         </div>
         <div class="terminal-lines-container">
           <div><span class="t-ok">$</span> running-tracker --auth=jwt</div>
-          <div>[INFO] Esquema OpenAPI 3.0.1 cargado (v1.3.0)</div>
+          <div>[INFO] Esquema OpenAPI 3.0.1 cargado (v1.4.0)</div>
           <div>[INFO] Endpoints del usuario: /auth · /stats · /analytics · /activities</div>
           <div>[READY] Introduce tus credenciales para abrir el panel del corredor…</div>
         </div>
@@ -73,7 +72,6 @@
     <section class="col-right-6">
       <article class="card-panel">
         <div class="card-header-bar">
-          <span class="card-title-mono">{{ mode === 'login' ? 'Iniciar Sesión' : 'Crear Cuenta' }}</span>
           <span class="card-tag-badge">AUTH</span>
         </div>
 
@@ -111,21 +109,41 @@
           }
 
           <div class="panel-actions-row">
-            <button type="submit" class="btn-pill-header" [disabled]="busy()">
+            <button
+              type="submit"
+              class="btn-pill-header btn-icon-only"
+              [disabled]="busy()"
+              [title]="busy() ? 'Autenticando…' : mode === 'login' ? 'Acceder al panel' : 'Registrar y acceder'"
+              [attr.aria-label]="busy() ? 'Autenticando…' : mode === 'login' ? 'Acceder al panel' : 'Registrar y acceder'"
+            >
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
                 <polyline points="10 17 15 12 10 7" />
                 <line x1="15" y1="12" x2="3" y2="12" />
               </svg>
-              {{ busy() ? 'AUTENTICANDO…' : mode === 'login' ? 'ACCEDER AL PANEL' : 'REGISTRAR Y ACCEDER' }}
             </button>
 
             <button
               type="button"
-              class="btn-outline-pill"
+              class="btn-outline-pill btn-icon-only"
+              [title]="mode === 'login' ? 'Crear cuenta nueva' : 'Ya tengo cuenta'"
+              [attr.aria-label]="mode === 'login' ? 'Crear cuenta nueva' : 'Ya tengo cuenta'"
               (click)="setMode(mode === 'login' ? 'register' : 'login')"
             >
-              {{ mode === 'login' ? 'Crear cuenta nueva' : 'Ya tengo cuenta' }}
+              @if (mode === 'login') {
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="8.5" cy="7" r="4" />
+                  <line x1="20" y1="8" x2="20" y2="14" />
+                  <line x1="23" y1="11" x2="17" y2="11" />
+                </svg>
+              } @else {
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
+                  <circle cx="8.5" cy="7" r="4" />
+                  <polyline points="17 11 19 13 23 9" />
+                </svg>
+              }
             </button>
           </div>
         </form>
@@ -143,8 +161,16 @@
                 placeholder="https://running-api.pdrgmz.uk"
                 [(ngModel)]="serverUrl"
               />
-              <button type="button" class="btn-outline-pill btn-compact" (click)="applyServerUrl()">
-                Aplicar
+              <button
+                type="button"
+                class="btn-outline-pill btn-compact btn-icon-only"
+                title="Aplicar"
+                aria-label="Aplicar"
+                (click)="applyServerUrl()"
+              >
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="20 6 9 17 4 12" />
+                </svg>
               </button>
             </div>
             <p class="login-server-hint">
