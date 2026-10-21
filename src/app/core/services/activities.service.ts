@@ -5,9 +5,13 @@ import {
   Activity,
   ActivityTrackpoint,
   CardiacDriftResponseDto,
+  ElevationCoverageDto,
   HrZonesResponseDto,
   PageActivity,
   SplitDto,
+  TrackpointCompletionResultDto,
+  TrackpointMetricsBatchCompletionResultDto,
+  TrackpointMetricsCompletionResultDto,
   TrainingLoadResponseDto,
   Vo2MaxVamResponseDto,
 } from '../models/api.models';
@@ -45,6 +49,47 @@ export class ActivitiesService {
       this.api.url(`/api/v1/activities/${encodeURIComponent(id)}/trackpoints`),
       { params },
     );
+  }
+
+  /** DELETE /api/v1/activities/{id} — elimina una carrera del usuario. */
+  deleteById(id: string): Observable<Record<string, unknown>> {
+    return this.http.delete<Record<string, unknown>>(
+      this.api.url(`/api/v1/activities/${encodeURIComponent(id)}`),
+    );
+  }
+
+  /** DELETE /api/v1/activities — vacía todo el historial del usuario. */
+  deleteAll(): Observable<Record<string, unknown>> {
+    return this.http.delete<Record<string, unknown>>(this.api.url('/api/v1/activities'));
+  }
+
+  /** POST /api/v1/activities/{id}/complete-trackpoints — completa GPS, altitud y métricas. */
+  completeTrackpoints(id: string): Observable<TrackpointCompletionResultDto> {
+    return this.http.post<TrackpointCompletionResultDto>(
+      this.api.url(`/api/v1/activities/${encodeURIComponent(id)}/complete-trackpoints`),
+      {},
+    );
+  }
+
+  /** POST /api/v1/activities/{id}/complete-metrics — completa FC, cadencia y velocidad. */
+  completeMetrics(id: string): Observable<TrackpointMetricsCompletionResultDto> {
+    return this.http.post<TrackpointMetricsCompletionResultDto>(
+      this.api.url(`/api/v1/activities/${encodeURIComponent(id)}/complete-metrics`),
+      {},
+    );
+  }
+
+  /** POST /api/v1/activities/complete-metrics — completa las métricas de todo el historial. */
+  completeAllMetrics(): Observable<TrackpointMetricsBatchCompletionResultDto> {
+    return this.http.post<TrackpointMetricsBatchCompletionResultDto>(
+      this.api.url('/api/v1/activities/complete-metrics'),
+      {},
+    );
+  }
+
+  /** GET /api/v1/activities/elevation-coverage — cobertura de altitudes del usuario. */
+  elevationCoverage(): Observable<ElevationCoverageDto> {
+    return this.http.get<ElevationCoverageDto>(this.api.url('/api/v1/activities/elevation-coverage'));
   }
 
   /** GET /api/v1/analytics/{id}/splits — splits por kilómetro. */

@@ -1,0 +1,189 @@
+<article class="card-panel files-panel">
+  <div class="card-header-bar">
+    <span class="card-tag-badge">ARCHIVOS</span>
+    <span class="card-tag-badge">{{ streamLabel() }}</span>
+  </div>
+
+  <div class="files-grid">
+    <!-- IMPORTACIÓN INDIVIDUAL -->
+    <section class="file-block">
+      <span class="block-title">Importar actividad</span>
+      <p class="account-hint">
+        Sube un archivo <code>TCX</code>, <code>GPX</code> o <code>FIT</code>. La API solo acepta
+        actividades de carrera y guarda una copia de respaldo.
+      </p>
+      <input
+        #singleInput
+        type="file"
+        class="form-control file-input"
+        accept=".tcx,.gpx,.fit"
+        (change)="onSingleSelected($event)"
+      />
+      <div class="file-action-row">
+        <button
+          type="button"
+          class="btn-pill-header btn-compact"
+          [disabled]="!singleFile() || uploadingSingle()"
+          (click)="uploadSingle()"
+        >
+          {{ uploadingSingle() ? 'IMPORTANDO…' : 'IMPORTAR ARCHIVO' }}
+        </button>
+        @if (singleFile(); as file) {
+          <span class="file-meta mono">{{ file.name }}</span>
+        }
+      </div>
+
+      @if (singleResult(); as result) {
+        <div class="file-success">
+          <span class="file-status-badge file-status-badge--ok">IMPORTADA</span>
+          <div class="kv-list">
+            <div class="kv-row">
+              <span class="kv-key">Actividad</span>
+              <span class="kv-val">{{ result.activityId }}</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-key">Puntos</span>
+              <span class="kv-val">{{ result.totalPoints | number }}</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-key">Formato</span>
+              <span class="kv-val">{{ result.sourceFileType || '—' }}</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-key">Respaldo</span>
+              <span class="kv-val">{{ result.backupPath || '—' }}</span>
+            </div>
+          </div>
+        </div>
+      }
+    </section>
+
+    <!-- IMPORTACIÓN MASIVA -->
+    <section class="file-block">
+      <span class="block-title">Importar ZIP masivo</span>
+      <p class="account-hint">
+        Sube un ZIP con archivos TCX, GPX y FIT. La carga es asíncrona: aquí puedes seguir su
+        progreso y revisar los errores por archivo.
+      </p>
+      <input
+        #bulkInput
+        type="file"
+        class="form-control file-input"
+        accept=".zip,application/zip"
+        (change)="onBulkSelected($event)"
+      />
+      <div class="file-action-row">
+        <button
+          type="button"
+          class="btn-pill-header btn-compact"
+          [disabled]="!bulkFile() || uploadingBulk()"
+          (click)="uploadBulk()"
+        >
+          {{ uploadingBulk() ? 'SUBIENDO…' : 'SUBIR ZIP' }}
+        </button>
+        @if (bulkFile(); as file) {
+          <span class="file-meta mono">{{ file.name }}</span>
+        }
+      </div>
+
+      @if (bulkStatus(); as status) {
+        <div class="file-progress-head">
+          <span class="file-status-badge">{{ bulkStateLabel() }}</span>
+          <span class="mono file-progress-value">{{ progress() | number: '1.0-0' }}%</span>
+        </div>
+        <div class="file-progress-track">
+          <div class="file-progress-bar" [style.width.%]="progress()"></div>
+        </div>
+        <div class="kv-list">
+          <div class="kv-row">
+            <span class="kv-key">Archivos</span>
+            <span class="kv-val">{{ status.processedFiles }} / {{ status.totalFiles }}</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">Correctos</span>
+            <span class="kv-val">{{ status.successCount }}</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">Errores</span>
+            <span class="kv-val">{{ status.errorCount }} ({{ status.percentMissing | number: '1.1-1' }}%)</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">Carga</span>
+            <span class="kv-val">{{ status.uploadId }}</span>
+          </div>
+        </div>
+
+        @if (bulkErrors().length > 0) {
+          <div class="data-table-wrap file-errors">
+            <table class="data-table">
+              <thead>
+                <tr>
+                  <th>Archivo</th>
+                  <th>Error</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (item of bulkErrors(); track item.fileName) {
+                  <tr>
+                    <td>{{ item.fileName }}</td>
+                    <td class="file-error-message">{{ item.errorMessage }}</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        }
+
+        @if (streamMode() === 'error' || streamMode() === 'polling') {
+          <button
+            type="button"
+            class="btn-outline-pill btn-compact"
+            (click)="retryBulkStatus()"
+          >
+            RECONSULTAR ESTADO
+          </button>
+        }
+      }
+
+      @if (bulkError(); as error) {
+        <div class="file-alert">{{ error }}</div>
+      }
+    </section>
+  </div>
+
+  <!-- EXPORTACIÓN -->
+  <section class="file-block file-export">
+    <span class="block-title">Exportar historial</span>
+    <p class="account-hint">
+      Déjalo vacío para exportar todas las actividades o indica IDs separados por comas.
+      El primer ZIP contiene los datos JSON y el segundo los archivos originales de respaldo.
+    </p>
+    <label class="form-label" for="files-export-ids">IDs de actividades (opcional)</label>
+    <input
+      id="files-export-ids"
+      name="exportIds"
+      type="text"
+      class="form-control"
+      placeholder="2026-09-05T07:00:00Z, 2026-09-07T06:30:00Z"
+      [(ngModel)]="exportIds"
+    />
+    <div class="file-action-row">
+      <button
+        type="button"
+        class="btn-pill-header btn-compact"
+        [disabled]="exporting() !== null"
+        (click)="exportJson()"
+      >
+        {{ exporting() === 'json' ? 'EXPORTANDO…' : 'EXPORTAR DATOS (ZIP)' }}
+      </button>
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact"
+        [disabled]="exporting() !== null"
+        (click)="exportBackup()"
+      >
+        {{ exporting() === 'backup' ? 'EXPORTANDO…' : 'EXPORTAR RESPALDOS (ZIP)' }}
+      </button>
+    </div>
+  </section>
+</article>

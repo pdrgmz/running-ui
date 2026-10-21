@@ -28,3 +28,39 @@ article.card-panel .kv-list {
   flex: 1;
   justify-content: space-between;
 }
+
+/* --- Zona peligrosa de la tarjeta CONFIG --- */
+.account-danger-zone {
+  border-top: 1.5px dashed var(--border-color);
+  padding-top: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.account-danger {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+  width: fit-content;
+}
+
+.account-danger:hover {
+  background: var(--accent-red);
+  color: #fff;
+}
+
+.account-danger-fill {
+  background: var(--accent-red);
+  border-color: var(--accent-red);
+  color: #fff;
+}
+
+.account-danger-fill:hover {
+  background: #a63b32;
+  border-color: #a63b32;
+}
+
+.account-danger-fill:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

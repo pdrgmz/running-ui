@@ -111,9 +111,19 @@
         />
       }
 
+      <!-- ARCHIVOS: IMPORTACIÓN / EXPORTACIÓN -->
+      @case ('files') {
+        <app-files-panel class="col-12" (changed)="refreshAfterChange()" />
+      }
+
       <!-- MAPA DE CALOR -->
       @case ('heatmap') {
         <app-activity-heatmap class="col-12" />
+      }
+
+      <!-- MCP -->
+      @case ('mcp') {
+        <app-mcp-panel class="col-12" />
       }
 
       <!-- CUENTA & API -->
@@ -259,6 +269,18 @@
               <span class="kv-key">Recálculo de estadísticas</span>
               <span class="kv-val">POST /api/v1/stats/recalculate</span>
             </div>
+            <div class="kv-row">
+              <span class="kv-key">Completar métricas</span>
+              <span class="kv-val">POST /api/v1/activities/complete-metrics</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-key">Cobertura de altitudes</span>
+              <span class="kv-val">GET /api/v1/activities/elevation-coverage</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-key">Vaciar historial</span>
+              <span class="kv-val">DELETE /api/v1/activities</span>
+            </div>
           </div>
 
           <div class="panel-actions-row">
@@ -284,6 +306,103 @@
                 <path d="M16 18h.01" />
               </svg>
             </button>
+            <button
+              type="button"
+              class="btn-outline-pill btn-compact"
+              [disabled]="completingMetrics()"
+              (click)="completeAllMetrics()"
+            >
+              {{ completingMetrics() ? 'COMPLETANDO…' : 'COMPLETAR MÉTRICAS' }}
+            </button>
+            <button
+              type="button"
+              class="btn-outline-pill btn-compact"
+              [disabled]="coverageLoading()"
+              (click)="loadElevationCoverage()"
+            >
+              {{ coverageLoading() ? 'CONSULTANDO…' : 'COBERTURA DE ALTITUD' }}
+            </button>
+          </div>
+
+          @if (completeMetricsResult(); as result) {
+            <div class="kv-list">
+              <div class="kv-row">
+                <span class="kv-key">Actividades procesadas</span>
+                <span class="kv-val">{{ result.activitiesProcessed }} / {{ result.activitiesFound }}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Valores completados</span>
+                <span class="kv-val">{{ result.totalFilled }}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Valores descartados</span>
+                <span class="kv-val">{{ result.totalRemoved }}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Distancia ajustada</span>
+                <span class="kv-val">{{ result.distanceAdjusted }} puntos</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Actividades fallidas</span>
+                <span class="kv-val">{{ result.activitiesFailed }}</span>
+              </div>
+            </div>
+          }
+
+          @if (elevationCoverage(); as coverage) {
+            <div class="kv-list">
+              <div class="kv-row">
+                <span class="kv-key">Trackpoints totales</span>
+                <span class="kv-val">{{ coverage.totalTrackpoints }}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Con altitud</span>
+                <span class="kv-val">{{ coverage.withElevationPercent | number: '1.1-1' }}%</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Sin altitud</span>
+                <span class="kv-val">{{ coverage.missingElevationPercent | number: '1.1-1' }}%</span>
+              </div>
+            </div>
+          }
+
+          @if (coverageError()) {
+            <div class="empty-state">NO SE PUDO CONSULTAR LA COBERTURA DE ALTITUD.</div>
+          }
+
+          <div class="account-danger-zone">
+            <span class="block-title">Zona peligrosa</span>
+            @if (!confirmingDeleteAll()) {
+              <button
+                type="button"
+                class="btn-outline-pill btn-compact account-danger"
+                (click)="requestDeleteAll()"
+              >
+                VACIAR HISTORIAL
+              </button>
+            } @else {
+              <p class="account-hint">
+                Se eliminarán todas las carreras, trackpoints y récords. Esta acción no se puede deshacer.
+              </p>
+              <div class="panel-actions-row">
+                <button
+                  type="button"
+                  class="btn-pill-header btn-compact account-danger-fill"
+                  [disabled]="deletingAll()"
+                  (click)="deleteAllActivities()"
+                >
+                  {{ deletingAll() ? 'ELIMINANDO…' : 'CONFIRMAR VACIADO' }}
+                </button>
+                <button
+                  type="button"
+                  class="btn-outline-pill btn-compact"
+                  [disabled]="deletingAll()"
+                  (click)="cancelDeleteAll()"
+                >
+                  CANCELAR
+                </button>
+              </div>
+            }
           </div>
         </article>
 
@@ -296,5 +415,10 @@
 </div>
 
 @if (selectedActivity(); as activity) {
-  <app-activity-detail [activity]="activity" (close)="closeActivity()" />
+  <app-activity-detail
+    [activity]="activity"
+    (close)="closeActivity()"
+    (deleted)="onActivityDeleted($event)"
+    (changed)="onActivityChanged()"
+  />
 }

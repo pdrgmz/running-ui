@@ -51,9 +51,38 @@ server {
         proxy_set_header X-Forwarded-Proto $scheme;
         proxy_set_header X-Forwarded-Host $host;
 
+        # Necesario para el SSE de progreso de cargas masivas.
+        proxy_buffering off;
+        proxy_cache off;
         proxy_connect_timeout 10s;
         proxy_send_timeout 120s;
         proxy_read_timeout 120s;
+    }
+
+    # Servidor MCP (JSON-RPC + SSE). Sin buffering para que los eventos del
+    # stream lleguen al navegador en tiempo real.
+    location ^~ /mcp {
+        set $api_upstream "${API_UPSTREAM}";
+        proxy_pass $api_upstream;
+
+        proxy_http_version 1.1;
+        proxy_ssl_server_name on;
+        proxy_ssl_name $proxy_host;
+        proxy_ssl_verify on;
+        proxy_ssl_trusted_certificate /etc/ssl/certs/ca-certificates.crt;
+        proxy_ssl_verify_depth 3;
+
+        proxy_set_header Host $proxy_host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Host $host;
+
+        proxy_buffering off;
+        proxy_cache off;
+        proxy_connect_timeout 10s;
+        proxy_send_timeout 1h;
+        proxy_read_timeout 1h;
     }
 
     # Assets con hash de Angular: cache larga.

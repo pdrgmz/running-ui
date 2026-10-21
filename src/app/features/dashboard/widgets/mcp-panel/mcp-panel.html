@@ -1,0 +1,149 @@
+<article class="card-panel mcp-panel">
+  <div class="card-header-bar">
+    <span class="card-tag-badge">MCP · JSON-RPC 2.0</span>
+    @if (connected()) {
+      <span class="card-tag-badge mcp-badge--live">SESIÓN ACTIVA</span>
+    } @else {
+      <span class="card-tag-badge">SIN SESIÓN</span>
+    }
+  </div>
+
+  <p class="account-hint">
+    El servidor MCP comparte el JWT de la API y opera solo sobre tus datos. Inicializa la sesión,
+    consulta las herramientas disponibles y ejecútalas con argumentos JSON. El stream SSE permite
+    ver los eventos que empuja el servidor en tiempo real.
+  </p>
+
+  <div class="panel-actions-row">
+    @if (!connected()) {
+      <button
+        type="button"
+        class="btn-pill-header btn-compact"
+        [disabled]="connecting()"
+        (click)="connect()"
+      >
+        {{ connecting() ? 'INICIALIZANDO…' : 'INICIALIZAR SESIÓN' }}
+      </button>
+    } @else {
+      <button type="button" class="btn-outline-pill btn-compact" (click)="loadTools()">
+        RECARGAR TOOLS
+      </button>
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact"
+        [class.mcp-button--active]="streamActive()"
+        (click)="toggleStream()"
+      >
+        {{ streamActive() ? 'CERRAR STREAM SSE' : 'ABRIR STREAM SSE' }}
+      </button>
+      <button type="button" class="btn-outline-pill btn-compact" (click)="resetSession()">
+        REINICIAR
+      </button>
+    }
+  </div>
+
+  @if (connected()) {
+    <div class="mcp-session">
+      <div class="kv-list">
+        <div class="kv-row">
+          <span class="kv-key">Mcp-Session-Id</span>
+          <span class="kv-val kv-val--token">{{ sessionId() }}</span>
+        </div>
+        @if (protocolVersion(); as protocol) {
+          <div class="kv-row">
+            <span class="kv-key">Protocolo</span>
+            <span class="kv-val">{{ protocol }}</span>
+          </div>
+        }
+        @if (serverInfo()?.name; as name) {
+          <div class="kv-row">
+            <span class="kv-key">Servidor</span>
+            <span class="kv-val">{{ name }} {{ serverInfo()?.version ?? '' }}</span>
+          </div>
+        }
+      </div>
+    </div>
+  }
+
+  @if (errorText(); as error) {
+    <div class="mcp-alert">{{ error }}</div>
+  }
+
+  @if (tools().length > 0) {
+    <div class="mcp-grid">
+      <section class="mcp-tool-list">
+        <span class="block-title">Herramientas ({{ tools().length }})</span>
+        @for (tool of tools(); track tool.name) {
+          <button
+            type="button"
+            class="mcp-tool"
+            [class.mcp-tool--active]="selectedToolName() === tool.name"
+            (click)="selectTool(tool.name)"
+          >
+            <span class="mcp-tool-name">{{ tool.name }}</span>
+            @if (tool.description) {
+              <span class="mcp-tool-description">{{ tool.description }}</span>
+            }
+          </button>
+        }
+      </section>
+
+      <section class="mcp-tool-detail">
+        <span class="block-title">{{ selectedToolName() }}</span>
+        @if (selectedTool()?.description; as description) {
+          <p class="account-hint">{{ description }}</p>
+        }
+        @if (schemaText(); as schema) {
+          <span class="mcp-label">Input schema</span>
+          <pre class="mcp-schema">{{ schema }}</pre>
+        }
+        <label class="form-label" for="mcp-args">Argumentos JSON</label>
+        <textarea
+          id="mcp-args"
+          name="mcpArgs"
+          class="form-control mcp-args"
+          rows="6"
+          spellcheck="false"
+          [(ngModel)]="argsText"
+        ></textarea>
+        <button
+          type="button"
+          class="btn-pill-header btn-compact"
+          [disabled]="calling() || !selectedTool()"
+          (click)="runTool()"
+        >
+          {{ calling() ? 'EJECUTANDO…' : 'EJECUTAR TOOL' }}
+        </button>
+      </section>
+    </div>
+  } @else if (connected()) {
+    <div class="empty-state">SIN HERRAMIENTAS DISPONIBLES O SIN CARGAR.</div>
+  }
+
+  @if (capabilitiesText(); as capabilities) {
+    <details class="mcp-capabilities">
+      <summary>CAPABILITIES DEL SERVIDOR</summary>
+      <pre class="mcp-schema">{{ capabilities }}</pre>
+    </details>
+  }
+
+  @if (resultText(); as result) {
+    <div class="terminal-panel mcp-output">
+      <div class="terminal-header">
+        <span>TOOL RESULT</span>
+        <button type="button" class="mcp-copy" (click)="copyResult()">COPIAR</button>
+      </div>
+      <pre class="mcp-output-body">{{ result }}</pre>
+    </div>
+  }
+
+  @if (streamLines().length > 0) {
+    <div class="terminal-panel mcp-output">
+      <div class="terminal-header">
+        <span>SSE /MCP</span>
+        <span>{{ streamActive() ? 'EN VIVO' : 'CERRADO' }}</span>
+      </div>
+      <pre class="mcp-output-body">{{ streamText() }}</pre>
+    </div>
+  }
+</article>

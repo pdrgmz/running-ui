@@ -1,0 +1,152 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.files-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.file-block {
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-main);
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.file-input {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  padding: 9px 10px;
+}
+
+.file-input::file-selector-button {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--text-main);
+  padding: 5px 10px;
+  margin-right: 10px;
+  cursor: pointer;
+}
+
+.file-action-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.file-action-row .btn-pill-header:disabled,
+.file-action-row .btn-outline-pill:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.file-meta {
+  font-size: 0.66rem;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+/* --- Resultado de la importación individual --- */
+.file-success {
+  border: 1.5px dashed var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* --- Progreso de la carga masiva --- */
+.file-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.file-progress-value {
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.file-progress-track {
+  height: 16px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.file-progress-bar {
+  height: 100%;
+  background: var(--accent-green);
+  border-right: 1.5px solid var(--border-color);
+  transition: width var(--transition-smooth);
+}
+
+.file-status-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  padding: 3px 10px;
+  width: fit-content;
+}
+
+.file-status-badge--ok {
+  border-color: var(--accent-green);
+  color: var(--accent-green);
+}
+
+.file-errors {
+  max-height: 220px;
+  overflow: auto;
+}
+
+.file-error-message {
+  white-space: normal;
+  color: var(--accent-red);
+}
+
+.file-alert {
+  border: 1.5px solid var(--accent-red);
+  border-left: 6px solid var(--accent-red);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--accent-red);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+}
+
+.file-export {
+  margin-top: 16px;
+}
+
+@media (max-width: 900px) {
+  .files-grid {
+    grid-template-columns: 1fr;
+  }
+}

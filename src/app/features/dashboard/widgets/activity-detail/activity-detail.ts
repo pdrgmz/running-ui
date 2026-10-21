@@ -26,6 +26,9 @@ import {
   Vo2MaxVamResponseDto,
 } from '../../../../core/models/api.models';
 import { ActivitiesService } from '../../../../core/services/activities.service';
+import { GeoService } from '../../../../core/services/geo.service';
+import { ToastService } from '../../../../core/services/toast.service';
+import { downloadBlob, safeFileStem } from '../../../../core/utils/download';
 import {
   DurationPipe,
   formatDuration,
@@ -85,8 +88,17 @@ const ZONE_DEFS: { key: keyof HrZonesResponseDto['zones']; label: string; cls: s
 export class ActivityDetail implements OnInit {
   readonly activity = input.required<Activity>();
   readonly close = output<void>();
+  readonly changed = output<void>();
+  readonly deleted = output<string>();
 
   private readonly activities = inject(ActivitiesService);
+  private readonly geo = inject(GeoService);
+  private readonly toast = inject(ToastService);
+
+  protected readonly completing = signal<'trackpoints' | 'metrics' | null>(null);
+  protected readonly downloading = signal<'gpx' | 'geojson' | null>(null);
+  protected readonly deleting = signal(false);
+  protected readonly confirmingDelete = signal(false);
 
   protected readonly sections: DetailSection[] = [
     { id: 'det-route', label: 'Mapa y perfiles' },
@@ -223,7 +235,18 @@ export class ActivityDetail implements OnInit {
   });
 
   ngOnInit(): void {
+    this.loadDetail();
+  }
+
+  /** Carga (o recarga) toda la analítica de la actividad. */
+  private loadDetail(): void {
     const id = this.activity().id;
+    this.splits.set(null);
+    this.hrZones.set(null);
+    this.trainingLoad.set(null);
+    this.vo2.set(null);
+    this.drift.set(null);
+    this.trackpoints.set(null);
     forkJoin({
       splits: this.activities.splits(id).pipe(catchError(() => of(null))),
       zones: this.activities.hrZones(id).pipe(catchError(() => of(null))),
@@ -238,6 +261,96 @@ export class ActivityDetail implements OnInit {
       this.vo2.set(res.vo2);
       this.drift.set(res.drift);
       this.trackpoints.set(res.track);
+    });
+  }
+
+  /** POST /api/v1/activities/{id}/complete-trackpoints */
+  protected completeTrackpoints(): void {
+    if (this.completing()) {
+      return;
+    }
+    this.completing.set('trackpoints');
+    this.activities.completeTrackpoints(this.activity().id).subscribe({
+      next: (result) => {
+        this.completing.set(null);
+        this.toast.show(result.message || 'TRACKPOINTS COMPLETADOS');
+        this.changed.emit();
+        this.loadDetail();
+      },
+      error: () => this.completing.set(null),
+    });
+  }
+
+  /** POST /api/v1/activities/{id}/complete-metrics */
+  protected completeMetrics(): void {
+    if (this.completing()) {
+      return;
+    }
+    this.completing.set('metrics');
+    this.activities.completeMetrics(this.activity().id).subscribe({
+      next: (result) => {
+        this.completing.set(null);
+        this.toast.show(result.message || 'MÉTRICAS COMPLETADAS');
+        this.changed.emit();
+        this.loadDetail();
+      },
+      error: () => this.completing.set(null),
+    });
+  }
+
+  /** GET /api/v1/geo/{id}/gpx */
+  protected downloadGpx(): void {
+    if (this.downloading()) {
+      return;
+    }
+    this.downloading.set('gpx');
+    this.geo.exportGpx(this.activity().id).subscribe({
+      next: (blob) => {
+        this.downloading.set(null);
+        downloadBlob(blob, `${safeFileStem(this.activity().id)}.gpx`);
+        this.toast.show('GPX DESCARGADO');
+      },
+      error: () => this.downloading.set(null),
+    });
+  }
+
+  /** GET /api/v1/geo/{id}/geojson */
+  protected downloadGeoJson(): void {
+    if (this.downloading()) {
+      return;
+    }
+    this.downloading.set('geojson');
+    this.geo.exportGeoJson(this.activity().id).subscribe({
+      next: (blob) => {
+        this.downloading.set(null);
+        downloadBlob(blob, `${safeFileStem(this.activity().id)}.geojson`);
+        this.toast.show('GEOJSON DESCARGADO');
+      },
+      error: () => this.downloading.set(null),
+    });
+  }
+
+  protected requestDelete(): void {
+    this.confirmingDelete.set(true);
+  }
+
+  protected cancelDelete(): void {
+    this.confirmingDelete.set(false);
+  }
+
+  /** DELETE /api/v1/activities/{id} */
+  protected deleteActivity(): void {
+    if (this.deleting()) {
+      return;
+    }
+    this.deleting.set(true);
+    this.activities.deleteById(this.activity().id).subscribe({
+      next: () => {
+        this.deleting.set(false);
+        this.deleted.emit(this.activity().id);
+        this.close.emit();
+      },
+      error: () => this.deleting.set(false),
     });
   }
 

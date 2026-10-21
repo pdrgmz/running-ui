@@ -154,6 +154,18 @@ function route(req, path, url, body, res) {
     return send(res, 200, trackpoints(decodeURIComponent(match[1]), resolution));
   }
 
+  if (method === 'GET' && path === '/api/v1/activities/elevation-coverage') {
+    const total = Math.max(1, activities().length * 3200);
+    const withElevation = Math.round(total * 0.9388);
+    return send(res, 200, {
+      totalTrackpoints: total,
+      trackpointsWithElevation: withElevation,
+      trackpointsMissingElevation: total - withElevation,
+      withElevationPercent: 93.88,
+      missingElevationPercent: 6.12,
+    });
+  }
+
   match = path.match(/^\/api\/v1\/activities\/([^/]+)$/);
   if (method === 'GET' && match) {
     const id = decodeURIComponent(match[1]);
@@ -162,6 +174,91 @@ function route(req, path, url, body, res) {
       return send(res, 404, error(404, 'Not Found', `Actividad no encontrada: ${id}`));
     }
     return send(res, 200, activity);
+  }
+
+  // --- Mantenimiento y borrado de actividades ---
+  if (method === 'POST' && path === '/api/v1/activities/complete-metrics') {
+    const total = activities().length;
+    return send(res, 200, {
+      activitiesFound: total,
+      activitiesProcessed: total,
+      activitiesUpdated: Math.max(0, total - 2),
+      activitiesWithoutTrackpoints: 2,
+      activitiesFailed: 0,
+      totalTrackpoints: total * 3200,
+      heartRateFilled: 1500,
+      cadenceFilled: 800,
+      speedFilled: 400,
+      heartRateRemoved: 20,
+      cadenceRemoved: 10,
+      speedRemoved: 30,
+      totalFilled: 2700,
+      totalRemoved: 60,
+      distanceAdjusted: 350,
+      distanceDiscardedMeters: 12500,
+      errors: {},
+      message: 'Métricas completadas en todas las actividades',
+    });
+  }
+
+  match = path.match(/^\/api\/v1\/activities\/([^/]+)\/complete-(trackpoints|metrics)$/);
+  if (method === 'POST' && match) {
+    const id = decodeURIComponent(match[1]);
+    const kind = match[2];
+    if (kind === 'trackpoints') {
+      return send(res, 200, {
+        activityId: id,
+        totalTrackpoints: 3200,
+        latitudeFilled: 3,
+        longitudeFilled: 3,
+        altitudeFilled: 120,
+        heartRateFilled: 15,
+        cadenceFilled: 8,
+        speedFilled: 4,
+        heartRateRemoved: 2,
+        cadenceRemoved: 1,
+        speedRemoved: 3,
+        totalRemoved: 6,
+        distanceAdjusted: 3,
+        distanceDiscardedMeters: 4900,
+        externalElevationUsed: true,
+        altitudeSource: 'open-meteo',
+        message: 'Trackpoints completados',
+      });
+    }
+    return send(res, 200, {
+      activityId: id,
+      totalTrackpoints: 3200,
+      heartRateFilled: 15,
+      cadenceFilled: 8,
+      speedFilled: 4,
+      heartRateRemoved: 2,
+      cadenceRemoved: 1,
+      speedRemoved: 3,
+      totalFilled: 27,
+      totalRemoved: 6,
+      distanceAdjusted: 3,
+      distanceDiscardedMeters: 4900,
+      message: 'Métricas completadas',
+    });
+  }
+
+  if (method === 'DELETE' && path === '/api/v1/activities') {
+    allActivitiesDeleted = true;
+    deletedActivityIds.clear();
+    uploadedActivities.length = 0;
+    return send(res, 200, { message: 'Actividades y estadísticas vaciadas' });
+  }
+
+  match = path.match(/^\/api\/v1\/activities\/([^/]+)$/);
+  if (method === 'DELETE' && match) {
+    const id = decodeURIComponent(match[1]);
+    deletedActivityIds.add(id);
+    const index = uploadedActivities.findIndex((a) => a.id === id);
+    if (index >= 0) {
+      uploadedActivities.splice(index, 1);
+    }
+    return send(res, 200, { message: `Carrera eliminada: ${id}` });
   }
 
   // --- Analítica por actividad ---
@@ -191,6 +288,211 @@ function route(req, path, url, body, res) {
     });
   }
 
+  // --- Archivos ---
+  if (method === 'POST' && path === '/api/v1/files/upload') {
+    uploadSeq += 1;
+    const id = new Date().toISOString().replace(/\.\d{3}Z$/, 'Z');
+    allActivitiesDeleted = false;
+    uploadedActivities.unshift(createUploadedActivity(id, 'Carrera importada (demo)'));
+    return send(res, 201, {
+      message: 'Carrera importada y respaldada con éxito',
+      activityId: id,
+      backupPath: `storage/${id.slice(0, 10)}.tcx`,
+      totalPoints: 1250,
+      sourceFileType: 'tcx',
+    });
+  }
+
+  if (method === 'POST' && path === '/api/v1/files/upload-bulk') {
+    uploadSeq += 1;
+    const uploadId = `mock-upload-${uploadSeq}`;
+    uploads.set(uploadId, {
+      uploadId,
+      filename: 'activities_backup.zip',
+      status: 'PROCESSING',
+      totalFiles: 3,
+      processedFiles: 0,
+      pendingFiles: 3,
+      successCount: 0,
+      errorCount: 0,
+      percentMissing: 0,
+      progress: 0,
+      errors: [],
+      startedAt: Date.now(),
+      activitiesAdded: false,
+    });
+    return send(res, 202, publicUpload(uploads.get(uploadId)));
+  }
+
+  match = path.match(/^\/api\/v1\/files\/upload-status\/([^/]+)\/stream$/);
+  if (method === 'GET' && match) {
+    const upload = advanceUpload(decodeURIComponent(match[1]));
+    if (!upload) {
+      return send(res, 404, error(404, 'Not Found', 'Carga no encontrada'));
+    }
+    return sendUploadStream(res, req, upload.uploadId);
+  }
+
+  match = path.match(/^\/api\/v1\/files\/upload-status\/([^/]+)$/);
+  if (method === 'GET' && match) {
+    const upload = advanceUpload(decodeURIComponent(match[1]));
+    if (!upload) {
+      return send(res, 404, error(404, 'Not Found', 'Carga no encontrada'));
+    }
+    return send(res, 200, publicUpload(upload));
+  }
+
+  if (
+    method === 'GET' &&
+    (path === '/api/v1/files/export-bulk' || path === '/api/v1/files/export-backup-zip')
+  ) {
+    const backup = path.endsWith('export-backup-zip');
+    const payload = JSON.stringify(
+      {
+        exportedAt: new Date().toISOString(),
+        mode: backup ? 'backup' : 'data',
+        activities: activities().slice(0, 5),
+      },
+      null,
+      2,
+    );
+    const zip = zipStore(backup ? 'backups.json' : 'activities.json', payload);
+    return sendBinary(
+      res,
+      200,
+      zip,
+      'application/zip',
+      backup ? 'running-respaldos-demo.zip' : 'running-datos-demo.zip',
+    );
+  }
+
+  // --- Exportación geoespacial ---
+  match = path.match(/^\/api\/v1\/geo\/([^/]+)\/(gpx|geojson)$/);
+  if (method === 'GET' && match) {
+    const id = decodeURIComponent(match[1]);
+    const activity = activities().find((item) => item.id === id);
+    if (!activity) {
+      return send(res, 404, error(404, 'Not Found', `Actividad no encontrada: ${id}`));
+    }
+    const points = trackpoints(id, 'low').filter(
+      (point) => point.latitude !== null && point.longitude !== null,
+    );
+    if (match[2] === 'gpx') {
+      const track = points
+        .map(
+          (point) =>
+            `<trkpt lat="${point.latitude}" lon="${point.longitude}"><ele>${point.altitudeMeters ?? 0}</ele><time>${point.timestamp}</time></trkpt>`,
+        )
+        .join('');
+      const xml = `<?xml version="1.0" encoding="UTF-8"?><gpx version="1.1" creator="running-mock" xmlns="http://www.topografix.com/GPX/1/1"><trk><name>${activity.name}</name><trkseg>${track}</trkseg></trk></gpx>`;
+      return sendText(res, 200, xml, 'application/gpx+xml', `attachment; filename="${activity.id}.gpx"`);
+    }
+    return send(res, 200, {
+      type: 'FeatureCollection',
+      features: [
+        {
+          type: 'Feature',
+          geometry: {
+            type: 'LineString',
+            coordinates: points.map((point) => [
+              point.longitude,
+              point.latitude,
+              point.altitudeMeters ?? 0,
+            ]),
+          },
+          properties: {
+            id: activity.id,
+            name: activity.name,
+            distanceMeters: activity.distanceMeters,
+            sourceFileType: activity.sourceFileType,
+          },
+        },
+      ],
+    });
+  }
+
+  // --- MCP (JSON-RPC + SSE) ---
+  if (method === 'POST' && path === '/mcp') {
+    const rpcId = body?.id ?? null;
+    const rpcMethod = body?.method;
+    const mcpHeaders = { 'Mcp-Session-Id': mcpSessionId };
+    if (rpcMethod === 'initialize') {
+      return send(
+        res,
+        200,
+        {
+          jsonrpc: '2.0',
+          id: rpcId,
+          result: {
+            protocolVersion: '2024-11-05',
+            capabilities: { tools: {} },
+            serverInfo: { name: 'running-tracker-mock', version: '1.0.0' },
+          },
+        },
+        mcpHeaders,
+      );
+    }
+    if (rpcMethod === 'notifications/initialized') {
+      return send(res, 202, null, mcpHeaders);
+    }
+    if (rpcMethod === 'ping') {
+      return send(res, 200, { jsonrpc: '2.0', id: rpcId, result: {} }, mcpHeaders);
+    }
+    if (rpcMethod === 'tools/list') {
+      return send(
+        res,
+        200,
+        {
+          jsonrpc: '2.0',
+          id: rpcId,
+          result: { tools: mcpTools() },
+        },
+        mcpHeaders,
+      );
+    }
+    if (rpcMethod === 'tools/call') {
+      const name = body?.params?.name;
+      const args = body?.params?.arguments ?? {};
+      let result;
+      if (name === 'get_summary') {
+        result = summary();
+      } else if (name === 'get_records') {
+        result = records();
+      } else if (name === 'list_activities') {
+        result = activities().slice(0, Number(args?.limit ?? 5));
+      } else if (name === 'get_activity') {
+        result = activities().find((activity) => activity.id === args?.id) ?? null;
+      } else {
+        return send(
+          res,
+          200,
+          { jsonrpc: '2.0', id: rpcId, error: { code: -32602, message: `Tool no encontrada: ${name}` } },
+          mcpHeaders,
+        );
+      }
+      return send(
+        res,
+        200,
+        {
+          jsonrpc: '2.0',
+          id: rpcId,
+          result: { content: [{ type: 'text', text: JSON.stringify(result, null, 2) }] },
+        },
+        mcpHeaders,
+      );
+    }
+    return send(
+      res,
+      200,
+      { jsonrpc: '2.0', id: rpcId, error: { code: -32601, message: `Método no soportado: ${rpcMethod}` } },
+      mcpHeaders,
+    );
+  }
+
+  if (method === 'GET' && path === '/mcp') {
+    return sendMcpStream(res);
+  }
+
   return send(res, 404, error(404, 'Not Found', `Ruta no simulada: ${path}`));
 }
 
@@ -199,6 +501,14 @@ function route(req, path, url, body, res) {
 /* ------------------------------------------------------------------ */
 
 let userEmail = 'runner@example.com';
+
+/* Estado de demostración para borrados, cargas y sesiones MCP. */
+const deletedActivityIds = new Set();
+const uploadedActivities = [];
+let allActivitiesDeleted = false;
+let uploadSeq = 0;
+const uploads = new Map();
+const mcpSessionId = 'mock-mcp-session-0001';
 
 /* Claves de API en memoria (el valor `key` solo se devuelve al crearlas). */
 let apiKeySeq = 4;
@@ -276,6 +586,9 @@ function authorized(req) {
 }
 
 function activities() {
+  if (allActivitiesDeleted) {
+    return [];
+  }
   const names = [
     'Rodaje matutino',
     'Intervalos 8x400',
@@ -350,11 +663,26 @@ function activities() {
   }
 
   // Orden descendente por fecha (el más reciente primero).
-  return list.sort((a, b) => (a.startTime < b.startTime ? 1 : a.startTime > b.startTime ? -1 : 0));
+  return [...uploadedActivities, ...list]
+    .filter((activity) => !deletedActivityIds.has(activity.id))
+    .sort((a, b) => (a.startTime < b.startTime ? 1 : a.startTime > b.startTime ? -1 : 0));
 }
 
 function summary() {
   const all = activities();
+  if (all.length === 0) {
+    return {
+      totalActivities: 0,
+      totalDistanceMeters: 0,
+      totalDistanceKm: 0,
+      totalTimeSeconds: 0,
+      totalTimeFormatted: '0:00:00',
+      totalElevationGain: 0,
+      totalCalories: 0,
+      avgDistanceKm: 0,
+      maxHeartRateGlobal: 0,
+    };
+  }
   const totalDistanceMeters = all.reduce((acc, a) => acc + a.distanceMeters, 0);
   const totalTimeSeconds = all.reduce((acc, a) => acc + a.totalTimeSeconds, 0);
   const totalElevationGain = all.reduce((acc, a) => acc + a.elevationGain, 0);
@@ -377,7 +705,11 @@ function summary() {
 }
 
 function records() {
-  const base = activities()[1];
+  const all = activities();
+  if (all.length === 0) {
+    return [];
+  }
+  const base = all[1] ?? all[0];
   return [
     { distanceCategory: '1k', targetDistanceMeters: 1000, bestTimeSeconds: 252, bestTimeFormatted: '00:04:12', activityId: base.id, activityDate: base.startTime, avgSpeed: 3.97, avgPaceMinPerKm: 4.2 },
     { distanceCategory: '5k', targetDistanceMeters: 5000, bestTimeSeconds: 1355, bestTimeFormatted: '00:22:35', activityId: base.id, activityDate: base.startTime, avgSpeed: 3.69, avgPaceMinPerKm: 4.52 },
@@ -494,13 +826,19 @@ function trackpoints(id, resolution) {
 /* Utilidades                                                          */
 /* ------------------------------------------------------------------ */
 
-function send(res, status, data) {
-  const headers = {
+function corsHeaders() {
+  return {
     'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'Authorization, Content-Type, X-Api-Key',
+    'Access-Control-Allow-Headers':
+      'Authorization, Content-Type, X-Api-Key, Mcp-Session-Id, MCP-Protocol-Version',
     'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+    'Access-Control-Expose-Headers': 'Mcp-Session-Id',
     'Cache-Control': 'no-store',
   };
+}
+
+function send(res, status, data, extraHeaders = {}) {
+  const headers = { ...corsHeaders(), ...extraHeaders };
   if (data === null) {
     res.writeHead(status, headers);
     return res.end();
@@ -508,6 +846,271 @@ function send(res, status, data) {
   const payload = JSON.stringify(data);
   res.writeHead(status, { ...headers, 'Content-Type': 'application/json' });
   res.end(payload);
+}
+
+function sendBinary(res, status, buffer, contentType, filename) {
+  res.writeHead(status, {
+    ...corsHeaders(),
+    'Content-Type': contentType,
+    'Content-Length': buffer.length,
+    'Content-Disposition': `attachment; filename="${filename}"`,
+  });
+  res.end(buffer);
+}
+
+function sendText(res, status, text, contentType, contentDisposition) {
+  const buffer = Buffer.from(text, 'utf8');
+  res.writeHead(status, {
+    ...corsHeaders(),
+    'Content-Type': `${contentType}; charset=utf-8`,
+    'Content-Length': buffer.length,
+    ...(contentDisposition ? { 'Content-Disposition': contentDisposition } : {}),
+  });
+  res.end(buffer);
+}
+
+function publicUpload(upload) {
+  if (!upload) {
+    return null;
+  }
+  const { startedAt, activitiesAdded, ...status } = upload;
+  return status;
+}
+
+function advanceUpload(uploadId) {
+  const upload = uploads.get(uploadId);
+  if (!upload) {
+    return null;
+  }
+  if (upload.status === 'COMPLETED' || upload.status === 'FAILED') {
+    return upload;
+  }
+  const elapsed = Date.now() - upload.startedAt;
+  const processed = Math.min(upload.totalFiles, Math.floor(elapsed / 650));
+  upload.processedFiles = processed;
+  upload.pendingFiles = upload.totalFiles - processed;
+  upload.successCount = processed;
+  upload.progress = Math.round((processed / upload.totalFiles) * 100);
+  upload.status = processed >= upload.totalFiles ? 'COMPLETED' : 'PROCESSING';
+
+  if (upload.status === 'COMPLETED' && !upload.activitiesAdded) {
+    upload.activitiesAdded = true;
+    allActivitiesDeleted = false;
+    const now = Date.now();
+    uploadedActivities.unshift(
+      createUploadedActivity(
+        new Date(now).toISOString().replace(/\.\d{3}Z$/, 'Z'),
+        'Carrera del ZIP (demo 1)',
+      ),
+      createUploadedActivity(
+        new Date(now + 1000).toISOString().replace(/\.\d{3}Z$/, 'Z'),
+        'Carrera del ZIP (demo 2)',
+      ),
+    );
+  }
+  return upload;
+}
+
+function sendUploadStream(res, req, uploadId) {
+  res.writeHead(200, {
+    ...corsHeaders(),
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+
+  let closed = false;
+  let timer = null;
+
+  const tick = () => {
+    if (closed) {
+      return;
+    }
+    const upload = advanceUpload(uploadId);
+    if (!upload) {
+      res.write(`event: error\ndata: ${JSON.stringify({ message: 'Carga no encontrada' })}\n\n`);
+      closed = true;
+      res.end();
+      return;
+    }
+    res.write(`event: status\ndata: ${JSON.stringify(publicUpload(upload))}\n\n`);
+    if (upload.status === 'COMPLETED' || upload.status === 'FAILED') {
+      closed = true;
+      res.end();
+    }
+  };
+
+  tick();
+  if (!closed) {
+    timer = setInterval(tick, 650);
+  }
+  req.on('close', () => {
+    closed = true;
+    if (timer) {
+      clearInterval(timer);
+    }
+  });
+}
+
+function sendMcpStream(res) {
+  res.writeHead(200, {
+    ...corsHeaders(),
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection: 'keep-alive',
+    'X-Accel-Buffering': 'no',
+  });
+  res.write(
+    `event: ready\ndata: ${JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'notifications/ready',
+      params: { sessionId: mcpSessionId, server: 'running-tracker-mock' },
+    })}\n\n`,
+  );
+  res.write(
+    `event: message\ndata: ${JSON.stringify({
+      jsonrpc: '2.0',
+      method: 'notifications/message',
+      params: { level: 'info', data: 'Stream MCP de demostración conectado' },
+    })}\n\n`,
+  );
+  const timer = setTimeout(() => res.end(), 1200);
+  res.on('close', () => clearTimeout(timer));
+}
+
+function mcpTools() {
+  return [
+    {
+      name: 'get_summary',
+      description: 'Resumen acumulado de entrenamientos del usuario.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    },
+    {
+      name: 'get_records',
+      description: 'Récords personales por distancia.',
+      inputSchema: { type: 'object', properties: {}, additionalProperties: false },
+    },
+    {
+      name: 'list_activities',
+      description: 'Lista las actividades más recientes.',
+      inputSchema: {
+        type: 'object',
+        properties: { limit: { type: 'integer', minimum: 1, maximum: 20 } },
+        additionalProperties: false,
+      },
+    },
+    {
+      name: 'get_activity',
+      description: 'Devuelve una actividad por su ID.',
+      inputSchema: {
+        type: 'object',
+        properties: { id: { type: 'string' } },
+        required: ['id'],
+        additionalProperties: false,
+      },
+    },
+  ];
+}
+
+function createUploadedActivity(id, name) {
+  return {
+    id,
+    userId: 1,
+    name,
+    startTime: id,
+    distanceMeters: 10000,
+    totalTimeSeconds: 3000,
+    avgSpeed: 3.33,
+    maxSpeed: 4.2,
+    avgHeartRate: 150,
+    maxHeartRate: 172,
+    avgCadence: 176,
+    maxCadence: 186,
+    avgPaceMinPerKm: 5,
+    maxPaceMinPerKm: 4.2,
+    trainingLoad: 80,
+    vo2MaxEstimated: 48.5,
+    vamKmH: 13.5,
+    totalCalories: 620,
+    elevationGain: 85,
+    elevationLoss: 80,
+    backupFilePath: `storage/uploaded-${id.slice(0, 10)}.tcx`,
+    sourceFileType: 'tcx',
+    extraData: JSON.stringify({ device: 'Mock upload', sport: 'RUNNING' }),
+    createdAt: id,
+  };
+}
+
+let crcTable = null;
+
+function crc32(buffer) {
+  if (!crcTable) {
+    crcTable = new Uint32Array(256);
+    for (let n = 0; n < 256; n++) {
+      let c = n;
+      for (let k = 0; k < 8; k++) {
+        c = c & 1 ? 0xedb88320 ^ (c >>> 1) : c >>> 1;
+      }
+      crcTable[n] = c >>> 0;
+    }
+  }
+  let crc = 0xffffffff;
+  for (const byte of buffer) {
+    crc = crcTable[(crc ^ byte) & 0xff] ^ (crc >>> 8);
+  }
+  return (crc ^ 0xffffffff) >>> 0;
+}
+
+/** ZIP mínimo (método store) con un único archivo, para las descargas demo. */
+function zipStore(filename, content) {
+  const name = Buffer.from(filename, 'utf8');
+  const data = Buffer.from(content, 'utf8');
+  const crc = crc32(data);
+
+  const local = Buffer.alloc(30);
+  local.writeUInt32LE(0x04034b50, 0);
+  local.writeUInt16LE(20, 4);
+  local.writeUInt16LE(0, 6);
+  local.writeUInt16LE(0, 8);
+  local.writeUInt16LE(0, 10);
+  local.writeUInt16LE(0, 12);
+  local.writeUInt32LE(crc, 14);
+  local.writeUInt32LE(data.length, 18);
+  local.writeUInt32LE(data.length, 22);
+  local.writeUInt16LE(name.length, 26);
+  local.writeUInt16LE(0, 28);
+
+  const central = Buffer.alloc(46);
+  central.writeUInt32LE(0x02014b50, 0);
+  central.writeUInt16LE(20, 4);
+  central.writeUInt16LE(20, 6);
+  central.writeUInt16LE(0, 8);
+  central.writeUInt16LE(0, 10);
+  central.writeUInt16LE(0, 12);
+  central.writeUInt16LE(0, 14);
+  central.writeUInt32LE(crc, 16);
+  central.writeUInt32LE(data.length, 20);
+  central.writeUInt32LE(data.length, 24);
+  central.writeUInt16LE(name.length, 28);
+  central.writeUInt16LE(0, 30);
+  central.writeUInt16LE(0, 32);
+  central.writeUInt16LE(0, 34);
+  central.writeUInt16LE(0, 36);
+  central.writeUInt32LE(0, 38);
+  central.writeUInt32LE(0, 42);
+
+  const eocd = Buffer.alloc(22);
+  eocd.writeUInt32LE(0x06054b50, 0);
+  eocd.writeUInt16LE(0, 4);
+  eocd.writeUInt16LE(0, 6);
+  eocd.writeUInt16LE(1, 8);
+  eocd.writeUInt16LE(1, 10);
+  eocd.writeUInt32LE(central.length + name.length, 12);
+  eocd.writeUInt32LE(local.length + name.length + data.length, 16);
+  eocd.writeUInt16LE(0, 20);
+
+  return Buffer.concat([local, name, data, central, name, eocd]);
 }
 
 function error(status, name, message, path = '') {

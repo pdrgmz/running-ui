@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
@@ -7,10 +7,12 @@ import {
   AcwrStatusDto,
   Activity,
   EddingtonStatsDto,
+  ElevationCoverageDto,
   PageActivity,
   PmcPointDto,
   RecordResponseDto,
   SummaryStatsDto,
+  TrackpointMetricsBatchCompletionResultDto,
 } from '../../core/models/api.models';
 import { ActivitiesService } from '../../core/services/activities.service';
 import { ApiConfigService } from '../../core/services/api-config.service';
@@ -26,13 +28,15 @@ import { ActivityHeatmap } from './widgets/activity-heatmap/activity-heatmap';
 import { AcwrCard } from './widgets/acwr-card/acwr-card';
 import { ApiKeysPanel } from './widgets/api-keys-panel/api-keys-panel';
 import { EddingtonCard } from './widgets/eddington-card/eddington-card';
+import { FilesPanel } from './widgets/files-panel/files-panel';
+import { McpPanel } from './widgets/mcp-panel/mcp-panel';
 import { MilestonesPanel } from './widgets/milestones-panel/milestones-panel';
 import { PmcChart } from './widgets/pmc-chart/pmc-chart';
 import { PmcReading } from './widgets/pmc-reading/pmc-reading';
 import { RecordsGrid } from './widgets/records-grid/records-grid';
 import { SummaryStats } from './widgets/summary-stats/summary-stats';
 
-type Tab = 'overview' | 'records' | 'activities' | 'heatmap' | 'account';
+type Tab = 'overview' | 'records' | 'activities' | 'files' | 'heatmap' | 'mcp' | 'account';
 
 /** Actividades por página en el calendario (cada página cubre ~3 semanas). */
 const CALENDAR_PAGE_SIZE = 15;
@@ -51,6 +55,7 @@ interface TabDef {
   selector: 'app-dashboard',
   imports: [
     DatePipe,
+    DecimalPipe,
     FormsModule,
     TerminalConsole,
     SummaryStats,
@@ -63,6 +68,8 @@ interface TabDef {
     ActivityCalendar,
     ActivityHeatmap,
     ActivityDetail,
+    FilesPanel,
+    McpPanel,
     ApiKeysPanel,
     DurationPipe,
     KmPipe,
@@ -85,13 +92,22 @@ export class Dashboard implements OnInit {
     { id: 'overview', label: 'Resumen' },
     { id: 'records', label: 'Récords & Logros' },
     { id: 'activities', label: 'Actividades' },
+    { id: 'files', label: 'Archivos' },
     { id: 'heatmap', label: 'Mapa de calor' },
+    { id: 'mcp', label: 'MCP' },
     { id: 'account', label: 'Cuenta & API' },
   ];
 
   protected readonly activeTab = signal<Tab>('overview');
   protected readonly loading = signal(true);
   protected readonly recalibrating = signal(false);
+  protected readonly completingMetrics = signal(false);
+  protected readonly completeMetricsResult = signal<TrackpointMetricsBatchCompletionResultDto | null>(null);
+  protected readonly elevationCoverage = signal<ElevationCoverageDto | null>(null);
+  protected readonly coverageLoading = signal(false);
+  protected readonly coverageError = signal(false);
+  protected readonly deletingAll = signal(false);
+  protected readonly confirmingDeleteAll = signal(false);
 
   protected readonly summary = signal<SummaryStatsDto | null>(null);
   protected readonly records = signal<RecordResponseDto[]>([]);
@@ -140,6 +156,18 @@ export class Dashboard implements OnInit {
       this.activitiesPage.set(res.activities);
       this.loading.set(false);
     });
+  }
+
+  /** Refresca todo el dashboard tras una importación, borrado o mantenimiento. */
+  protected refreshAfterChange(): void {
+    this.calendarActivities.set([]);
+    this.calendarPage = 0;
+    this.calendarHasMore.set(true);
+    this.calendarError.set(false);
+    this.loadAll();
+    if (this.activeTab() === 'activities') {
+      this.loadCalendarPage();
+    }
   }
 
   /** Carga la siguiente página de actividades para el calendario (scroll infinito). */
@@ -192,6 +220,26 @@ export class Dashboard implements OnInit {
     this.selectedActivity.set(null);
   }
 
+  protected onActivityDeleted(id: string): void {
+    this.selectedActivity.set(null);
+    this.toast.show(`ACTIVIDAD ELIMINADA: ${id}`);
+    this.refreshAfterChange();
+  }
+
+  /** Refresca el dashboard y el resumen del modal tras un mantenimiento. */
+  protected onActivityChanged(): void {
+    const current = this.selectedActivity();
+    this.refreshAfterChange();
+    if (current) {
+      this.activities.byId(current.id).subscribe({
+        next: (activity) => this.selectedActivity.set(activity),
+        error: () => {
+          /* el detalle conserva los datos actuales si falla la recarga */
+        },
+      });
+    }
+  }
+
   protected applyServerUrl(): void {
     this.api.setBaseUrl(this.serverUrl);
     this.serverUrl = this.api.baseUrl();
@@ -217,6 +265,77 @@ export class Dashboard implements OnInit {
         });
       },
       error: () => this.recalibrating.set(false),
+    });
+  }
+
+  /** GET /api/v1/activities/elevation-coverage */
+  protected loadElevationCoverage(): void {
+    if (this.coverageLoading()) {
+      return;
+    }
+    this.coverageLoading.set(true);
+    this.coverageError.set(false);
+    this.activities.elevationCoverage().subscribe({
+      next: (coverage) => {
+        this.coverageLoading.set(false);
+        this.elevationCoverage.set(coverage);
+      },
+      error: () => {
+        this.coverageLoading.set(false);
+        this.coverageError.set(true);
+      },
+    });
+  }
+
+  /** POST /api/v1/activities/complete-metrics — mantenimiento de todo el historial. */
+  protected completeAllMetrics(): void {
+    if (this.completingMetrics()) {
+      return;
+    }
+    this.completingMetrics.set(true);
+    this.completeMetricsResult.set(null);
+    this.activities.completeAllMetrics().subscribe({
+      next: (result) => {
+        this.completingMetrics.set(false);
+        this.completeMetricsResult.set(result);
+        this.toast.show(
+          `MÉTRICAS COMPLETADAS EN ${result.activitiesProcessed} ACTIVIDADES`,
+        );
+        this.refreshAfterChange();
+      },
+      error: () => this.completingMetrics.set(false),
+    });
+  }
+
+  /** DELETE /api/v1/activities — primer paso: pide confirmación. */
+  protected requestDeleteAll(): void {
+    this.confirmingDeleteAll.set(true);
+  }
+
+  protected cancelDeleteAll(): void {
+    this.confirmingDeleteAll.set(false);
+  }
+
+  /** DELETE /api/v1/activities — vacía historial, trackpoints y récords. */
+  protected deleteAllActivities(): void {
+    if (this.deletingAll()) {
+      return;
+    }
+    this.deletingAll.set(true);
+    this.activities.deleteAll().subscribe({
+      next: () => {
+        this.deletingAll.set(false);
+        this.confirmingDeleteAll.set(false);
+        this.selectedActivity.set(null);
+        this.completeMetricsResult.set(null);
+        this.elevationCoverage.set(null);
+        this.toast.show('HISTORIAL DE ACTIVIDADES VACIADO');
+        this.refreshAfterChange();
+      },
+      error: () => {
+        this.deletingAll.set(false);
+        this.confirmingDeleteAll.set(false);
+      },
     });
   }
 

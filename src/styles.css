@@ -321,6 +321,74 @@
   padding-bottom: 2px;
 }
 
+/* --- Barra de acciones del detalle de actividad --- */
+.detail-action-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-main);
+  padding: 8px 10px;
+}
+
+.detail-action-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  margin-right: 4px;
+}
+
+.detail-action-separator {
+  width: 1px;
+  height: 22px;
+  background: var(--border-color);
+  margin: 0 2px;
+}
+
+.detail-action-spacer {
+  flex: 1 1 auto;
+}
+
+.detail-action-bar .btn-outline-pill:disabled,
+.detail-action-bar .btn-pill-header:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.detail-confirm-text {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 800;
+  color: var(--accent-red);
+  letter-spacing: 0.3px;
+}
+
+.detail-danger {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+.detail-danger:hover {
+  background: var(--accent-red);
+  color: #fff;
+}
+
+.detail-danger-fill {
+  background: var(--accent-red);
+  border-color: var(--accent-red);
+  color: #fff;
+}
+
+.detail-danger-fill:hover {
+  background: #a63b32;
+  border-color: #a63b32;
+}
+
 /* Área desplazable en mosaico bento; la cabecera y las pestañas quedan fijas. */
 .detail-body {
   flex: 1 1 auto;

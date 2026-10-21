@@ -266,6 +266,166 @@ export interface ActivityTrackpoint {
 }
 
 /* ------------------------------------------------------------------ */
+/* Archivos e ingesta                                                  */
+/* ------------------------------------------------------------------ */
+
+export interface FileUploadResponseDto {
+  message: string;
+  activityId: string;
+  backupPath: string;
+  totalPoints: number;
+  sourceFileType: string;
+}
+
+export interface FileErrorDto {
+  fileName: string;
+  errorMessage: string;
+}
+
+export type BulkUploadState = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+
+export interface BulkUploadStatusDto {
+  uploadId: string;
+  filename: string;
+  status: BulkUploadState | string;
+  totalFiles: number;
+  processedFiles: number;
+  pendingFiles: number;
+  successCount: number;
+  errorCount: number;
+  percentMissing: number;
+  progress: number;
+  errors: FileErrorDto[];
+}
+
+/* ------------------------------------------------------------------ */
+/* Mantenimiento de trackpoints                                        */
+/* ------------------------------------------------------------------ */
+
+export interface TrackpointCompletionResultDto {
+  activityId: string;
+  totalTrackpoints: number;
+  latitudeFilled: number;
+  longitudeFilled: number;
+  altitudeFilled: number;
+  heartRateFilled: number;
+  cadenceFilled: number;
+  speedFilled: number;
+  heartRateRemoved: number;
+  cadenceRemoved: number;
+  speedRemoved: number;
+  totalRemoved: number;
+  distanceAdjusted: number;
+  distanceDiscardedMeters: number;
+  externalElevationUsed: boolean;
+  altitudeSource: string;
+  message: string;
+}
+
+export interface TrackpointMetricsCompletionResultDto {
+  activityId: string;
+  totalTrackpoints: number;
+  heartRateFilled: number;
+  cadenceFilled: number;
+  speedFilled: number;
+  heartRateRemoved: number;
+  cadenceRemoved: number;
+  speedRemoved: number;
+  totalFilled: number;
+  totalRemoved: number;
+  distanceAdjusted: number;
+  distanceDiscardedMeters: number;
+  message: string;
+}
+
+export interface TrackpointMetricsBatchCompletionResultDto {
+  activitiesFound: number;
+  activitiesProcessed: number;
+  activitiesUpdated: number;
+  activitiesWithoutTrackpoints: number;
+  activitiesFailed: number;
+  totalTrackpoints: number;
+  heartRateFilled: number;
+  cadenceFilled: number;
+  speedFilled: number;
+  heartRateRemoved: number;
+  cadenceRemoved: number;
+  speedRemoved: number;
+  totalFilled: number;
+  totalRemoved: number;
+  distanceAdjusted: number;
+  distanceDiscardedMeters: number;
+  errors: Record<string, string>;
+  message: string;
+}
+
+export interface ElevationCoverageDto {
+  totalTrackpoints: number;
+  trackpointsWithElevation: number;
+  trackpointsMissingElevation: number;
+  withElevationPercent: number;
+  missingElevationPercent: number;
+}
+
+/* ------------------------------------------------------------------ */
+/* GeoJSON                                                             */
+/* ------------------------------------------------------------------ */
+
+export interface GeoJsonGeometry {
+  type: string;
+  coordinates: number[][];
+}
+
+export interface GeoJsonFeature {
+  type: string;
+  geometry: GeoJsonGeometry;
+  properties: Record<string, unknown>;
+}
+
+export interface GeoJsonDto {
+  type: string;
+  features: GeoJsonFeature[];
+}
+
+/* ------------------------------------------------------------------ */
+/* MCP (Model Context Protocol)                                        */
+/* ------------------------------------------------------------------ */
+
+export interface McpServerInfo {
+  name?: string;
+  version?: string;
+}
+
+export interface McpInitializeResult {
+  protocolVersion?: string;
+  capabilities?: Record<string, unknown>;
+  serverInfo?: McpServerInfo;
+  instructions?: string;
+}
+
+export interface McpTool {
+  name: string;
+  description?: string;
+  inputSchema?: Record<string, unknown>;
+}
+
+export interface McpToolListResult {
+  tools: McpTool[];
+}
+
+export interface McpContentBlock {
+  type: string;
+  text?: string;
+  [key: string]: unknown;
+}
+
+export interface McpToolCallResult {
+  content?: McpContentBlock[];
+  isError?: boolean;
+  [key: string]: unknown;
+}
+
+/* ------------------------------------------------------------------ */
 /* Sesión local                                                        */
 /* ------------------------------------------------------------------ */
 

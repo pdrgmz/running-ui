@@ -25,6 +25,61 @@
       </div>
     </div>
 
+    <!-- ACCIONES DE MANTENIMIENTO Y EXPORTACIÓN -->
+    <div class="detail-action-bar">
+      <span class="detail-action-label">MANTENIMIENTO</span>
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact"
+        [disabled]="completing() !== null"
+        (click)="completeTrackpoints()"
+      >
+        {{ completing() === 'trackpoints' ? 'COMPLETANDO…' : 'COMPLETAR TRACKPOINTS' }}
+      </button>
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact"
+        [disabled]="completing() !== null"
+        (click)="completeMetrics()"
+      >
+        {{ completing() === 'metrics' ? 'COMPLETANDO…' : 'COMPLETAR MÉTRICAS' }}
+      </button>
+      <span class="detail-action-separator"></span>
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact"
+        [disabled]="downloading() !== null"
+        (click)="downloadGpx()"
+      >
+        {{ downloading() === 'gpx' ? 'DESCARGANDO…' : 'GPX' }}
+      </button>
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact"
+        [disabled]="downloading() !== null"
+        (click)="downloadGeoJson()"
+      >
+        {{ downloading() === 'geojson' ? 'DESCARGANDO…' : 'GEOJSON' }}
+      </button>
+      <span class="detail-action-spacer"></span>
+      @if (!confirmingDelete()) {
+        <button type="button" class="btn-outline-pill btn-compact detail-danger" (click)="requestDelete()">
+          ELIMINAR ACTIVIDAD
+        </button>
+      } @else {
+        <span class="detail-confirm-text">¿ELIMINAR DEFINITIVAMENTE?</span>
+        <button
+          type="button"
+          class="btn-pill-header btn-compact detail-danger-fill"
+          [disabled]="deleting()"
+          (click)="deleteActivity()"
+        >
+          {{ deleting() ? 'ELIMINANDO…' : 'CONFIRMAR' }}
+        </button>
+        <button type="button" class="btn-outline-pill btn-compact" (click)="cancelDelete()">CANCELAR</button>
+      }
+    </div>
+
     <nav class="nav-tabs-bar detail-tabs">
       @for (section of sections; track section.id) {
         <button

@@ -15,8 +15,12 @@ calor global con las trazas GPS de **todas** las sesiones (estilo Strava,
 carga por lotes con progreso), analítica detallada por sesión (splits, zonas
 de FC, carga TRIMP/HRSS, VO2Max/VAM, predicción de marcas, desacople aeróbico
 y ruta GPS sobre mapa **Leaflet + OpenStreetMap** con tiles desaturados a
-juego con el sistema de diseño) y **gestión de claves de API**
-(`X-Api-Key`) para automatizaciones como n8n, scripts o cron.
+juego con el sistema de diseño), **gestión de claves de API** (`X-Api-Key`)
+para automatizaciones como n8n, scripts o cron, **importación/exportación de
+archivos** (TCX/GPX/FIT, ZIP masivo con progreso SSE y exportaciones ZIP),
+**mantenimiento de trackpoints** (completado de métricas y cobertura de
+altitud), **exportación GPX/GeoJSON** por actividad y un **panel MCP** para
+inicializar sesiones, listar/ejecutar tools y consumir el stream SSE.
 
 ## Puesta en marcha
 
@@ -141,7 +145,10 @@ src/app/
 │       ├── api-keys.service.ts       # claves de API (X-Api-Key) del usuario
 │       ├── stats.service.ts          # summary, records, pmc, eddington, acwr
 │       ├── milestones.service.ts     # logros automáticos sobre /activities
-│       ├── activities.service.ts     # actividades + analíticas por sesión
+│       ├── activities.service.ts     # actividades + analíticas + mantenimiento
+│       ├── files.service.ts          # importación/exportación de archivos
+│       ├── geo.service.ts            # exportación GPX / GeoJSON
+│       ├── mcp.service.ts            # cliente MCP JSON-RPC + SSE
 │       ├── telemetry.service.ts      # registro de tráfico HTTP para la consola
 │       └── toast.service.ts          # notificaciones
 ├── features/
@@ -160,6 +167,8 @@ src/app/
 │           ├── activity-calendar/    # historial en calendario con scroll infinito
 │           ├── activity-detail/      # modal bento con splits, zonas, carga, mapa GPS
 │           ├── activity-heatmap/     # mapa de calor con todas las trazas GPS
+│           ├── files-panel/          # subida individual/ZIP y exportaciones
+│           ├── mcp-panel/            # sesión MCP, tools y stream SSE
 │           └── api-keys-panel/       # generar/revocar claves de API (X-Api-Key)
 └── shared/
     ├── pipes/format.pipes.ts         # duration, km, pace, kmh
@@ -181,6 +190,11 @@ src/app/
 | Actividades | `GET /api/v1/activities?page&size&sort` · `GET /activities/{id}` |
 | GPS | `GET /api/v1/activities/{id}/trackpoints?resolution` |
 | Analítica de sesión | `GET /api/v1/analytics/{id}/(splits\|hr-zones\|training-load\|vo2max-vam\|cardiac-drift)` |
+| Archivos | `POST /api/v1/files/upload` · `/upload-bulk` · `GET /files/upload-status/{id}` · `/stream` · `GET /files/export-bulk` · `/export-backup-zip` |
+| Mantenimiento | `POST /api/v1/activities/{id}/complete-trackpoints` · `/complete-metrics` · `POST /activities/complete-metrics` · `GET /activities/elevation-coverage` |
+| Borrado | `DELETE /api/v1/activities` · `DELETE /activities/{id}` |
+| Geoespacial | `GET /api/v1/geo/{id}/gpx` · `/geojson` |
+| MCP | `POST /mcp` (JSON-RPC) · `GET /mcp` (SSE) |
 
 ## Design system
 

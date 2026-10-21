@@ -4,5 +4,11 @@
     "secure": true,
     "changeOrigin": true,
     "logLevel": "warn"
+  },
+  "/mcp": {
+    "target": "https://running-api.pdrgmz.uk",
+    "secure": true,
+    "changeOrigin": true,
+    "logLevel": "warn"
   }
 }
