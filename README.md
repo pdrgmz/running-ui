@@ -99,11 +99,11 @@ docker compose down
 5. **Deploy the stack**. En Docker Standalone, Portainer construye la imagen
    con el `Dockerfile` y arranca el contenedor.
 
-> Si al desplegar aparece `pull access denied for running-ui, repository does
-> not exist or may require 'docker login'`, es porque Portainer intenta
-> descargar la imagen antes de construirla. El stack ya incluye
-> `pull_policy: build` para evitarlo; si tu versión de Portainer lo ignora,
-> desactiva la opción **Re-pull image** al desplegar.
+> El compose **no declara `image:`** a propósito: así el `docker compose pull`
+> previo de Portainer no intenta descargarla de un registry y pasa a construir
+> con el `Dockerfile`. Si aún aparece `pull access denied for running-ui,
+> repository does not exist or may require 'docker login'`, desactiva la opción
+> **Re-pull image** al desplegar.
 
 > En un entorno **Swarm**, `docker stack deploy` no construye imágenes: usa la
 > opción B con una imagen ya publicada.
@@ -134,8 +134,9 @@ su nombre como upstream (por ejemplo `http://running-api:8080`).
 
 Para actualizar, vuelve a desplegar el stack o ejecuta
 `docker compose up -d --build` en local. Si Portainer reutiliza la imagen en
-caché tras un redespliegue, elimina la imagen `running-ui:latest` del entorno y
-vuelve a desplegar (o publica la imagen con CI y usa la opción B).
+caché tras un redespliegue, fuerza la reconstrucción (en Portainer, elimina la
+imagen del stack; suele llamarse `<nombre-del-stack>-running-ui`) y vuelve a
+desplegar, o publica la imagen con CI y usa la opción B.
 
 ## Arquitectura
 

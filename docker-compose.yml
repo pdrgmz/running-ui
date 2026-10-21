@@ -3,10 +3,11 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: running-ui:latest
-    # La imagen se construye en local desde el Dockerfile. Sin esto, Compose
-    # (y el "pull" que hace Portainer al desplegar) intenta descargarla de un
-    # registry y falla con "pull access denied for running-ui".
+    # Sin "image:" a propósito: la imagen se construye en local desde el
+    # Dockerfile. Si se declara un nombre (p. ej. running-ui:latest), Compose y
+    # el "pull" previo que hace Portainer al desplegar intentan descargarlo de
+    # un registry y fallan con "pull access denied for running-ui".
+    # El nombre resultante es <stack>-running-ui (p. ej. running-ui-running-ui).
     pull_policy: build
     restart: unless-stopped
     ports:
