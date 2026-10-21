@@ -64,3 +64,68 @@ article.card-panel .kv-list {
   opacity: 0.55;
   cursor: not-allowed;
 }
+
+/* --- Progreso del vaciado asíncrono --- */
+.delete-progress-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.delete-state-badge {
+  display: inline-flex;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  padding: 3px 10px;
+  width: fit-content;
+}
+
+.delete-state-badge--failed {
+  border-color: var(--accent-red);
+  color: var(--accent-red);
+}
+
+.delete-progress-value {
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.delete-progress-track {
+  height: 16px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.delete-progress-bar {
+  height: 100%;
+  background: var(--accent-red);
+  border-right: 1.5px solid var(--border-color);
+  transition: width var(--transition-smooth);
+}
+
+.delete-progress-bar--failed {
+  background: var(--accent-red);
+}
+
+.delete-alert {
+  border: 1.5px solid var(--accent-red);
+  border-left: 6px solid var(--accent-red);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  color: var(--accent-red);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 10px 12px;
+  overflow-wrap: anywhere;
+}

@@ -88,14 +88,12 @@ const ZONE_DEFS: { key: keyof HrZonesResponseDto['zones']; label: string; cls: s
 export class ActivityDetail implements OnInit {
   readonly activity = input.required<Activity>();
   readonly close = output<void>();
-  readonly changed = output<void>();
   readonly deleted = output<string>();
 
   private readonly activities = inject(ActivitiesService);
   private readonly geo = inject(GeoService);
   private readonly toast = inject(ToastService);
 
-  protected readonly completing = signal<'trackpoints' | 'metrics' | null>(null);
   protected readonly downloading = signal<'gpx' | 'geojson' | null>(null);
   protected readonly deleting = signal(false);
   protected readonly confirmingDelete = signal(false);
@@ -261,40 +259,6 @@ export class ActivityDetail implements OnInit {
       this.vo2.set(res.vo2);
       this.drift.set(res.drift);
       this.trackpoints.set(res.track);
-    });
-  }
-
-  /** POST /api/v1/activities/{id}/complete-trackpoints */
-  protected completeTrackpoints(): void {
-    if (this.completing()) {
-      return;
-    }
-    this.completing.set('trackpoints');
-    this.activities.completeTrackpoints(this.activity().id).subscribe({
-      next: (result) => {
-        this.completing.set(null);
-        this.toast.show(result.message || 'TRACKPOINTS COMPLETADOS');
-        this.changed.emit();
-        this.loadDetail();
-      },
-      error: () => this.completing.set(null),
-    });
-  }
-
-  /** POST /api/v1/activities/{id}/complete-metrics */
-  protected completeMetrics(): void {
-    if (this.completing()) {
-      return;
-    }
-    this.completing.set('metrics');
-    this.activities.completeMetrics(this.activity().id).subscribe({
-      next: (result) => {
-        this.completing.set(null);
-        this.toast.show(result.message || 'MÉTRICAS COMPLETADAS');
-        this.changed.emit();
-        this.loadDetail();
-      },
-      error: () => this.completing.set(null),
     });
   }
 

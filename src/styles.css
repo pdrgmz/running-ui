@@ -333,23 +333,6 @@
   padding: 8px 10px;
 }
 
-.detail-action-label {
-  font-family: var(--font-mono);
-  font-size: 0.6rem;
-  font-weight: 800;
-  letter-spacing: 0.5px;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  margin-right: 4px;
-}
-
-.detail-action-separator {
-  width: 1px;
-  height: 22px;
-  background: var(--border-color);
-  margin: 0 2px;
-}
-
 .detail-action-spacer {
   flex: 1 1 auto;
 }

@@ -25,26 +25,8 @@
       </div>
     </div>
 
-    <!-- ACCIONES DE MANTENIMIENTO Y EXPORTACIÓN -->
+    <!-- ACCIONES DE EXPORTACIÓN Y BORRADO -->
     <div class="detail-action-bar">
-      <span class="detail-action-label">MANTENIMIENTO</span>
-      <button
-        type="button"
-        class="btn-outline-pill btn-compact"
-        [disabled]="completing() !== null"
-        (click)="completeTrackpoints()"
-      >
-        {{ completing() === 'trackpoints' ? 'COMPLETANDO…' : 'COMPLETAR TRACKPOINTS' }}
-      </button>
-      <button
-        type="button"
-        class="btn-outline-pill btn-compact"
-        [disabled]="completing() !== null"
-        (click)="completeMetrics()"
-      >
-        {{ completing() === 'metrics' ? 'COMPLETANDO…' : 'COMPLETAR MÉTRICAS' }}
-      </button>
-      <span class="detail-action-separator"></span>
       <button
         type="button"
         class="btn-outline-pill btn-compact"

@@ -1,18 +1,26 @@
 import { DatePipe, DecimalPipe } from '@angular/common';
-import { ChangeDetectionStrategy, Component, OnInit, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  DestroyRef,
+  OnInit,
+  computed,
+  inject,
+  signal,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { catchError, forkJoin, of } from 'rxjs';
+import { Subscription, catchError, forkJoin, of, switchMap, takeWhile, timer } from 'rxjs';
 import {
   AcwrStatusDto,
   Activity,
+  ActivityDeletionStatusDto,
   EddingtonStatsDto,
   ElevationCoverageDto,
   PageActivity,
   PmcPointDto,
   RecordResponseDto,
   SummaryStatsDto,
-  TrackpointMetricsBatchCompletionResultDto,
 } from '../../core/models/api.models';
 import { ActivitiesService } from '../../core/services/activities.service';
 import { ApiConfigService } from '../../core/services/api-config.service';
@@ -87,6 +95,7 @@ export class Dashboard implements OnInit {
   private readonly milestones = inject(MilestonesService);
   private readonly toast = inject(ToastService);
   private readonly router = inject(Router);
+  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly tabs: TabDef[] = [
     { id: 'overview', label: 'Resumen' },
@@ -101,13 +110,13 @@ export class Dashboard implements OnInit {
   protected readonly activeTab = signal<Tab>('overview');
   protected readonly loading = signal(true);
   protected readonly recalibrating = signal(false);
-  protected readonly completingMetrics = signal(false);
-  protected readonly completeMetricsResult = signal<TrackpointMetricsBatchCompletionResultDto | null>(null);
   protected readonly elevationCoverage = signal<ElevationCoverageDto | null>(null);
   protected readonly coverageLoading = signal(false);
   protected readonly coverageError = signal(false);
   protected readonly deletingAll = signal(false);
   protected readonly confirmingDeleteAll = signal(false);
+  protected readonly deletionStatus = signal<ActivityDeletionStatusDto | null>(null);
+  protected readonly deletionError = signal<string | null>(null);
 
   protected readonly summary = signal<SummaryStatsDto | null>(null);
   protected readonly records = signal<RecordResponseDto[]>([]);
@@ -129,7 +138,34 @@ export class Dashboard implements OnInit {
     return page ? page.content.slice(0, 5) : [];
   });
 
+  protected readonly deletionProgress = computed(() => {
+    const value = this.deletionStatus()?.progressPercent ?? 0;
+    return Math.max(0, Math.min(100, value));
+  });
+
+  protected readonly deletionStateLabel = computed(() => {
+    const status = this.deletionStatus()?.status ?? 'PENDING';
+    const labels: Record<string, string> = {
+      PENDING: 'EN COLA',
+      PROCESSING: 'ELIMINANDO',
+      COMPLETED: 'COMPLETADO',
+      FAILED: 'FALLIDO',
+    };
+    return labels[status] ?? status;
+  });
+
+  protected readonly deletionCanRetry = computed(() => {
+    const status = this.deletionStatus();
+    return Boolean(this.deletionError() && status && !isDeletionTerminal(status.status));
+  });
+
   protected serverUrl = this.api.baseUrl();
+
+  private deletionSub: Subscription | null = null;
+
+  constructor() {
+    this.destroyRef.onDestroy(() => this.stopDeletionPolling());
+  }
 
   ngOnInit(): void {
     this.loadAll();
@@ -226,20 +262,6 @@ export class Dashboard implements OnInit {
     this.refreshAfterChange();
   }
 
-  /** Refresca el dashboard y el resumen del modal tras un mantenimiento. */
-  protected onActivityChanged(): void {
-    const current = this.selectedActivity();
-    this.refreshAfterChange();
-    if (current) {
-      this.activities.byId(current.id).subscribe({
-        next: (activity) => this.selectedActivity.set(activity),
-        error: () => {
-          /* el detalle conserva los datos actuales si falla la recarga */
-        },
-      });
-    }
-  }
-
   protected applyServerUrl(): void {
     this.api.setBaseUrl(this.serverUrl);
     this.serverUrl = this.api.baseUrl();
@@ -287,28 +309,9 @@ export class Dashboard implements OnInit {
     });
   }
 
-  /** POST /api/v1/activities/complete-metrics — mantenimiento de todo el historial. */
-  protected completeAllMetrics(): void {
-    if (this.completingMetrics()) {
-      return;
-    }
-    this.completingMetrics.set(true);
-    this.completeMetricsResult.set(null);
-    this.activities.completeAllMetrics().subscribe({
-      next: (result) => {
-        this.completingMetrics.set(false);
-        this.completeMetricsResult.set(result);
-        this.toast.show(
-          `MÉTRICAS COMPLETADAS EN ${result.activitiesProcessed} ACTIVIDADES`,
-        );
-        this.refreshAfterChange();
-      },
-      error: () => this.completingMetrics.set(false),
-    });
-  }
-
   /** DELETE /api/v1/activities — primer paso: pide confirmación. */
   protected requestDeleteAll(): void {
+    this.deletionError.set(null);
     this.confirmingDeleteAll.set(true);
   }
 
@@ -316,27 +319,83 @@ export class Dashboard implements OnInit {
     this.confirmingDeleteAll.set(false);
   }
 
-  /** DELETE /api/v1/activities — vacía historial, trackpoints y récords. */
+  /**
+   * DELETE /api/v1/activities — inicia el vaciado asíncrono (202 Accepted) y
+   * sigue su progreso con GET /api/v1/activities/delete-status/{deleteId}.
+   */
   protected deleteAllActivities(): void {
     if (this.deletingAll()) {
       return;
     }
     this.deletingAll.set(true);
+    this.confirmingDeleteAll.set(false);
+    this.deletionStatus.set(null);
+    this.deletionError.set(null);
     this.activities.deleteAll().subscribe({
-      next: () => {
-        this.deletingAll.set(false);
-        this.confirmingDeleteAll.set(false);
-        this.selectedActivity.set(null);
-        this.completeMetricsResult.set(null);
-        this.elevationCoverage.set(null);
-        this.toast.show('HISTORIAL DE ACTIVIDADES VACIADO');
-        this.refreshAfterChange();
+      next: (status) => {
+        this.applyDeletionStatus(status);
+        if (!isDeletionTerminal(status.status)) {
+          this.pollDeletionStatus(status.deleteId);
+        }
       },
       error: () => {
         this.deletingAll.set(false);
-        this.confirmingDeleteAll.set(false);
+        this.deletionError.set('NO SE PUDO INICIAR EL VACIADO DE ACTIVIDADES');
       },
     });
+  }
+
+  /** Reanuda la consulta del estado si el polling falló temporalmente. */
+  protected retryDeletionStatus(): void {
+    const status = this.deletionStatus();
+    if (!status || this.deletingAll()) {
+      return;
+    }
+    this.deletingAll.set(true);
+    this.deletionError.set(null);
+    this.pollDeletionStatus(status.deleteId);
+  }
+
+  private pollDeletionStatus(deleteId: string): void {
+    this.stopDeletionPolling();
+    this.deletionSub = timer(0, 1200)
+      .pipe(
+        switchMap(() => this.activities.deletionStatus(deleteId)),
+        takeWhile((status) => !isDeletionTerminal(status.status), true),
+      )
+      .subscribe({
+        next: (status) => this.applyDeletionStatus(status),
+        error: () => {
+          this.stopDeletionPolling();
+          this.deletingAll.set(false);
+          this.deletionError.set('NO SE PUDO CONSULTAR EL ESTADO DEL VACIADO');
+        },
+      });
+  }
+
+  private applyDeletionStatus(status: ActivityDeletionStatusDto): void {
+    this.deletionStatus.set(status);
+    if (!isDeletionTerminal(status.status)) {
+      return;
+    }
+    this.stopDeletionPolling();
+    this.deletingAll.set(false);
+    if (status.status === 'COMPLETED') {
+      this.selectedActivity.set(null);
+      this.elevationCoverage.set(null);
+      this.toast.show(
+        `HISTORIAL VACIADO: ${status.deletedActivities} ACTIVIDADES ELIMINADAS`,
+      );
+      this.refreshAfterChange();
+      return;
+    }
+    this.deletionError.set(status.error ?? 'EL VACIADO DE ACTIVIDADES HA FALLADO');
+    this.toast.error('EL VACIADO DE ACTIVIDADES HA FALLADO');
+  }
+
+  private stopDeletionPolling(): void {
+    this.deletionSub?.unsubscribe();
+    this.deletionSub = null;
   }
 
   protected refreshToken(): void {
@@ -368,4 +427,8 @@ export class Dashboard implements OnInit {
     }
     return token.length <= 34 ? token : `${token.slice(0, 22)}…${token.slice(-8)}`;
   }
+}
+
+function isDeletionTerminal(status: string | undefined): boolean {
+  return status === 'COMPLETED' || status === 'FAILED';
 }

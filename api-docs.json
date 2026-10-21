@@ -2,7 +2,7 @@
   "openapi": "3.0.1",
   "info": {
     "title": "Running Tracker & Analytics API",
-    "description": "API REST para la ingesta de actividades de carrera (TCX, GPX y FIT), analítica\nfisiológica avanzada, cálculo de récords personales (PB), exportación\ngeoespacial (GeoJSON/GPX) y respaldo de archivos.\n\n**Autenticación:** la mayoría de los endpoints requieren un JWT. Obtén un token\ncon `/api/v1/auth/register` o `/api/v1/auth/login` y pulsa **Authorize** para\nintroducirlo. Cada usuario solo puede acceder a sus propios datos.",
+    "description": "API REST para la ingesta de actividades de carrera (TCX, GPX y FIT), analítica\nfisiológica avanzada, cálculo de récords personales (PB), exportación\ngeoespacial (GeoJSON/GPX) y respaldo de archivos.\n\n**Autenticación:** la mayoría de los endpoints requieren un JWT. Obtén un token\ncon `/api/v1/auth/register` o `/api/v1/auth/login` y pulsa **Authorize** para\nintroducirlo. Para automatizaciones puedes crear una clave de API en\n`POST /api/v1/auth/api-keys` y enviarla en la cabecera `X-Api-Key`.\nCada usuario solo puede acceder a sus propios datos.",
     "contact": {
       "name": "Running API Support",
       "email": "support@running.local"
@@ -62,6 +62,10 @@
     {
       "name": "MCP (Model Context Protocol)",
       "description": "Servidor MCP sobre JSON-RPC 2.0 para integrar las métricas de carrera con LLMs. Requiere el mismo JWT que la API REST y opera solo sobre los datos del usuario autenticado."
+    },
+    {
+      "name": "Control global de Actividades",
+      "description": "Operaciones globales sobre las carreras del usuario autenticado"
     }
   ],
   "paths": {
@@ -1258,19 +1262,16 @@
         "tags": [
           "Actividades"
         ],
-        "summary": "Vaciar las actividades del usuario autenticado",
-        "description": "Elimina todas las carreras, trackpoints y récords personales del usuario y reinicia sus estadísticas.",
+        "summary": "Vaciar las actividades del usuario autenticado (asíncrono)",
+        "description": "Elimina en segundo plano todas las carreras, trackpoints, ficheros de respaldo y récords personales del usuario, y reinicia sus estadísticas. Responde 202 Accepted con un identificador de vaciado cuyo progreso se consulta en GET /api/v1/activities/delete-status/{deleteId}.",
         "operationId": "deleteAllActivities",
         "responses": {
-          "200": {
-            "description": "Actividades y estadísticas vaciadas",
+          "202": {
+            "description": "Vaciado aceptado y en proceso",
             "content": {
               "*/*": {
                 "schema": {
-                  "type": "object",
-                  "additionalProperties": {
-                    "type": "object"
-                  }
+                  "$ref": "#/components/schemas/ActivityDeletionStatusDto"
                 }
               }
             }
@@ -1486,7 +1487,7 @@
           "Actividades"
         ],
         "summary": "Completar frecuencia cardíaca, cadencia y velocidad",
-        "description": "Descarta los valores fuera de rango fisiológico (FC 30-240 bpm, cadencia 30-240 spm y velocidad 0-15 m/s) y rellena los huecos interpolando linealmente entre los puntos válidos vecinos. También ajusta la distancia acumulada descartando retrocesos y saltos que implicarían más de 15 m/s. No modifica coordenadas ni altitud y no consulta proveedores externos.",
+        "description": "Solo rellena los valores nulos y los claramente atípicos: los que se alejan mucho de la mediana de sus vecinos o son imposibles (FC o cadencia <= 0, velocidad < 0 o > 15 m/s). El resto de valores se conserva sin cambios. La interpolación es lineal entre los puntos válidos vecinos. También ajusta la distancia acumulada descartando retrocesos y saltos que implicarían más de 15 m/s. No modifica coordenadas ni altitud y no consulta proveedores externos.",
         "operationId": "completeMetrics",
         "parameters": [
           {
@@ -1527,10 +1528,10 @@
     "/api/v1/activities/complete-metrics": {
       "post": {
         "tags": [
-          "Actividades"
+          "Control global de Actividades"
         ],
         "summary": "Completar FC, cadencia, velocidad y distancia en todas las carreras",
-        "description": "Recorre todas las actividades del usuario autenticado y aplica el mismo completado que el endpoint individual: descarta valores fuera de rango fisiológico, interpola FC, cadencia y velocidad, y ajusta la distancia acumulada. No modifica coordenadas ni altitud y no consulta proveedores externos. Cada actividad se procesa en su propia transacción; si una falla, las demás continúan. Al final se recalculan estadísticas y récords.",
+        "description": "Recorre todas las actividades del usuario autenticado y aplica el mismo completado que el endpoint individual: solo rellena los valores nulos y los claramente atípicos (muy alejados de la mediana de sus vecinos o imposibles), interpola FC, cadencia y velocidad, y ajusta la distancia acumulada. No modifica coordenadas ni altitud y no consulta proveedores externos. Cada actividad se procesa en su propia transacción; si una falla, las demás continúan. Al final se recalculan estadísticas y récords.",
         "operationId": "completeAllMetrics",
         "responses": {
           "200": {
@@ -1559,10 +1560,10 @@
     "/api/v1/activities/elevation-coverage": {
       "get": {
         "tags": [
-          "Actividades"
+          "Control global de Actividades"
         ],
         "summary": "Obtener la cobertura de altitudes de los trackpoints",
-        "description": "Devuelve cuántos trackpoints tienen altitud y cuántos la tienen pendiente, con sus porcentajes. Una altitud nula o 0 se considera pendiente, igual que en el cron de completado.",
+        "description": "Devuelve cuántos trackpoints tienen altitud y cuántos la tienen pendiente, con sus porcentajes. Una altitud nula o 0 se considera pendiente, igual que en el cron de completado. También se consideran pendientes los trackpoints que comparten una altitud constante sospechosa (el mismo valor exacto en al menos el 90% de los puntos del dispositivo), que se informan aparte.",
         "operationId": "getElevationCoverage",
         "responses": {
           "200": {
@@ -1577,6 +1578,50 @@
           },
           "401": {
             "description": "No autenticado o token inválido",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponseDto"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/activities/delete-status/{deleteId}": {
+      "get": {
+        "tags": [
+          "Actividades"
+        ],
+        "summary": "Consultar el estado de un vaciado de actividades",
+        "description": "Estados: PENDING (en cola), PROCESSING (eliminando), COMPLETED (terminado) y FAILED (error). Solo se conserva el último vaciado de cada usuario.",
+        "operationId": "getDeletionStatus",
+        "parameters": [
+          {
+            "name": "deleteId",
+            "in": "path",
+            "description": "ID del vaciado devuelto por DELETE /api/v1/activities",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Estado del vaciado",
+            "content": {
+              "*/*": {
+                "schema": {
+                  "$ref": "#/components/schemas/ActivityDeletionStatusDto"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "El vaciado no existe o fue reemplazado por uno más reciente",
             "content": {
               "*/*": {
                 "schema": {
@@ -2875,19 +2920,19 @@
           },
           "heartRateRemoved": {
             "type": "integer",
-            "description": "Valores de frecuencia cardíaca fuera de rango descartados",
+            "description": "Valores de frecuencia cardíaca descartados por ser inválidos o muy atípicos respecto a sus vecinos",
             "format": "int32",
             "example": 2
           },
           "cadenceRemoved": {
             "type": "integer",
-            "description": "Valores de cadencia fuera de rango descartados",
+            "description": "Valores de cadencia descartados por ser inválidos o muy atípicos respecto a sus vecinos",
             "format": "int32",
             "example": 1
           },
           "speedRemoved": {
             "type": "integer",
-            "description": "Valores de velocidad fuera de rango descartados",
+            "description": "Valores de velocidad descartados por ser inválidos o muy atípicos respecto a sus vecinos",
             "format": "int32",
             "example": 3
           },
@@ -2899,7 +2944,7 @@
           },
           "totalRemoved": {
             "type": "integer",
-            "description": "Total de valores fuera de rango descartados",
+            "description": "Total de valores descartados por ser inválidos o muy atípicos",
             "format": "int32",
             "example": 6
           },
@@ -2981,19 +3026,19 @@
           },
           "heartRateRemoved": {
             "type": "integer",
-            "description": "Valores de frecuencia cardíaca fuera de rango descartados",
+            "description": "Valores de frecuencia cardíaca descartados por ser inválidos o muy atípicos respecto a sus vecinos",
             "format": "int32",
             "example": 20
           },
           "cadenceRemoved": {
             "type": "integer",
-            "description": "Valores de cadencia fuera de rango descartados",
+            "description": "Valores de cadencia descartados por ser inválidos o muy atípicos respecto a sus vecinos",
             "format": "int32",
             "example": 10
           },
           "speedRemoved": {
             "type": "integer",
-            "description": "Valores de velocidad fuera de rango descartados",
+            "description": "Valores de velocidad descartados por ser inválidos o muy atípicos respecto a sus vecinos",
             "format": "int32",
             "example": 30
           },
@@ -3005,7 +3050,7 @@
           },
           "totalRemoved": {
             "type": "integer",
-            "description": "Total de valores fuera de rango descartados",
+            "description": "Total de valores descartados por ser inválidos o muy atípicos",
             "format": "int32",
             "example": 60
           },
@@ -3047,13 +3092,13 @@
           },
           "trackpointsWithElevation": {
             "type": "integer",
-            "description": "Trackpoints con altitud válida o calculada",
+            "description": "Trackpoints con altitud válida o calculada (excluye los de altitud constante sospechosa)",
             "format": "int64",
             "example": 190480
           },
           "trackpointsMissingElevation": {
             "type": "integer",
-            "description": "Trackpoints con altitud nula o 0 sin calcular",
+            "description": "Trackpoints con altitud nula, 0 sin calcular o constante sospechosa",
             "format": "int64",
             "example": 12421
           },
@@ -3068,9 +3113,65 @@
             "description": "Porcentaje de trackpoints sin altitud válida ni calculada",
             "format": "double",
             "example": 6.12
+          },
+          "trackpointsWithFlatElevation": {
+            "type": "integer",
+            "description": "Trackpoints descartados por compartir una altitud constante sospechosa (mismo valor en al menos el 90% de los puntos del dispositivo); están incluidos en los pendientes",
+            "format": "int64",
+            "example": 3200
+          },
+          "flatElevationPercent": {
+            "type": "number",
+            "description": "Porcentaje de trackpoints con altitud constante sospechosa",
+            "format": "double",
+            "example": 1.58
           }
         },
         "description": "Cobertura de altitudes de los trackpoints del usuario"
+      },
+      "ActivityDeletionStatusDto": {
+        "type": "object",
+        "properties": {
+          "deleteId": {
+            "type": "string",
+            "description": "Identificador único del vaciado",
+            "example": "a1b2c3d4-e5f6-7890-abcd-ef1234567890"
+          },
+          "status": {
+            "type": "string",
+            "description": "Estado del vaciado: PENDING, PROCESSING, COMPLETED o FAILED",
+            "example": "PROCESSING"
+          },
+          "totalActivities": {
+            "type": "integer",
+            "description": "Cantidad total de actividades a eliminar",
+            "format": "int64",
+            "example": 50
+          },
+          "deletedActivities": {
+            "type": "integer",
+            "description": "Cantidad de actividades eliminadas hasta el momento",
+            "format": "int64",
+            "example": 32
+          },
+          "progressPercent": {
+            "type": "number",
+            "description": "Porcentaje de progreso del vaciado",
+            "format": "double",
+            "example": 64
+          },
+          "message": {
+            "type": "string",
+            "description": "Mensaje informativo del estado",
+            "example": "Vaciado en proceso"
+          },
+          "error": {
+            "type": "string",
+            "description": "Detalle del error cuando el estado es FAILED",
+            "example": "No se pudo completar el vaciado"
+          }
+        },
+        "description": "Estado del vaciado asíncrono de las actividades del usuario"
       }
     },
     "securitySchemes": {

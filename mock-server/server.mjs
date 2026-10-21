@@ -9,6 +9,7 @@
  * En la pantalla de acceso de la app introduce http://localhost:4300 como
  * "URL base de la API" y entra con cualquier email/contraseña.
  */
+import { randomUUID } from 'node:crypto';
 import { createServer } from 'node:http';
 
 const PORT = Number(process.env['PORT'] ?? 4300);
@@ -157,12 +158,15 @@ function route(req, path, url, body, res) {
   if (method === 'GET' && path === '/api/v1/activities/elevation-coverage') {
     const total = Math.max(1, activities().length * 3200);
     const withElevation = Math.round(total * 0.9388);
+    const flatElevation = Math.round(total * 0.0158);
     return send(res, 200, {
       totalTrackpoints: total,
       trackpointsWithElevation: withElevation,
       trackpointsMissingElevation: total - withElevation,
+      trackpointsWithFlatElevation: flatElevation,
       withElevationPercent: 93.88,
       missingElevationPercent: 6.12,
+      flatElevationPercent: 1.58,
     });
   }
 
@@ -176,78 +180,22 @@ function route(req, path, url, body, res) {
     return send(res, 200, activity);
   }
 
-  // --- Mantenimiento y borrado de actividades ---
-  if (method === 'POST' && path === '/api/v1/activities/complete-metrics') {
-    const total = activities().length;
-    return send(res, 200, {
-      activitiesFound: total,
-      activitiesProcessed: total,
-      activitiesUpdated: Math.max(0, total - 2),
-      activitiesWithoutTrackpoints: 2,
-      activitiesFailed: 0,
-      totalTrackpoints: total * 3200,
-      heartRateFilled: 1500,
-      cadenceFilled: 800,
-      speedFilled: 400,
-      heartRateRemoved: 20,
-      cadenceRemoved: 10,
-      speedRemoved: 30,
-      totalFilled: 2700,
-      totalRemoved: 60,
-      distanceAdjusted: 350,
-      distanceDiscardedMeters: 12500,
-      errors: {},
-      message: 'Métricas completadas en todas las actividades',
-    });
-  }
-
-  match = path.match(/^\/api\/v1\/activities\/([^/]+)\/complete-(trackpoints|metrics)$/);
-  if (method === 'POST' && match) {
-    const id = decodeURIComponent(match[1]);
-    const kind = match[2];
-    if (kind === 'trackpoints') {
-      return send(res, 200, {
-        activityId: id,
-        totalTrackpoints: 3200,
-        latitudeFilled: 3,
-        longitudeFilled: 3,
-        altitudeFilled: 120,
-        heartRateFilled: 15,
-        cadenceFilled: 8,
-        speedFilled: 4,
-        heartRateRemoved: 2,
-        cadenceRemoved: 1,
-        speedRemoved: 3,
-        totalRemoved: 6,
-        distanceAdjusted: 3,
-        distanceDiscardedMeters: 4900,
-        externalElevationUsed: true,
-        altitudeSource: 'open-meteo',
-        message: 'Trackpoints completados',
-      });
-    }
-    return send(res, 200, {
-      activityId: id,
-      totalTrackpoints: 3200,
-      heartRateFilled: 15,
-      cadenceFilled: 8,
-      speedFilled: 4,
-      heartRateRemoved: 2,
-      cadenceRemoved: 1,
-      speedRemoved: 3,
-      totalFilled: 27,
-      totalRemoved: 6,
-      distanceAdjusted: 3,
-      distanceDiscardedMeters: 4900,
-      message: 'Métricas completadas',
-    });
-  }
-
+  // --- Borrado de actividades ---
   if (method === 'DELETE' && path === '/api/v1/activities') {
-    allActivitiesDeleted = true;
-    deletedActivityIds.clear();
-    uploadedActivities.length = 0;
-    return send(res, 200, { message: 'Actividades y estadísticas vaciadas' });
+    return send(res, 202, startActivityDeletion());
+  }
+
+  match = path.match(/^\/api\/v1\/activities\/delete-status\/([^/]+)$/);
+  if (method === 'GET' && match) {
+    const status = activityDeletionStatus(decodeURIComponent(match[1]));
+    if (!status) {
+      return send(
+        res,
+        404,
+        error(404, 'Not Found', 'El vaciado no existe o fue reemplazado por uno más reciente'),
+      );
+    }
+    return send(res, 200, status);
   }
 
   match = path.match(/^\/api\/v1\/activities\/([^/]+)$/);
@@ -510,6 +458,10 @@ let uploadSeq = 0;
 const uploads = new Map();
 const mcpSessionId = 'mock-mcp-session-0001';
 
+/* Vaciado asíncrono: solo se conserva el último trabajo de cada usuario. */
+const DELETION_DURATION_MS = 2500;
+let deletionJob = null;
+
 /* Claves de API en memoria (el valor `key` solo se devuelve al crearlas). */
 let apiKeySeq = 4;
 const apiKeys = [
@@ -553,6 +505,63 @@ function generateApiKey() {
     secret += alphabet[Math.floor(Math.random() * alphabet.length)];
   }
   return `rk_${secret}`;
+}
+
+function startActivityDeletion() {
+  const total = activities().length;
+  deletionJob = {
+    deleteId: randomUUID(),
+    status: total === 0 ? 'COMPLETED' : 'PROCESSING',
+    totalActivities: total,
+    deletedActivities: 0,
+    progressPercent: total === 0 ? 100 : 0,
+    message: total === 0 ? 'No hay actividades que eliminar' : 'Vaciado en proceso',
+    error: null,
+    startedAt: Date.now(),
+    finalized: total === 0,
+  };
+  return publicActivityDeletion();
+}
+
+function activityDeletionStatus(deleteId) {
+  if (!deletionJob || deletionJob.deleteId !== deleteId) {
+    return null;
+  }
+  return publicActivityDeletion();
+}
+
+function publicActivityDeletion() {
+  if (!deletionJob) {
+    return null;
+  }
+  const job = deletionJob;
+  if (!job.finalized) {
+    const ratio = Math.min(1, (Date.now() - job.startedAt) / DELETION_DURATION_MS);
+    job.deletedActivities = Math.min(
+      job.totalActivities,
+      Math.round(job.totalActivities * ratio),
+    );
+    job.progressPercent = Math.round(ratio * 1000) / 10;
+    if (ratio >= 1) {
+      job.deletedActivities = job.totalActivities;
+      job.progressPercent = 100;
+      job.status = 'COMPLETED';
+      job.message = 'Vaciado completado';
+      job.finalized = true;
+      allActivitiesDeleted = true;
+      deletedActivityIds.clear();
+      uploadedActivities.length = 0;
+    }
+  }
+  return {
+    deleteId: job.deleteId,
+    status: job.status,
+    totalActivities: job.totalActivities,
+    deletedActivities: job.deletedActivities,
+    progressPercent: job.progressPercent,
+    message: job.message,
+    error: job.error,
+  };
 }
 
 function authPayload(email) {

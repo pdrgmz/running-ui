@@ -270,16 +270,16 @@
               <span class="kv-val">POST /api/v1/stats/recalculate</span>
             </div>
             <div class="kv-row">
-              <span class="kv-key">Completar métricas</span>
-              <span class="kv-val">POST /api/v1/activities/complete-metrics</span>
-            </div>
-            <div class="kv-row">
               <span class="kv-key">Cobertura de altitudes</span>
               <span class="kv-val">GET /api/v1/activities/elevation-coverage</span>
             </div>
             <div class="kv-row">
               <span class="kv-key">Vaciar historial</span>
               <span class="kv-val">DELETE /api/v1/activities</span>
+            </div>
+            <div class="kv-row">
+              <span class="kv-key">Estado del vaciado</span>
+              <span class="kv-val">GET /api/v1/activities/delete-status/{{ '{deleteId}' }}</span>
             </div>
           </div>
 
@@ -309,45 +309,12 @@
             <button
               type="button"
               class="btn-outline-pill btn-compact"
-              [disabled]="completingMetrics()"
-              (click)="completeAllMetrics()"
-            >
-              {{ completingMetrics() ? 'COMPLETANDO…' : 'COMPLETAR MÉTRICAS' }}
-            </button>
-            <button
-              type="button"
-              class="btn-outline-pill btn-compact"
               [disabled]="coverageLoading()"
               (click)="loadElevationCoverage()"
             >
               {{ coverageLoading() ? 'CONSULTANDO…' : 'COBERTURA DE ALTITUD' }}
             </button>
           </div>
-
-          @if (completeMetricsResult(); as result) {
-            <div class="kv-list">
-              <div class="kv-row">
-                <span class="kv-key">Actividades procesadas</span>
-                <span class="kv-val">{{ result.activitiesProcessed }} / {{ result.activitiesFound }}</span>
-              </div>
-              <div class="kv-row">
-                <span class="kv-key">Valores completados</span>
-                <span class="kv-val">{{ result.totalFilled }}</span>
-              </div>
-              <div class="kv-row">
-                <span class="kv-key">Valores descartados</span>
-                <span class="kv-val">{{ result.totalRemoved }}</span>
-              </div>
-              <div class="kv-row">
-                <span class="kv-key">Distancia ajustada</span>
-                <span class="kv-val">{{ result.distanceAdjusted }} puntos</span>
-              </div>
-              <div class="kv-row">
-                <span class="kv-key">Actividades fallidas</span>
-                <span class="kv-val">{{ result.activitiesFailed }}</span>
-              </div>
-            </div>
-          }
 
           @if (elevationCoverage(); as coverage) {
             <div class="kv-list">
@@ -363,6 +330,12 @@
                 <span class="kv-key">Sin altitud</span>
                 <span class="kv-val">{{ coverage.missingElevationPercent | number: '1.1-1' }}%</span>
               </div>
+              <div class="kv-row">
+                <span class="kv-key">Altitud constante (incluida en sin altitud)</span>
+                <span class="kv-val">
+                  {{ coverage.trackpointsWithFlatElevation }} ({{ coverage.flatElevationPercent | number: '1.1-1' }}%)
+                </span>
+              </div>
             </div>
           }
 
@@ -372,7 +345,47 @@
 
           <div class="account-danger-zone">
             <span class="block-title">Zona peligrosa</span>
-            @if (!confirmingDeleteAll()) {
+
+            @if (deletionStatus(); as deletion) {
+              <div class="delete-progress-head">
+                <span
+                  class="delete-state-badge"
+                  [class.delete-state-badge--failed]="deletion.status === 'FAILED'"
+                >
+                  {{ deletionStateLabel() }}
+                </span>
+                <span class="mono delete-progress-value">{{ deletionProgress() | number: '1.0-0' }}%</span>
+              </div>
+              <div class="delete-progress-track">
+                <div
+                  class="delete-progress-bar"
+                  [class.delete-progress-bar--failed]="deletion.status === 'FAILED'"
+                  [style.width.%]="deletionProgress()"
+                ></div>
+              </div>
+              <div class="kv-list">
+                <div class="kv-row">
+                  <span class="kv-key">Actividades eliminadas</span>
+                  <span class="kv-val">{{ deletion.deletedActivities }} / {{ deletion.totalActivities }}</span>
+                </div>
+                @if (deletion.message) {
+                  <div class="kv-row">
+                    <span class="kv-key">Mensaje</span>
+                    <span class="kv-val">{{ deletion.message }}</span>
+                  </div>
+                }
+              </div>
+            }
+
+            @if (deletionError(); as error) {
+              <div class="delete-alert">{{ error }}</div>
+            }
+
+            @if (deletingAll()) {
+              <p class="account-hint">
+                El vaciado se ejecuta en segundo plano. Puedes cerrar esta pestaña: el proceso continúa en el servidor.
+              </p>
+            } @else if (!confirmingDeleteAll()) {
               <button
                 type="button"
                 class="btn-outline-pill btn-compact account-danger"
@@ -380,23 +393,31 @@
               >
                 VACIAR HISTORIAL
               </button>
+              @if (deletionCanRetry()) {
+                <button
+                  type="button"
+                  class="btn-outline-pill btn-compact"
+                  (click)="retryDeletionStatus()"
+                >
+                  RECONSULTAR ESTADO
+                </button>
+              }
             } @else {
               <p class="account-hint">
-                Se eliminarán todas las carreras, trackpoints y récords. Esta acción no se puede deshacer.
+                Se eliminarán todas las carreras, trackpoints, ficheros de respaldo y récords. El
+                proceso se ejecuta en segundo plano. Esta acción no se puede deshacer.
               </p>
               <div class="panel-actions-row">
                 <button
                   type="button"
                   class="btn-pill-header btn-compact account-danger-fill"
-                  [disabled]="deletingAll()"
                   (click)="deleteAllActivities()"
                 >
-                  {{ deletingAll() ? 'ELIMINANDO…' : 'CONFIRMAR VACIADO' }}
+                  CONFIRMAR VACIADO
                 </button>
                 <button
                   type="button"
                   class="btn-outline-pill btn-compact"
-                  [disabled]="deletingAll()"
                   (click)="cancelDeleteAll()"
                 >
                   CANCELAR
@@ -419,6 +440,5 @@
     [activity]="activity"
     (close)="closeActivity()"
     (deleted)="onActivityDeleted($event)"
-    (changed)="onActivityChanged()"
   />
 }

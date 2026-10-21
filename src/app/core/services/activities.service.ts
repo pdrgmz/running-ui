@@ -3,15 +3,13 @@ import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
   Activity,
+  ActivityDeletionStatusDto,
   ActivityTrackpoint,
   CardiacDriftResponseDto,
   ElevationCoverageDto,
   HrZonesResponseDto,
   PageActivity,
   SplitDto,
-  TrackpointCompletionResultDto,
-  TrackpointMetricsBatchCompletionResultDto,
-  TrackpointMetricsCompletionResultDto,
   TrainingLoadResponseDto,
   Vo2MaxVamResponseDto,
 } from '../models/api.models';
@@ -58,32 +56,19 @@ export class ActivitiesService {
     );
   }
 
-  /** DELETE /api/v1/activities — vacía todo el historial del usuario. */
-  deleteAll(): Observable<Record<string, unknown>> {
-    return this.http.delete<Record<string, unknown>>(this.api.url('/api/v1/activities'));
+  /**
+   * DELETE /api/v1/activities — inicia el vaciado asíncrono del historial.
+   * Responde 202 con el estado inicial; el progreso se consulta con
+   * `deletionStatus(deleteId)`.
+   */
+  deleteAll(): Observable<ActivityDeletionStatusDto> {
+    return this.http.delete<ActivityDeletionStatusDto>(this.api.url('/api/v1/activities'));
   }
 
-  /** POST /api/v1/activities/{id}/complete-trackpoints — completa GPS, altitud y métricas. */
-  completeTrackpoints(id: string): Observable<TrackpointCompletionResultDto> {
-    return this.http.post<TrackpointCompletionResultDto>(
-      this.api.url(`/api/v1/activities/${encodeURIComponent(id)}/complete-trackpoints`),
-      {},
-    );
-  }
-
-  /** POST /api/v1/activities/{id}/complete-metrics — completa FC, cadencia y velocidad. */
-  completeMetrics(id: string): Observable<TrackpointMetricsCompletionResultDto> {
-    return this.http.post<TrackpointMetricsCompletionResultDto>(
-      this.api.url(`/api/v1/activities/${encodeURIComponent(id)}/complete-metrics`),
-      {},
-    );
-  }
-
-  /** POST /api/v1/activities/complete-metrics — completa las métricas de todo el historial. */
-  completeAllMetrics(): Observable<TrackpointMetricsBatchCompletionResultDto> {
-    return this.http.post<TrackpointMetricsBatchCompletionResultDto>(
-      this.api.url('/api/v1/activities/complete-metrics'),
-      {},
+  /** GET /api/v1/activities/delete-status/{deleteId} — estado del vaciado. */
+  deletionStatus(deleteId: string): Observable<ActivityDeletionStatusDto> {
+    return this.http.get<ActivityDeletionStatusDto>(
+      this.api.url(`/api/v1/activities/delete-status/${encodeURIComponent(deleteId)}`),
     );
   }
 

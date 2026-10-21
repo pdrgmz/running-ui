@@ -299,72 +299,35 @@ export interface BulkUploadStatusDto {
 }
 
 /* ------------------------------------------------------------------ */
-/* Mantenimiento de trackpoints                                        */
+/* Cobertura de altitudes                                              */
 /* ------------------------------------------------------------------ */
-
-export interface TrackpointCompletionResultDto {
-  activityId: string;
-  totalTrackpoints: number;
-  latitudeFilled: number;
-  longitudeFilled: number;
-  altitudeFilled: number;
-  heartRateFilled: number;
-  cadenceFilled: number;
-  speedFilled: number;
-  heartRateRemoved: number;
-  cadenceRemoved: number;
-  speedRemoved: number;
-  totalRemoved: number;
-  distanceAdjusted: number;
-  distanceDiscardedMeters: number;
-  externalElevationUsed: boolean;
-  altitudeSource: string;
-  message: string;
-}
-
-export interface TrackpointMetricsCompletionResultDto {
-  activityId: string;
-  totalTrackpoints: number;
-  heartRateFilled: number;
-  cadenceFilled: number;
-  speedFilled: number;
-  heartRateRemoved: number;
-  cadenceRemoved: number;
-  speedRemoved: number;
-  totalFilled: number;
-  totalRemoved: number;
-  distanceAdjusted: number;
-  distanceDiscardedMeters: number;
-  message: string;
-}
-
-export interface TrackpointMetricsBatchCompletionResultDto {
-  activitiesFound: number;
-  activitiesProcessed: number;
-  activitiesUpdated: number;
-  activitiesWithoutTrackpoints: number;
-  activitiesFailed: number;
-  totalTrackpoints: number;
-  heartRateFilled: number;
-  cadenceFilled: number;
-  speedFilled: number;
-  heartRateRemoved: number;
-  cadenceRemoved: number;
-  speedRemoved: number;
-  totalFilled: number;
-  totalRemoved: number;
-  distanceAdjusted: number;
-  distanceDiscardedMeters: number;
-  errors: Record<string, string>;
-  message: string;
-}
 
 export interface ElevationCoverageDto {
   totalTrackpoints: number;
   trackpointsWithElevation: number;
   trackpointsMissingElevation: number;
+  /** Trackpoints descartados por compartir una altitud constante sospechosa. */
+  trackpointsWithFlatElevation: number;
   withElevationPercent: number;
   missingElevationPercent: number;
+  /** Porcentaje de trackpoints con altitud constante sospechosa. */
+  flatElevationPercent: number;
+}
+
+/* ------------------------------------------------------------------ */
+/* Borrado asíncrono de actividades                                    */
+/* ------------------------------------------------------------------ */
+
+export type ActivityDeletionState = 'PENDING' | 'PROCESSING' | 'COMPLETED' | 'FAILED';
+
+export interface ActivityDeletionStatusDto {
+  deleteId: string;
+  status: ActivityDeletionState | string;
+  totalActivities: number;
+  deletedActivities: number;
+  progressPercent: number;
+  message: string;
+  error: string | null;
 }
 
 /* ------------------------------------------------------------------ */
