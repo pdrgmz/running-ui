@@ -4,6 +4,10 @@ services:
       context: .
       dockerfile: Dockerfile
     image: running-ui:latest
+    # La imagen se construye en local desde el Dockerfile. Sin esto, Compose
+    # (y el "pull" que hace Portainer al desplegar) intenta descargarla de un
+    # registry y falla con "pull access denied for running-ui".
+    pull_policy: build
     restart: unless-stopped
     ports:
       # APP_PORT es el puerto del host; 80 es el puerto interno de Nginx.
