@@ -4,6 +4,7 @@ import { Router } from '@angular/router';
 import { ErrorResponseDto } from '../../core/models/api.models';
 import { ApiConfigService } from '../../core/services/api-config.service';
 import { AuthService } from '../../core/services/auth.service';
+import { PwaService } from '../../core/services/pwa.service';
 import { ToastService } from '../../core/services/toast.service';
 
 type AuthMode = 'login' | 'register';
@@ -20,6 +21,7 @@ export class Login {
   private readonly api = inject(ApiConfigService);
   private readonly router = inject(Router);
   private readonly toast = inject(ToastService);
+  protected readonly pwa = inject(PwaService);
 
   protected readonly apiBaseUrl = this.api.baseUrl;
 

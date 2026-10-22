@@ -21,9 +21,11 @@
 }
 
 .file-input {
+  width: 100%;
   font-family: var(--font-mono);
   font-size: 0.72rem;
   padding: 9px 10px;
+  max-width: 100%;
 }
 
 .file-input::file-selector-button {

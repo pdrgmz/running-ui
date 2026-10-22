@@ -8,11 +8,29 @@
       </div>
     </div>
 
-    <div class="status-module-badge login-endpoint-badge">
-      <span class="status-dot-active"></span>
-      <div class="status-module-info">
-        <span class="status-module-name">SERVIDOR API</span>
-        <span class="status-module-val">{{ apiBaseUrl() || 'MISMO ORIGEN' }}</span>
+    <div class="panel-actions-row">
+      @if (pwa.canInstall() || (pwa.isIos() && !pwa.isStandalone())) {
+        <button
+          type="button"
+          class="btn-pill-header pwa-header-install"
+          title="Instalar Running Tracker en tu teléfono"
+          aria-label="Instalar Running Tracker en tu teléfono"
+          (click)="pwa.promptInstall()"
+        >
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="5" y="2" width="14" height="20" rx="3" ry="3" />
+            <line x1="12" y1="18" x2="12.01" y2="18" />
+          </svg>
+          <span class="pwa-header-label">INSTALAR APP</span>
+        </button>
+      }
+
+      <div class="status-module-badge login-endpoint-badge">
+        <span class="status-dot-active"></span>
+        <div class="status-module-info">
+          <span class="status-module-name">SERVIDOR API</span>
+          <span class="status-module-val">{{ apiBaseUrl() || 'MISMO ORIGEN' }}</span>
+        </div>
       </div>
     </div>
   </header>

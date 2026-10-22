@@ -26,6 +26,7 @@ import { ActivitiesService } from '../../core/services/activities.service';
 import { ApiConfigService } from '../../core/services/api-config.service';
 import { AuthService } from '../../core/services/auth.service';
 import { MilestonesService } from '../../core/services/milestones.service';
+import { PwaService } from '../../core/services/pwa.service';
 import { StatsService } from '../../core/services/stats.service';
 import { ToastService } from '../../core/services/toast.service';
 import { DurationPipe, KmPipe, PacePipe } from '../../shared/pipes/format.pipes';
@@ -90,6 +91,7 @@ interface TabDef {
 export class Dashboard implements OnInit {
   protected readonly auth = inject(AuthService);
   protected readonly api = inject(ApiConfigService);
+  protected readonly pwa = inject(PwaService);
   private readonly stats = inject(StatsService);
   private readonly activities = inject(ActivitiesService);
   private readonly milestones = inject(MilestonesService);
@@ -237,6 +239,12 @@ export class Dashboard implements OnInit {
     this.activeTab.set(tab);
     if (tab === 'activities' && this.calendarActivities().length === 0 && !this.calendarError()) {
       this.loadCalendarPage();
+    }
+  }
+
+  protected scrollMobileTop(): void {
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     }
   }
 

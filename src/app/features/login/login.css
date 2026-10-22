@@ -77,3 +77,54 @@
   border-radius: 4px;
   padding: 0 4px;
 }
+
+/* En móvil el formulario va primero: es la acción principal de la pantalla. */
+@media (max-width: 900px) {
+  .login-container .dashboard-grid > .col-right-6 {
+    order: -1;
+  }
+
+  .login-container .dashboard-grid > .col-left-6 {
+    order: 2;
+  }
+
+  .login-container {
+    margin-top: 0;
+    margin-bottom: 0;
+  }
+}
+
+@media (max-width: 768px) {
+  .login-server-details summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    margin-bottom: 8px;
+  }
+
+  .login-hero-card .login-hero-title {
+    font-size: 1.8rem;
+    line-height: 1.1;
+  }
+
+  .login-hero-card .login-hero-desc {
+    font-size: 0.8rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .login-hero-card .login-hero-title {
+    font-size: 1.45rem;
+  }
+
+  .login-endpoint-badge {
+    max-width: 100%;
+    width: 100%;
+  }
+
+  .panel-header-row:has(.login-endpoint-badge) {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+

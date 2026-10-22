@@ -1,4 +1,4 @@
-import { DatePipe } from '@angular/common';
+import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -57,7 +57,7 @@ const MAX_MONTHS = 60;
  */
 @Component({
   selector: 'app-activity-calendar',
-  imports: [DatePipe, KmPipe],
+  imports: [DatePipe, DecimalPipe, KmPipe],
   templateUrl: './activity-calendar.html',
   styleUrl: './activity-calendar.css',
   changeDetection: ChangeDetectionStrategy.OnPush,

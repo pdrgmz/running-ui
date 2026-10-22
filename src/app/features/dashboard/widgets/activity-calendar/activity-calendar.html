@@ -29,7 +29,7 @@
                     [title]="activity.name + ' — ' + (activity.startTime | date: 'HH:mm') + ' · ' + (activity.distanceMeters | km: 1)"
                     (click)="selectActivity.emit(activity)"
                   >
-                    {{ activity.distanceMeters | km: 1 }}
+                    <span class="cal-chip-distance">{{ activity.distanceMeters / 1000 | number: '1.1-1' }}</span><span class="cal-chip-distance cal-chip-distance--rounded">{{ activity.distanceMeters / 1000 | number: '1.0-0' }}</span><span class="cal-chip-unit"> KM</span>
                   </button>
                 }
                 @if (day.activities.length > 2) {

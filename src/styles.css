@@ -127,6 +127,7 @@
   color: var(--text-muted);
   text-transform: uppercase;
   letter-spacing: 0.5px;
+  overflow-wrap: anywhere;
 }
 
 .stat-tile-value {
@@ -860,3 +861,339 @@
   text-decoration: none;
   border-bottom: 1px dotted var(--border-subtle);
 }
+
+/* --------------------------------------------------------------------------
+   Adaptación móvil y táctil
+   -------------------------------------------------------------------------- */
+
+/* La cabecera de acciones y las pestañas del detalle no deben encogerse:
+   sin esto, en pantallas bajas las pestañas colapsan y desaparecen. */
+.modal-panel > .modal-header-bar,
+.modal-panel > .detail-action-bar,
+.modal-panel > .detail-tabs {
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  body {
+    padding: 10px;
+    padding-left: max(10px, env(safe-area-inset-left));
+    padding-right: max(10px, env(safe-area-inset-right));
+    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    min-height: 100dvh;
+  }
+
+  .dashboard-container {
+    padding: 14px;
+    border-radius: 20px;
+    gap: 18px;
+  }
+
+  .hero-identity {
+    min-width: 0;
+  }
+
+  .hero-identity h1 {
+    font-size: clamp(1.75rem, 7vw, 2.3rem);
+    line-height: 1.08;
+    overflow-wrap: anywhere;
+  }
+
+  .hero-identity .role-subtitle {
+    font-size: 0.78rem;
+    gap: 6px 10px;
+    margin-bottom: 6px;
+    overflow-wrap: anywhere;
+  }
+
+  .panel-header-row {
+    gap: 12px;
+  }
+
+  /* Pestañas desplazables con el dedo, sin barra de scroll visible. */
+  .nav-tabs-bar {
+    gap: 16px;
+    padding-bottom: 0;
+    scroll-snap-type: x proximity;
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .nav-tabs-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .nav-tab-item {
+    flex: 0 0 auto;
+    min-width: 44px;
+    min-height: 44px;
+    padding: 10px 2px;
+    scroll-snap-align: start;
+  }
+
+  .detail-tabs {
+    gap: 16px;
+  }
+
+  /* 16 px evita el zoom automático de iOS al enfocar un campo.
+     Los inputs de archivo no provocan zoom y conservan su tamaño compacto. */
+  .form-control:not([type='file']) {
+    font-size: 16px;
+  }
+
+  .data-table-wrap {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-x: contain;
+  }
+
+  .toast-notice {
+    left: 12px;
+    right: 12px;
+    bottom: max(12px, env(safe-area-inset-bottom));
+    max-width: none;
+    text-align: center;
+  }
+
+  /* El detalle de actividad pasa a pantalla completa. */
+  .modal-overlay {
+    padding: 0;
+    align-items: stretch;
+    overscroll-behavior: contain;
+  }
+
+  .modal-panel {
+    width: 100%;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    border-radius: 0;
+    border-left: none;
+    border-right: none;
+    padding: 14px;
+    padding-top: max(14px, env(safe-area-inset-top));
+    padding-right: max(14px, env(safe-area-inset-right));
+    padding-bottom: max(14px, env(safe-area-inset-bottom));
+    padding-left: max(14px, env(safe-area-inset-left));
+    gap: 12px;
+  }
+
+  .modal-header-bar {
+    align-items: flex-start;
+    gap: 8px;
+    padding-bottom: 10px;
+  }
+
+  .detail-action-bar {
+    padding: 8px;
+  }
+
+  .detail-body {
+    gap: 12px;
+    padding-right: 0;
+  }
+
+  .bento-card {
+    padding: 14px;
+  }
+
+  .stat-tile-value {
+    font-size: 1.25rem;
+  }
+
+  .stat-tile-value--dual {
+    font-size: 1.05rem;
+  }
+
+  .gauge-scale {
+    font-size: 0.55rem;
+  }
+
+  .hbar-row {
+    grid-template-columns: 92px minmax(0, 1fr) max-content;
+    gap: 8px;
+  }
+
+  .heat-range {
+    height: 32px;
+  }
+
+  .heatmap-map {
+    height: min(56vh, 480px);
+    min-height: 320px;
+  }
+
+  .leaflet-container .leaflet-control-zoom a.leaflet-control-zoom-in,
+  .leaflet-container .leaflet-control-zoom a.leaflet-control-zoom-out {
+    width: 44px;
+    height: 44px;
+    line-height: 41px;
+  }
+}
+
+/* Objetivos táctiles cómodos (mínimo recomendado 44×44 px). */
+@media (pointer: coarse), (max-width: 768px) {
+  .btn-pill-header,
+  .btn-pill-cta,
+  .btn-outline-pill {
+    min-height: 44px;
+  }
+
+  .btn-icon-only {
+    min-width: 44px;
+    padding-left: 10px;
+    padding-right: 10px;
+    justify-content: center;
+  }
+
+  .btn-compact {
+    min-height: 44px;
+  }
+
+  .milestones-chip,
+  .cal-retry {
+    min-height: 44px;
+  }
+
+  .cal-chip {
+    min-height: 30px;
+  }
+
+  .heat-range {
+    min-height: 32px;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Las fechas largas de la sesión se leen mejor con la clave encima. */
+  .kv-row--stack {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2px;
+  }
+
+  .kv-row--stack .kv-val {
+    text-align: left;
+  }
+}
+
+@media (max-width: 600px) {
+  /* La escala del ACWR conserva solo las referencias que no se solapan. */
+  .gauge-scale span:nth-child(3),
+  .gauge-scale span:nth-child(4) {
+    display: none;
+  }
+
+  /* Las tres secciones del detalle caben mejor en dos filas que en un scroll. */
+  .detail-tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+    gap: 0 14px;
+  }
+
+  .detail-tabs .nav-tab-item {
+    flex: 0 0 auto;
+  }
+
+  /* En pantallas cortas el mapa del detalle no necesita 300 px de alto. */
+  .bento-card--route .gps-map {
+    min-height: 240px;
+  }
+}
+
+/* ==========================================================================
+   PWA & Mobile Ergonomics Extensions
+   ========================================================================== */
+
+/* Botón de instalación en la barra superior */
+.pwa-header-install {
+  background: var(--accent-green) !important;
+  color: var(--border-color) !important;
+  border-color: var(--border-color) !important;
+  font-weight: 800 !important;
+  gap: 6px;
+}
+
+.pwa-header-install:hover {
+  background: #24ff8d !important;
+  color: #000000 !important;
+}
+
+@media (max-width: 640px) {
+  .pwa-header-label {
+    display: none;
+  }
+}
+
+/* Barra de navegación inferior móvil para el pulgar (Smartphones) */
+.mobile-bottom-dock {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  .mobile-bottom-dock {
+    display: flex;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 999;
+    background: var(--bg-card);
+    border-top: 1.5px solid var(--border-color);
+    padding: 6px 4px;
+    padding-bottom: max(6px, env(safe-area-inset-bottom, 0px));
+    justify-content: space-around;
+    align-items: center;
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.12);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
+  }
+
+  .mobile-dock-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    background: transparent;
+    border: none;
+    padding: 5px 6px;
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-family: var(--font-mono);
+    font-size: 0.6rem;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    cursor: pointer;
+    min-width: 52px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    transition: all var(--transition-fast);
+  }
+
+  .mobile-dock-item svg {
+    width: 20px;
+    height: 20px;
+    stroke-width: 2;
+    transition: transform var(--transition-fast);
+  }
+
+  .mobile-dock-item.active {
+    color: var(--text-main);
+    background: rgba(26, 26, 26, 0.08);
+  }
+
+  .mobile-dock-item.active svg {
+    color: var(--accent-green);
+    stroke: var(--text-main);
+    transform: translateY(-1px);
+    filter: drop-shadow(0 0 5px rgba(0, 230, 118, 0.75));
+  }
+
+  .mobile-dock-item:active {
+    transform: scale(0.92);
+  }
+}
+

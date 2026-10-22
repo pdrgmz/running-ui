@@ -51,19 +51,42 @@ html {
   color: var(--text-main);
   font-family: var(--font-sans);
   -webkit-font-smoothing: antialiased;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 body {
   min-height: 100vh;
+  min-height: 100dvh;
   display: flex;
   flex-direction: column;
   background-color: var(--bg-main);
   padding: 24px;
+  padding-top: max(24px, env(safe-area-inset-top, 0px));
+  padding-bottom: max(24px, env(safe-area-inset-bottom, 0px));
+  padding-left: max(24px, env(safe-area-inset-left, 0px));
+  padding-right: max(24px, env(safe-area-inset-right, 0px));
+  overflow-x: hidden;
 }
 
 @media (max-width: 768px) {
   body {
-    padding: 12px;
+    padding: 10px 8px;
+    padding-top: max(10px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(80px, calc(env(safe-area-inset-bottom, 0px) + 68px));
+    padding-left: max(8px, env(safe-area-inset-left, 0px));
+    padding-right: max(8px, env(safe-area-inset-right, 0px));
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: 6px 4px;
+    padding-top: max(6px, env(safe-area-inset-top, 0px));
+    padding-bottom: max(78px, calc(env(safe-area-inset-bottom, 0px) + 66px));
+    padding-left: max(4px, env(safe-area-inset-left, 0px));
+    padding-right: max(4px, env(safe-area-inset-right, 0px));
   }
 }
 
@@ -80,12 +103,22 @@ body {
   border-radius: 36px;
   padding: 28px;
   position: relative;
+  box-sizing: border-box;
 }
 
 @media (max-width: 768px) {
   .dashboard-container {
-    padding: 16px;
-    border-radius: 24px;
+    padding: 14px 12px;
+    border-radius: 20px;
+    gap: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .dashboard-container {
+    padding: 12px 10px;
+    border-radius: 16px;
+    gap: 14px;
   }
 }
 
@@ -114,7 +147,7 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 20px;
+  gap: 16px;
   flex-wrap: wrap;
 }
 
@@ -140,6 +173,31 @@ body {
   margin-bottom: 12px;
 }
 
+@media (max-width: 768px) {
+  .hero-identity h1 {
+    font-size: 1.65rem;
+    letter-spacing: -0.3px;
+  }
+  .hero-identity .role-subtitle {
+    font-size: 0.76rem;
+    gap: 8px;
+    margin-bottom: 6px;
+  }
+  .panel-header-row {
+    gap: 12px;
+  }
+}
+
+@media (max-width: 480px) {
+  .hero-identity h1 {
+    font-size: 1.35rem;
+  }
+  .hero-identity .role-subtitle {
+    font-size: 0.68rem;
+    gap: 4px;
+  }
+}
+
 .hero-specs-list {
   display: flex;
   gap: 16px;
@@ -158,11 +216,17 @@ body {
 /* Navigation Tabs Component */
 .nav-tabs-bar {
   display: flex;
-  gap: 24px;
+  gap: 20px;
   border-bottom: 1.5px solid var(--border-color);
   overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
   padding-bottom: 4px;
   margin-top: 8px;
+}
+
+.nav-tabs-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .nav-tab-item {
@@ -173,13 +237,27 @@ body {
   letter-spacing: 0.5px;
   color: var(--text-muted);
   text-decoration: none;
-  padding-bottom: 10px;
+  padding: 4px 6px 10px;
   position: relative;
   white-space: nowrap;
   transition: color var(--transition-fast);
   cursor: pointer;
   background: none;
   border: none;
+  touch-action: manipulation;
+  flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+  .nav-tabs-bar {
+    gap: 12px;
+    padding-bottom: 6px;
+    margin-top: 4px;
+  }
+  .nav-tab-item {
+    font-size: 0.74rem;
+    padding: 6px 4px 8px;
+  }
 }
 
 .nav-tab-item.active,
@@ -258,6 +336,14 @@ body {
   cursor: pointer;
   transition: all var(--transition-fast);
   white-space: nowrap;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-pill-header:active,
+.btn-pill-cta:active,
+.btn-outline-pill:active {
+  transform: scale(0.97);
 }
 
 .btn-pill-cta {
@@ -286,6 +372,8 @@ body {
   text-decoration: none;
   cursor: pointer;
   transition: all var(--transition-fast);
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .btn-outline-pill:hover {
@@ -714,6 +802,14 @@ body {
   color: var(--text-main);
   outline: none;
   transition: border-color var(--transition-fast);
+  touch-action: manipulation;
+}
+
+@media (max-width: 768px) {
+  .form-control {
+    font-size: 16px; /* Evita que Safari en iOS haga zoom involuntario */
+    padding: 12px 14px;
+  }
 }
 
 .form-control:focus {
@@ -725,6 +821,7 @@ body {
 .toast-notice {
   position: fixed;
   bottom: 24px;
+  bottom: max(24px, calc(env(safe-area-inset-bottom, 0px) + 76px));
   right: 24px;
   background: var(--border-color);
   color: var(--bg-main);
@@ -737,6 +834,14 @@ body {
   opacity: 0;
   transition: all 0.3s ease;
   z-index: 9999;
+}
+
+@media (max-width: 480px) {
+  .toast-notice {
+    left: 16px;
+    right: 16px;
+    text-align: center;
+  }
 }
 
 .toast-notice.show {

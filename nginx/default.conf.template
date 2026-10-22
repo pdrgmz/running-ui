@@ -85,8 +85,28 @@ server {
         proxy_read_timeout 1h;
     }
 
-    # Assets con hash de Angular: cache larga.
-    location ~* \.(?:js|css|mjs|map|woff2?|ttf|otf|eot|svg|png|jpe?g|gif|webp|avif|ico)$ {
+    # Service Worker y Manifest de PWA: sin cache prolongada para permitir actualizaciones inmediatas en teléfonos
+    location = /sw.js {
+        expires -1;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+        add_header Service-Worker-Allowed "/";
+        default_type application/javascript;
+    }
+
+    location = /manifest.webmanifest {
+        expires 1d;
+        add_header Cache-Control "public, max-age=86400";
+        default_type application/manifest+json;
+    }
+
+    # Assets con hash de Angular: cache larga (excluyendo sw.js).
+    location ~* \.(?:css|mjs|map|woff2?|ttf|otf|eot|svg|png|jpe?g|gif|webp|avif|ico)$ {
+        expires 1y;
+        access_log off;
+        try_files $uri =404;
+    }
+
+    location ~* ^(?!/sw\.js$).*\.js$ {
         expires 1y;
         access_log off;
         try_files $uri =404;

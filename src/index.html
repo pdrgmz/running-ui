@@ -4,9 +4,35 @@
   <meta charset="utf-8">
   <title>Running Tracker · Panel del Corredor</title>
   <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Panel de analítica del corredor: estadísticas, récords personales, PMC, ACWR y VO2Max sobre la Running Tracker & Analytics API.">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
+
+  <!-- Viewport para móviles con soporte de safe-area (notch, dynamic island) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5, viewport-fit=cover">
+  <meta name="description" content="Panel de analítica del corredor: estadísticas fisiológicas, rutas GPS, récords personales, PMC, ACWR y VO2Max.">
+
+  <!-- Colores de barra de estado móvil -->
+  <meta name="theme-color" content="#161A16" media="(prefers-color-scheme: dark)">
+  <meta name="theme-color" content="#E4E9DD">
+  <meta name="color-scheme" content="light dark">
+
+  <!-- Web App Manifest (PWA) -->
+  <link rel="manifest" href="manifest.webmanifest">
+
+  <!-- Compatibilidad PWA en iOS / Safari -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Running Tracker">
+  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png">
+
+  <!-- Android / Windows PWA -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="application-name" content="Running Tracker">
+  <meta name="msapplication-TileColor" content="#161A16">
+  <meta name="msapplication-tap-highlight" content="no">
+
+  <!-- Iconos de pestaña -->
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="alternate icon" type="image/x-icon" href="favicon.ico">
 </head>
 <body>
   <app-root></app-root>

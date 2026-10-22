@@ -271,3 +271,31 @@ app-activity-profiles {
   white-space: pre-wrap;
   overflow-wrap: anywhere;
 }
+
+@media (max-width: 600px) {
+  .detail-action-bar {
+    gap: 6px;
+    justify-content: space-between;
+  }
+
+  .detail-action-spacer {
+    display: none;
+  }
+
+  .race-predictions {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+  }
+
+  .split-row {
+    grid-template-columns: 44px minmax(0, 1fr) 74px;
+    gap: 6px;
+  }
+
+  .zone-chart {
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 10px;
+    min-height: 180px;
+  }
+}
+

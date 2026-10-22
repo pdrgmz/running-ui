@@ -1,0 +1,80 @@
+{
+  "$schema": "https://json.schemastore.org/web-manifest-combined.json",
+  "id": "/",
+  "name": "Running Tracker · Panel del Corredor",
+  "short_name": "Running Tracker",
+  "description": "Panel de analítica del corredor: estadísticas fisiológicas, mapas GPS, récords personales, PMC, ACWR y VO2Max.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
+  "orientation": "any",
+  "background_color": "#E4E9DD",
+  "theme_color": "#161A16",
+  "lang": "es",
+  "dir": "ltr",
+  "categories": ["sports", "fitness", "health", "utilities"],
+  "prefer_related_applications": false,
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Resumen del Corredor",
+      "short_name": "Resumen",
+      "description": "Ver métricas PMC, ACWR y estadísticas globales",
+      "url": "/dashboard?tab=overview",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Historial de Carreras",
+      "short_name": "Historial",
+      "description": "Calendario y lista de actividades realizadas",
+      "url": "/dashboard?tab=activities",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Récords Personales",
+      "short_name": "Récords",
+      "description": "Mejores marcas de 1k, 5k, 10k, media y maratón",
+      "url": "/dashboard?tab=records",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Mapa de Calor GPS",
+      "short_name": "Mapa de Calor",
+      "description": "Rutas agregadas en OpenStreetMap",
+      "url": "/dashboard?tab=heatmap",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}

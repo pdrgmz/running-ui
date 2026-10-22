@@ -179,13 +179,57 @@
     gap: 6px;
   }
 
-  .cal-day {
-    min-height: 52px;
-    padding: 4px;
+  .cal-grid {
+    gap: 4px;
   }
 
+  .cal-day {
+    min-height: 52px;
+    padding: 4px 2px 6px;
+  }
+
+  /* El chip ocupa el ancho de la celda y oculta la unidad para no recortarse. */
   .cal-chip {
-    font-size: 0.53rem;
-    padding: 1px 4px;
+    width: 100%;
+    padding: 2px 0;
+    font-size: 0.55rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .cal-chip-unit {
+    display: none;
+  }
+}
+
+.cal-chip-distance--rounded {
+  display: none;
+}
+
+@media (max-width: 360px) {
+  .cal-month {
+    padding: 8px;
+  }
+
+  .cal-grid {
+    gap: 3px;
+  }
+
+  .cal-day {
+    padding: 4px 1px 6px;
+  }
+
+  /* En 320 px la celda es muy estrecha: se muestra el km entero. */
+  .cal-chip {
+    font-size: 0.52rem;
+  }
+
+  .cal-chip-distance {
+    display: none;
+  }
+
+  .cal-chip-distance--rounded {
+    display: inline;
   }
 }
