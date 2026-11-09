@@ -84,10 +84,13 @@
                   <span class="hsb-label">{{ recent.startTime | date: 'EEEE d MMM y, HH:mm' }}</span>
                   <span class="hsb-value">{{ recent.name || 'Carrera' }}</span>
                 </span>
-                <span class="hsb-stats">
-                  <span>{{ recent.distanceMeters | km }}</span>
-                  <span>{{ recent.totalTimeSeconds | duration }}</span>
-                  <span>{{ recent.avgPaceMinPerKm | pace }}</span>
+                <span class="session-row-tail">
+                  <span class="hsb-stats">
+                    <span>{{ recent.distanceMeters | km }}</span>
+                    <span>{{ recent.totalTimeSeconds | duration }}</span>
+                    <span>{{ recent.avgPaceMinPerKm | pace }}</span>
+                  </span>
+                  <app-hr-zone-bar [zones]="recentZones()[recent.id] ?? null" />
                 </span>
               </button>
             }

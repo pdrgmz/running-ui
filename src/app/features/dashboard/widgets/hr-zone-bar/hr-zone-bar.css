@@ -1,0 +1,47 @@
+:host {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+
+.zone-bar {
+  display: flex;
+  width: 88px;
+  height: 11px;
+  border: 1px solid rgba(228, 233, 221, 0.35);
+  border-radius: var(--radius-pill);
+  background: rgba(228, 233, 221, 0.12);
+  overflow: hidden;
+}
+
+.zone-bar-seg {
+  min-width: 1px;
+}
+
+.zone-bar-seg.z1 {
+  background: #c2cab8;
+}
+
+.zone-bar-seg.z2 {
+  background: #98a68c;
+}
+
+.zone-bar-seg.z3 {
+  background: #6b7562;
+}
+
+.zone-bar-seg.z4 {
+  background: var(--accent-charcoal-soft);
+}
+
+.zone-bar-seg.z5 {
+  background: var(--accent-green);
+}
+
+.zone-bar-empty {
+  flex: 1;
+  background: repeating-linear-gradient(
+    90deg,
+    transparent 0 4px,
+    rgba(228, 233, 221, 0.16) 4px 8px
+  );
+}

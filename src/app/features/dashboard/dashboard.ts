@@ -10,13 +10,14 @@ import {
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
-import { Subscription, catchError, forkJoin, of, switchMap, takeWhile, timer } from 'rxjs';
+import { Subscription, catchError, forkJoin, map, of, switchMap, takeWhile, timer } from 'rxjs';
 import {
   AcwrStatusDto,
   Activity,
   ActivityDeletionStatusDto,
   EddingtonStatsDto,
   ElevationCoverageDto,
+  HrZonesResponseDto,
   PageActivity,
   PmcPointDto,
   RecordResponseDto,
@@ -38,6 +39,7 @@ import { AcwrCard } from './widgets/acwr-card/acwr-card';
 import { ApiKeysPanel } from './widgets/api-keys-panel/api-keys-panel';
 import { EddingtonCard } from './widgets/eddington-card/eddington-card';
 import { FilesPanel } from './widgets/files-panel/files-panel';
+import { HrZoneBar } from './widgets/hr-zone-bar/hr-zone-bar';
 import { HrZonesCard } from './widgets/hr-zones-card/hr-zones-card';
 import { McpPanel } from './widgets/mcp-panel/mcp-panel';
 import { MilestonesPanel } from './widgets/milestones-panel/milestones-panel';
@@ -74,6 +76,7 @@ interface TabDef {
     AcwrCard,
     EddingtonCard,
     HrZonesCard,
+    HrZoneBar,
     RecordsGrid,
     MilestonesPanel,
     ActivityCalendar,
@@ -129,6 +132,7 @@ export class Dashboard implements OnInit {
   protected readonly acwr = signal<AcwrStatusDto | null>(null);
   protected readonly activitiesPage = signal<PageActivity | null>(null);
   protected readonly selectedActivity = signal<Activity | null>(null);
+  protected readonly recentZones = signal<Record<string, HrZonesResponseDto | null>>({});
 
   /* Calendario de actividades: carga incremental por scroll desde el mes actual. */
   protected readonly calendarActivities = signal<Activity[]>([]);
@@ -166,6 +170,7 @@ export class Dashboard implements OnInit {
   protected serverUrl = this.api.baseUrl();
 
   private deletionSub: Subscription | null = null;
+  private recentZonesRequest = 0;
 
   constructor() {
     this.destroyRef.onDestroy(() => this.stopDeletionPolling());
@@ -178,6 +183,7 @@ export class Dashboard implements OnInit {
   /** Refresca en paralelo todos los recursos del usuario autenticado. */
   protected loadAll(): void {
     this.loading.set(true);
+    this.recentZones.set({});
     this.milestones.refreshIfLoaded();
     forkJoin({
       me: this.auth.loadMe().pipe(catchError(() => of(null))),
@@ -195,6 +201,36 @@ export class Dashboard implements OnInit {
       this.acwr.set(res.acwr);
       this.activitiesPage.set(res.activities);
       this.loading.set(false);
+      this.loadRecentZones(res.activities?.content.slice(0, 5) ?? []);
+    });
+  }
+
+  /**
+   * Carga las zonas de FC de las últimas carreras para pintar su barra de
+   * colores. Se hace después del bloque principal para no retrasar el panel.
+   */
+  private loadRecentZones(activities: Activity[]): void {
+    const requestId = ++this.recentZonesRequest;
+    if (activities.length === 0) {
+      this.recentZones.set({});
+      return;
+    }
+    forkJoin(
+      activities.map((activity) =>
+        this.activities.hrZones(activity.id).pipe(
+          catchError(() => of(null)),
+          map((zones) => ({ id: activity.id, zones })),
+        ),
+      ),
+    ).subscribe((entries) => {
+      if (requestId !== this.recentZonesRequest) {
+        return;
+      }
+      const byId: Record<string, HrZonesResponseDto | null> = {};
+      for (const entry of entries) {
+        byId[entry.id] = entry.zones;
+      }
+      this.recentZones.set(byId);
     });
   }
 

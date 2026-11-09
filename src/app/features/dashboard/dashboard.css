@@ -29,6 +29,13 @@
   font-weight: 800;
 }
 
+.session-row-tail {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
+}
+
 .server-row {
   display: flex;
   gap: 10px;
