@@ -21,6 +21,7 @@ import {
   PmcPointDto,
   RecordResponseDto,
   SummaryStatsDto,
+  TrackpointMetricsBatchCompletionResultDto,
 } from '../../core/models/api.models';
 import { ActivitiesService } from '../../core/services/activities.service';
 import { ApiConfigService } from '../../core/services/api-config.service';
@@ -112,6 +113,9 @@ export class Dashboard implements OnInit {
   protected readonly activeTab = signal<Tab>('overview');
   protected readonly loading = signal(true);
   protected readonly recalibrating = signal(false);
+  protected readonly completingAllMetrics = signal(false);
+  protected readonly metricsBatchResult = signal<TrackpointMetricsBatchCompletionResultDto | null>(null);
+  protected readonly metricsBatchError = signal<string | null>(null);
   protected readonly elevationCoverage = signal<ElevationCoverageDto | null>(null);
   protected readonly coverageLoading = signal(false);
   protected readonly coverageError = signal(false);
@@ -270,6 +274,20 @@ export class Dashboard implements OnInit {
     this.refreshAfterChange();
   }
 
+  /** Recarga el detalle abierto tras completar sus trackpoints. */
+  protected onActivityUpdated(): void {
+    const current = this.selectedActivity();
+    if (current) {
+      this.activities.byId(current.id).subscribe({
+        next: (activity) => this.selectedActivity.set(activity),
+        error: () => {
+          /* el detalle conserva los datos anteriores */
+        },
+      });
+    }
+    this.refreshAfterChange();
+  }
+
   protected applyServerUrl(): void {
     this.api.setBaseUrl(this.serverUrl);
     this.serverUrl = this.api.baseUrl();
@@ -295,6 +313,33 @@ export class Dashboard implements OnInit {
         });
       },
       error: () => this.recalibrating.set(false),
+    });
+  }
+
+  /** POST /api/v1/activities/complete-metrics — completa métricas de todas las carreras. */
+  protected completeAllMetrics(): void {
+    if (this.completingAllMetrics()) {
+      return;
+    }
+    this.completingAllMetrics.set(true);
+    this.metricsBatchResult.set(null);
+    this.metricsBatchError.set(null);
+    this.activities.completeAllMetrics().subscribe({
+      next: (result) => {
+        this.completingAllMetrics.set(false);
+        this.metricsBatchResult.set(result);
+        this.toast.show(
+          result.message ||
+            `MÉTRICAS COMPLETADAS EN ${result.activitiesProcessed} ACTIVIDADES`,
+        );
+        this.refreshAfterChange();
+      },
+      error: () => {
+        this.completingAllMetrics.set(false);
+        this.metricsBatchError.set(
+          'NO SE PUDO COMPLETAR LAS MÉTRICAS DE TODAS LAS ACTIVIDADES',
+        );
+      },
     });
   }
 

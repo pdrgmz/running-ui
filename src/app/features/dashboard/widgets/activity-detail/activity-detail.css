@@ -60,6 +60,15 @@ app-activity-profiles {
   color: var(--text-muted);
 }
 
+/* Resultado del mantenimiento de trackpoints de la sesión */
+.detail-action-note {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  color: var(--text-muted);
+}
+
 /* --- Splits por km: barras horizontales, más corta = más rápido --- */
 .splits-rows {
   display: flex;

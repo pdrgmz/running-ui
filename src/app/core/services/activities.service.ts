@@ -10,6 +10,9 @@ import {
   HrZonesResponseDto,
   PageActivity,
   SplitDto,
+  TrackpointCompletionResultDto,
+  TrackpointMetricsBatchCompletionResultDto,
+  TrackpointMetricsCompletionResultDto,
   TrainingLoadResponseDto,
   Vo2MaxVamResponseDto,
 } from '../models/api.models';
@@ -46,6 +49,39 @@ export class ActivitiesService {
     return this.http.get<ActivityTrackpoint[]>(
       this.api.url(`/api/v1/activities/${encodeURIComponent(id)}/trackpoints`),
       { params },
+    );
+  }
+
+  /**
+   * POST /api/v1/activities/{id}/complete-trackpoints — rellena coordenadas,
+   * altitud y métricas interpolando con los puntos vecinos.
+   */
+  completeTrackpoints(id: string): Observable<TrackpointCompletionResultDto> {
+    return this.http.post<TrackpointCompletionResultDto>(
+      this.api.url(`/api/v1/activities/${encodeURIComponent(id)}/complete-trackpoints`),
+      {},
+    );
+  }
+
+  /**
+   * POST /api/v1/activities/{id}/complete-metrics — solo completa FC, cadencia,
+   * velocidad y distancia sin tocar coordenadas ni altitud.
+   */
+  completeMetrics(id: string): Observable<TrackpointMetricsCompletionResultDto> {
+    return this.http.post<TrackpointMetricsCompletionResultDto>(
+      this.api.url(`/api/v1/activities/${encodeURIComponent(id)}/complete-metrics`),
+      {},
+    );
+  }
+
+  /**
+   * POST /api/v1/activities/complete-metrics — aplica el completado de métricas
+   * a todas las actividades del usuario y recalcula estadísticas y PB.
+   */
+  completeAllMetrics(): Observable<TrackpointMetricsBatchCompletionResultDto> {
+    return this.http.post<TrackpointMetricsBatchCompletionResultDto>(
+      this.api.url('/api/v1/activities/complete-metrics'),
+      {},
     );
   }
 

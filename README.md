@@ -200,6 +200,7 @@ src/app/
 | Analítica de sesión | `GET /api/v1/analytics/{id}/(splits\|hr-zones\|training-load\|vo2max-vam\|cardiac-drift)` |
 | Archivos | `POST /api/v1/files/upload` · `/upload-bulk` · `GET /files/upload-status/{id}` · `/stream` · `GET /files/export-bulk` · `/export-backup-zip` |
 | Cobertura de altitudes | `GET /api/v1/activities/elevation-coverage` |
+| Mantenimiento de trackpoints | `POST /api/v1/activities/{id}/complete-trackpoints` · `/complete-metrics` · `POST /api/v1/activities/complete-metrics` |
 | Borrado | `DELETE /api/v1/activities` (202 + `deleteId`) · `GET /activities/delete-status/{deleteId}` · `DELETE /activities/{id}` |
 | Geoespacial | `GET /api/v1/geo/{id}/gpx` · `/geojson` |
 | MCP | `POST /mcp` (JSON-RPC) · `GET /mcp` (SSE) |
