@@ -1,0 +1,134 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.zones-source {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.zones-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.zones-hero-value {
+  font-family: var(--font-mono);
+  font-size: 2.4rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.zones-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.zones-hero-title {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.zones-hero-sub {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.zone-scale {
+  display: flex;
+  gap: 3px;
+  height: 10px;
+}
+
+.zone-scale-seg {
+  flex: 1;
+  border-radius: 2px;
+}
+
+.zone-scale-seg.z1,
+.zone-dot.z1 {
+  background: #c2cab8;
+}
+
+.zone-scale-seg.z2,
+.zone-dot.z2 {
+  background: #98a68c;
+}
+
+.zone-scale-seg.z3,
+.zone-dot.z3 {
+  background: #6b7562;
+}
+
+.zone-scale-seg.z4,
+.zone-dot.z4 {
+  background: var(--accent-charcoal-soft);
+}
+
+.zone-scale-seg.z5,
+.zone-dot.z5 {
+  background: var(--accent-green);
+}
+
+.zone-rows {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  justify-content: space-between;
+}
+
+.zone-row {
+  display: grid;
+  grid-template-columns: 10px minmax(0, 1fr) max-content max-content;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 0;
+  border-bottom: 1px dashed var(--border-subtle);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+}
+
+.zone-row:last-child {
+  border-bottom: none;
+}
+
+.zone-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.zone-name {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.zone-pct {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.zone-bpm {
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.zones-note {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  line-height: 1.5;
+  color: var(--text-muted);
+}

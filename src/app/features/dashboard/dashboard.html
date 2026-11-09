@@ -95,7 +95,10 @@
         }
 
         <app-acwr-card class="col-8" [acwr]="acwr()" />
-        <app-eddington-card class="col-4" [eddington]="eddington()" />
+        <div class="overview-side col-4">
+          <app-hr-zones-card [summary]="summary()" />
+          <app-eddington-card [eddington]="eddington()" />
+        </div>
         <app-summary-stats class="col-12" [summary]="summary()" />
         <app-pmc-chart class="col-12" [points]="pmcPoints()" />
         <app-pmc-reading class="col-12" [pmc]="pmcPoints()" [acwr]="acwr()" />

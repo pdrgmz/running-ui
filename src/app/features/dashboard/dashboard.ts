@@ -38,6 +38,7 @@ import { AcwrCard } from './widgets/acwr-card/acwr-card';
 import { ApiKeysPanel } from './widgets/api-keys-panel/api-keys-panel';
 import { EddingtonCard } from './widgets/eddington-card/eddington-card';
 import { FilesPanel } from './widgets/files-panel/files-panel';
+import { HrZonesCard } from './widgets/hr-zones-card/hr-zones-card';
 import { McpPanel } from './widgets/mcp-panel/mcp-panel';
 import { MilestonesPanel } from './widgets/milestones-panel/milestones-panel';
 import { PmcChart } from './widgets/pmc-chart/pmc-chart';
@@ -72,6 +73,7 @@ interface TabDef {
     PmcReading,
     AcwrCard,
     EddingtonCard,
+    HrZonesCard,
     RecordsGrid,
     MilestonesPanel,
     ActivityCalendar,

@@ -1,3 +1,22 @@
+/* Columna derecha del resumen: zonas de FC sobre Eddington, junto al ACWR. */
+.overview-side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+}
+
+.overview-side > * {
+  flex: 1 1 0;
+  min-width: 0;
+  display: flex;
+}
+
+.overview-side > * > .card-panel {
+  width: 100%;
+  height: 100%;
+}
+
 .hsb-stats {
   display: flex;
   gap: 14px;
