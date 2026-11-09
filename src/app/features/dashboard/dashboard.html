@@ -289,18 +289,6 @@
               <span class="kv-val">GET /api/v1/activities/elevation-coverage</span>
             </div>
             <div class="kv-row">
-              <span class="kv-key">Completar trackpoints</span>
-              <span class="kv-val">POST /api/v1/activities/{{ '{id}' }}/complete-trackpoints</span>
-            </div>
-            <div class="kv-row">
-              <span class="kv-key">Completar métricas</span>
-              <span class="kv-val">POST /api/v1/activities/{{ '{id}' }}/complete-metrics</span>
-            </div>
-            <div class="kv-row">
-              <span class="kv-key">Completar métricas (todas)</span>
-              <span class="kv-val">POST /api/v1/activities/complete-metrics</span>
-            </div>
-            <div class="kv-row">
               <span class="kv-key">Vaciar historial</span>
               <span class="kv-val">DELETE /api/v1/activities</span>
             </div>
@@ -341,15 +329,6 @@
             >
               {{ coverageLoading() ? 'CONSULTANDO…' : 'COBERTURA DE ALTITUD' }}
             </button>
-            <button
-              type="button"
-              class="btn-outline-pill btn-compact"
-              [disabled]="completingAllMetrics()"
-              title="Completa FC, cadencia, velocidad y distancia en todas las carreras"
-              (click)="completeAllMetrics()"
-            >
-              {{ completingAllMetrics() ? 'COMPLETANDO…' : 'COMPLETAR MÉTRICAS (TODAS)' }}
-            </button>
           </div>
 
           @if (elevationCoverage(); as coverage) {
@@ -377,45 +356,6 @@
 
           @if (coverageError()) {
             <div class="empty-state">NO SE PUDO CONSULTAR LA COBERTURA DE ALTITUD.</div>
-          }
-
-          @if (metricsBatchResult(); as batch) {
-            <div class="kv-list">
-              <div class="kv-row">
-                <span class="kv-key">Actividades procesadas</span>
-                <span class="kv-val">{{ batch.activitiesProcessed }} / {{ batch.activitiesFound }}</span>
-              </div>
-              <div class="kv-row">
-                <span class="kv-key">Actividades actualizadas</span>
-                <span class="kv-val">{{ batch.activitiesUpdated }}</span>
-              </div>
-              <div class="kv-row">
-                <span class="kv-key">Trackpoints procesados</span>
-                <span class="kv-val">{{ batch.totalTrackpoints }}</span>
-              </div>
-              <div class="kv-row">
-                <span class="kv-key">Valores rellenados</span>
-                <span class="kv-val">{{ batch.totalFilled }}</span>
-              </div>
-              <div class="kv-row">
-                <span class="kv-key">Valores descartados</span>
-                <span class="kv-val">{{ batch.totalRemoved }}</span>
-              </div>
-              <div class="kv-row">
-                <span class="kv-key">Distancia ajustada</span>
-                <span class="kv-val">{{ batch.distanceAdjusted }} pts · {{ batch.distanceDiscardedMeters | number: '1.0-2' }} m</span>
-              </div>
-              @if (batch.activitiesFailed > 0) {
-                <div class="kv-row">
-                  <span class="kv-key">Actividades fallidas</span>
-                  <span class="kv-val">{{ batch.activitiesFailed }}</span>
-                </div>
-              }
-            </div>
-          }
-
-          @if (metricsBatchError(); as error) {
-            <div class="delete-alert">{{ error }}</div>
           }
 
           <div class="account-danger-zone">
@@ -591,6 +531,5 @@
     [activity]="activity"
     (close)="closeActivity()"
     (deleted)="onActivityDeleted($event)"
-    (updated)="onActivityUpdated()"
   />
 }

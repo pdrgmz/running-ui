@@ -22,8 +22,6 @@ import {
   CardiacDriftResponseDto,
   HrZonesResponseDto,
   SplitDto,
-  TrackpointCompletionResultDto,
-  TrackpointMetricsCompletionResultDto,
   TrainingLoadResponseDto,
   Vo2MaxVamResponseDto,
 } from '../../../../core/models/api.models';
@@ -91,8 +89,6 @@ export class ActivityDetail implements OnInit {
   readonly activity = input.required<Activity>();
   readonly close = output<void>();
   readonly deleted = output<string>();
-  /** Notifica al dashboard que la actividad cambió (mantenimiento de trackpoints). */
-  readonly updated = output<void>();
 
   private readonly activities = inject(ActivitiesService);
   private readonly geo = inject(GeoService);
@@ -101,8 +97,6 @@ export class ActivityDetail implements OnInit {
   protected readonly downloading = signal<'gpx' | 'geojson' | null>(null);
   protected readonly deleting = signal(false);
   protected readonly confirmingDelete = signal(false);
-  protected readonly completing = signal<'trackpoints' | 'metrics' | null>(null);
-  protected readonly completionNote = signal<string | null>(null);
 
   protected readonly sections: DetailSection[] = [
     { id: 'det-route', label: 'Mapa y perfiles' },
@@ -300,44 +294,6 @@ export class ActivityDetail implements OnInit {
     });
   }
 
-  /** POST /api/v1/activities/{id}/complete-trackpoints */
-  protected completeTrackpoints(): void {
-    if (this.completing()) {
-      return;
-    }
-    this.completing.set('trackpoints');
-    this.completionNote.set(null);
-    this.activities.completeTrackpoints(this.activity().id).subscribe({
-      next: (result) => {
-        this.completing.set(null);
-        this.completionNote.set(describeTrackpointCompletion(result));
-        this.toast.show(result.message || 'TRACKPOINTS COMPLETADOS');
-        this.loadDetail();
-        this.updated.emit();
-      },
-      error: () => this.completing.set(null),
-    });
-  }
-
-  /** POST /api/v1/activities/{id}/complete-metrics */
-  protected completeMetrics(): void {
-    if (this.completing()) {
-      return;
-    }
-    this.completing.set('metrics');
-    this.completionNote.set(null);
-    this.activities.completeMetrics(this.activity().id).subscribe({
-      next: (result) => {
-        this.completing.set(null);
-        this.completionNote.set(describeMetricsCompletion(result));
-        this.toast.show(result.message || 'MÉTRICAS COMPLETADAS');
-        this.loadDetail();
-        this.updated.emit();
-      },
-      error: () => this.completing.set(null),
-    });
-  }
-
   protected requestDelete(): void {
     this.confirmingDelete.set(true);
   }
@@ -516,30 +472,4 @@ export class ActivityDetail implements OnInit {
     }
     this.activeSection.set(current);
   }
-}
-
-function describeTrackpointCompletion(result: TrackpointCompletionResultDto): string {
-  const filled =
-    (result.latitudeFilled ?? 0) +
-    (result.longitudeFilled ?? 0) +
-    (result.altitudeFilled ?? 0) +
-    (result.heartRateFilled ?? 0) +
-    (result.cadenceFilled ?? 0) +
-    (result.speedFilled ?? 0);
-  return [
-    `${result.totalTrackpoints ?? 0} PTS`,
-    `RELLENADOS ${filled}`,
-    `DESCARTADOS ${result.totalRemoved ?? 0}`,
-    `DISTANCIA AJUSTADA ${result.distanceAdjusted ?? 0}`,
-    `ALTITUD ${(result.altitudeSource ?? '—').toUpperCase()}`,
-  ].join(' · ');
-}
-
-function describeMetricsCompletion(result: TrackpointMetricsCompletionResultDto): string {
-  return [
-    `${result.totalTrackpoints ?? 0} PTS`,
-    `RELLENADOS ${result.totalFilled ?? 0}`,
-    `DESCARTADOS ${result.totalRemoved ?? 0}`,
-    `DISTANCIA AJUSTADA ${result.distanceAdjusted ?? 0}`,
-  ].join(' · ');
 }

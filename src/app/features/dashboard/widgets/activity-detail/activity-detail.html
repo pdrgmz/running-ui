@@ -43,27 +43,6 @@
       >
         {{ downloading() === 'geojson' ? 'DESCARGANDO…' : 'GEOJSON' }}
       </button>
-      <button
-        type="button"
-        class="btn-outline-pill btn-compact"
-        [disabled]="completing() !== null"
-        title="Rellena coordenadas, altitud, FC, cadencia y velocidad interpolando con los puntos vecinos"
-        (click)="completeTrackpoints()"
-      >
-        {{ completing() === 'trackpoints' ? 'COMPLETANDO…' : 'COMPLETAR TRACKPOINTS' }}
-      </button>
-      <button
-        type="button"
-        class="btn-outline-pill btn-compact"
-        [disabled]="completing() !== null"
-        title="Rellena solo FC, cadencia, velocidad y distancia; no modifica coordenadas ni altitud"
-        (click)="completeMetrics()"
-      >
-        {{ completing() === 'metrics' ? 'COMPLETANDO…' : 'COMPLETAR MÉTRICAS' }}
-      </button>
-      @if (completionNote(); as note) {
-        <span class="detail-action-note">{{ note }}</span>
-      }
       <span class="detail-action-spacer"></span>
       @if (!confirmingDelete()) {
         <button type="button" class="btn-outline-pill btn-compact detail-danger" (click)="requestDelete()">
