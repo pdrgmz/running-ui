@@ -22,6 +22,43 @@
       </div>
     </div>
 
+    @if (trend(); as t) {
+      <div class="acwr-trend">
+        <div class="acwr-trend-head">
+          <span class="acwr-trend-title">Tendencia ACWR · {{ t.count }} días</span>
+          <span
+            class="acwr-trend-delta"
+            [class.is-up]="t.delta > 0"
+            [class.is-down]="t.delta < 0"
+          >
+            {{ t.delta > 0 ? '▲' : t.delta < 0 ? '▼' : '■' }}
+            {{ t.delta > 0 ? '+' : '' }}{{ t.delta | number: '1.2-2' }}
+          </span>
+        </div>
+        <svg
+          class="acwr-spark"
+          viewBox="0 0 600 100"
+          role="img"
+          aria-label="Evolución del ACWR en los últimos días"
+        >
+          @for (band of trendBands; track band.cls) {
+            <rect x="0" [attr.y]="band.y" width="600" [attr.height]="band.height" [class]="band.cls" />
+          }
+          <polyline
+            class="acwr-spark-line"
+            [attr.points]="t.linePoints"
+            vector-effect="non-scaling-stroke"
+          />
+          <circle class="acwr-spark-dot" [attr.cx]="t.lastX" [attr.cy]="t.lastY" r="4" />
+        </svg>
+        <div class="acwr-trend-foot">
+          <span>MÍN {{ t.min | number: '1.2-2' }}</span>
+          <span>MEDIA {{ t.avg | number: '1.2-2' }}</span>
+          <span>MÁX {{ t.max | number: '1.2-2' }}</span>
+        </div>
+      </div>
+    }
+
     <p class="acwr-recommendation">{{ a.recommendation }}</p>
 
     <div class="stat-tiles-grid">
@@ -35,6 +72,16 @@
         <span class="stat-tile-value">{{ a.chronicLoad | number: '1.1-1' }}</span>
         <span class="stat-tile-sub">aptitud física</span>
       </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Variación vs crónica</span>
+        <span class="stat-tile-value">{{ variationLabel() }}</span>
+        <span class="stat-tile-sub">aguda sobre la base</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Diferencia de carga</span>
+        <span class="stat-tile-value">{{ loadDifferenceLabel() }}</span>
+        <span class="stat-tile-sub">ATL − CTL</span>
+      </div>
     </div>
 
     <div class="kv-list">
@@ -43,8 +90,12 @@
         <span class="kv-val">{{ a.date }}</span>
       </div>
       <div class="kv-row">
-        <span class="kv-key">Zona de riesgo</span>
-        <span class="kv-val">{{ a.zone }}</span>
+        <span class="kv-key">Rango objetivo</span>
+        <span class="kv-val">0.80 – 1.30</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-key">Margen hasta riesgo</span>
+        <span class="kv-val">{{ riskMarginLabel() }}</span>
       </div>
     </div>
   } @else {

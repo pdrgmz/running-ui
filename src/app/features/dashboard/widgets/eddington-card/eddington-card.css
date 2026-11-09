@@ -1,6 +1,13 @@
 :host {
-  display: block;
+  display: flex;
   min-width: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.card-panel {
+  width: 100%;
+  height: 100%;
 }
 
 /* La lista clave/valor reparte el espacio sobrante de la celda bento */

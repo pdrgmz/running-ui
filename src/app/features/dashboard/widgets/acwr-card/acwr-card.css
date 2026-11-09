@@ -50,3 +50,86 @@
   padding: 10px 12px;
   font-family: var(--font-mono);
 }
+
+/* --- Tendencia histórica del ACWR --- */
+.acwr-trend {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.acwr-trend-head,
+.acwr-trend-foot {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-mono);
+}
+
+.acwr-trend-title {
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.acwr-trend-delta {
+  font-size: 0.72rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.acwr-trend-delta.is-up {
+  color: var(--accent-amber);
+}
+
+.acwr-trend-delta.is-down {
+  color: var(--accent-green);
+}
+
+.acwr-spark {
+  display: block;
+  width: 100%;
+  height: auto;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-input);
+}
+
+.band-risk {
+  fill: rgba(201, 79, 69, 0.18);
+}
+
+.band-warn {
+  fill: rgba(201, 143, 0, 0.18);
+}
+
+.band-ok {
+  fill: rgba(0, 230, 118, 0.14);
+}
+
+.band-low {
+  fill: rgba(107, 117, 98, 0.08);
+}
+
+.acwr-spark-line {
+  fill: none;
+  stroke: var(--text-main);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.acwr-spark-dot {
+  fill: var(--accent-green);
+  stroke: var(--text-main);
+  stroke-width: 2;
+}
+
+.acwr-trend-foot {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}

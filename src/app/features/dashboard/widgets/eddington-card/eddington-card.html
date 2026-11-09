@@ -9,7 +9,6 @@
         <div class="seniority-hero-number">{{ e.eddingtonNumber }}</div>
         <div class="seniority-hero-text">
           <span class="seniority-hero-title">E = {{ e.eddingtonNumber }} KM EN {{ e.eddingtonNumber }} DÍAS</span>
-          <span class="seniority-hero-sub">Métrica de consistencia del corredor</span>
         </div>
       </div>
 
@@ -24,7 +23,6 @@
       </div>
 
       <div class="seniority-milestone-labels">
-        <span>E = {{ e.eddingtonNumber }}</span>
         <span>PROGRESO A E + 1 · {{ progressPercent() }}%</span>
         <span>E + 1 = {{ e.nextTargetKm }} KM</span>
       </div>
@@ -38,10 +36,6 @@
       <div class="kv-row">
         <span class="kv-key">Carreras ≥ {{ e.nextTargetKm }} km necesarias</span>
         <span class="kv-val">{{ e.runsNeededForNext }}</span>
-      </div>
-      <div class="kv-row">
-        <span class="kv-key">Siguiente meta</span>
-        <span class="kv-val">{{ e.nextTargetKm }} km</span>
       </div>
     </div>
   } @else {

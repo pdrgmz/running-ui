@@ -94,8 +94,8 @@
           </div>
         }
 
-        <app-acwr-card class="col-8" [acwr]="acwr()" />
-        <div class="overview-side col-4">
+        <app-acwr-card class="col-6" [acwr]="acwr()" [history]="pmcPoints()" />
+        <div class="overview-side col-6">
           <app-hr-zones-card [summary]="summary()" />
           <app-eddington-card [eddington]="eddington()" />
         </div>
