@@ -16,6 +16,7 @@
 .training-notes{resize:vertical;min-height:74px;font-family:var(--font-mono);font-size:0.7rem}
 .form-label{font-family:var(--font-mono);font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:4px}
 .form-control{font-family:var(--font-mono);font-size:0.72rem;padding:6px 8px;border:1.5px solid var(--border-color);border-radius:var(--radius-pill);background:var(--bg-input);color:var(--text-main);width:100%}
+.form-actions{display:flex;justify-content:flex-start;gap:6px;margin-top:8px}
 
 /* ---------- Botones y acciones ---------- */
 .training-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}

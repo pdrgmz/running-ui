@@ -158,56 +158,60 @@
     <span class="block-title">Preferencias de planificación</span>
 
     @if (preferencesLoading()) {
-    <p class="loading-text">CARGANDO PREFERENCIAS…</p>
+      <p class="loading-text">CARGANDO PREFERENCIAS…</p>
     } @else {
-    @if (preferences(); as prefs) {
-    @if (!prefs.configured) {
-    <p class="account-hint">
-      Aún no has configurado la generación automática. Completa los campos y guarda para
-      activarla.
-    </p>
-    }
-    }
+      @if (preferences(); as prefs) {
+        @if (!prefs.configured) {
+          <p class="account-hint">
+            Aún no has configurado la generación automática. Completa los campos y guarda para
+            activarla.
+          </p>
+        }
+      }
 
-    <label class="training-check">
-      <input type="checkbox" name="prefEnabled" [(ngModel)]="prefEnabled" />
-      <span>Activar generación automática semanal</span>
-    </label>
-
-    <div class="form-group">
-      <label class="form-label" for="training-timezone">Zona horaria (IANA)</label>
-      <input id="training-timezone" name="prefTimezone" type="text" class="form-control" placeholder="Europe/Madrid"
-        [(ngModel)]="prefTimezone" />
-    </div>
-
-    <div class="training-inline">
       <div class="form-group">
-        <label class="form-label" for="training-days">Sesiones / semana</label>
-        <input id="training-days" name="prefDaysPerWeek" type="number" class="form-control" min="1" max="7"
-          [(ngModel)]="prefDaysPerWeek" />
+        <label class="training-check">
+          <input type="checkbox" name="prefEnabled" [(ngModel)]="prefEnabled" />
+          <span>Activar generación automática semanal</span>
+        </label>
       </div>
 
       <div class="form-group">
-        <label class="form-label" for="training-long-run">Día del rodaje largo</label>
-        <select id="training-long-run" name="prefLongRunDay" class="form-control" [(ngModel)]="prefLongRunDay">
-          @for (day of longRunDays; track day) {
-          <option [value]="day">{{ day }}</option>
-          }
-        </select>
+        <label class="form-label" for="training-timezone">Zona horaria (IANA)</label>
+        <input id="training-timezone" name="prefTimezone" type="text" class="form-control" placeholder="Europe/Madrid"
+          [(ngModel)]="prefTimezone" />
       </div>
-    </div>
 
-    <div class="form-group">
-      <label class="form-label" for="training-notes">Notas o restricciones para la IA</label>
-      <textarea id="training-notes" name="prefNotes" class="form-control training-notes" rows="3"
-        placeholder="Objetivo, lesiones, disponibilidad, preferencias de terreno…" [(ngModel)]="prefNotes"></textarea>
-    </div>
+      <div class="training-inline">
+        <div class="form-group">
+          <label class="form-label" for="training-days">Sesiones / semana</label>
+          <input id="training-days" name="prefDaysPerWeek" type="number" class="form-control" min="1" max="7"
+            [(ngModel)]="prefDaysPerWeek" />
+        </div>
 
-    <button type="button" class="btn-pill-header btn-compact" [disabled]="savingPreferences()"
-      (click)="savePreferences()">
-      {{ savingPreferences() ? 'GUARDANDO…' : 'GUARDAR PREFERENCIAS' }}
-    </button>
-    }
+        <div class="form-group">
+          <label class="form-label" for="training-long-run">Día del rodaje largo</label>
+          <select id="training-long-run" name="prefLongRunDay" class="form-control" [(ngModel)]="prefLongRunDay">
+            @for (day of longRunDays; track day) {
+            <option [value]="day">{{ day }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="training-notes">Notas o restricciones para la IA</label>
+        <textarea id="training-notes" name="prefNotes" class="form-control training-notes" rows="3"
+          placeholder="Objetivo, lesiones, disponibilidad, preferencias de terreno…" [(ngModel)]="prefNotes"></textarea>
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-pill-header btn-compact" [disabled]="savingPreferences()"
+          (click)="savePreferences()">
+          {{ savingPreferences() ? 'GUARDANDO…' : 'GUARDAR PREFERENCIAS' }}
+        </button>
+      </div>
+      }
   </section>
 
   <section class="training-block management-section">
