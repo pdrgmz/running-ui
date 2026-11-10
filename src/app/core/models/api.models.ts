@@ -1,5 +1,5 @@
 /**
- * DTOs generados a partir de `api-docs.json` (Running Tracker & Analytics API v1.4.0).
+ * DTOs generados a partir de `api-docs.json` (Running Tracker & Analytics API v1.7.0).
  * Los campos marcados como opcionales pueden no venir informados por el servidor.
  */
 
@@ -83,6 +83,9 @@ export interface ApiKeyCreatedResponseDto extends ApiKeyResponseDto {
 /* Estadísticas y récords                                              */
 /* ------------------------------------------------------------------ */
 
+/** Periodos predefinidos aceptados por GET /api/v1/stats/summary. */
+export type SummaryPeriod = 'THIS_MONTH' | 'LAST_MONTH' | 'THIS_YEAR' | 'LAST_YEAR';
+
 export interface SummaryStatsDto {
   totalActivities: number;
   totalDistanceMeters: number;
@@ -117,6 +120,8 @@ export interface PmcPointDto {
   atl: number;
   tsb: number;
   acwr: number;
+  /** Carga crónica de 28 días usada por el ACWR (v1.7.0). */
+  chronicLoad28?: number;
 }
 
 export interface EddingtonStatsDto {
@@ -194,6 +199,134 @@ export interface CardiacDriftResponseDto {
 }
 
 /* ------------------------------------------------------------------ */
+/* Entrenamientos (planes semanales generados por IA)                  */
+/* ------------------------------------------------------------------ */
+
+export type TrainingPlanStatus = 'ACTIVE' | 'ARCHIVED' | 'COMPLETED';
+export type PlanGenerationStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'TIMEOUT';
+export type WorkoutType =
+  | 'EASY'
+  | 'RECOVERY'
+  | 'LONG_RUN'
+  | 'TEMPO'
+  | 'INTERVALS'
+  | 'HILLS'
+  | 'RACE_PACE'
+  | 'RACE'
+  | 'CROSS_TRAINING'
+  | 'REST'
+  | 'OTHER';
+
+/** Preferencias para la generación automática de planes. */
+export interface TrainingPreferencesDto {
+  configured: boolean;
+  enabled: boolean;
+  timezone: string;
+  daysPerWeek: number;
+  preferredLongRunDay: string;
+  notes: string;
+  updatedAt?: string;
+}
+
+/** Actualización de preferencias de planificación. */
+export interface UpdateTrainingPreferencesRequestDto {
+  enabled?: boolean;
+  timezone?: string;
+  daysPerWeek?: number;
+  preferredLongRunDay?: string;
+  notes?: string;
+}
+
+export interface GenerateTrainingPlanRequestDto {
+  /** Lunes de la semana a generar (yyyy-MM-dd). */
+  weekStart?: string;
+  /** Archiva la versión anterior y genera una nueva. */
+  replace?: boolean;
+}
+
+export interface GenerateTrainingPlanResponseDto {
+  requestId: string;
+  weekStart: string;
+  status: PlanGenerationStatus;
+  message?: string;
+}
+
+/** Sesión planificada dentro de un plan semanal. */
+export interface WorkoutDto {
+  id: number;
+  date: string;
+  type: WorkoutType;
+  title: string;
+  description: string;
+  targetDistanceMeters: number;
+  targetDurationSeconds: number;
+  targetPaceMinPerKm: number;
+  targetHrZone: number;
+  targetLoad: number;
+  mainSet: string;
+  status: string;
+  completedActivityId: string;
+  rpe: number;
+  feedback: string;
+}
+
+/** Resumen de un plan semanal para listados. */
+export interface TrainingPlanSummaryDto {
+  planId: string;
+  weekStart: string;
+  weekEnd: string;
+  status: TrainingPlanStatus;
+  version: number;
+  summary: string;
+  targetWeeklyDistanceMeters: number;
+  targetWeeklyLoad: number;
+  workoutCount: number;
+  generatedAt: string;
+}
+
+/** Plan semanal con sus sesiones. */
+export interface TrainingPlanResponseDto {
+  planId: string;
+  userId: number;
+  weekStart: string;
+  weekEnd: string;
+  status: TrainingPlanStatus;
+  version: number;
+  requestId: string;
+  summary: string;
+  coachNotes: string;
+  targetWeeklyDistanceMeters: number;
+  targetWeeklyLoad: number;
+  model: string;
+  promptVersion: string;
+  generatedAt: string;
+  workouts: WorkoutDto[];
+}
+
+/** Estado de un job de generación de plan. */
+export interface PlanGenerationJobResponseDto {
+  requestId: string;
+  userId: number;
+  weekStart: string;
+  status: PlanGenerationStatus;
+  source: string;
+  attempts: number;
+  planId: string;
+  error: string;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string;
+}
+
+export interface DeletedPlansResponseDto {
+  deleted: number;
+}
+
+export interface DeletedJobsResponseDto {
+  deleted: number;
+}
+
+/* ------------------------------------------------------------------ */
 /* Actividades                                                         */
 /* ------------------------------------------------------------------ */
 
@@ -263,6 +396,15 @@ export interface ActivityTrackpoint {
   heartRate: number | null;
   cadence: number | null;
   speed: number | null;
+}
+
+/** Resumen del recálculo masivo de métricas derivadas de las actividades. */
+export interface MetricsRecalculationResponseDto {
+  activitiesProcessed: number;
+  trainingLoadRecalculated: number;
+  vo2MaxRecalculated: number;
+  athleteMaxHrUsed: number;
+  durationMs: number;
 }
 
 /* ------------------------------------------------------------------ */

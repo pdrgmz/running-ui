@@ -3,6 +3,39 @@
   min-width: 0;
 }
 
+.summary-period {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-left: auto;
+}
+
+.summary-period-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.summary-period-select {
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 800;
+  color: var(--text-main);
+  background: var(--bg-input);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+  cursor: pointer;
+}
+
+.summary-period-select:focus {
+  outline: none;
+  border-color: var(--accent-green);
+}
+
 /* Rejilla 3×3 que llena la altura de la tarjeta (celda bento completa) */
 .stat-tiles-grid {
   grid-template-columns: repeat(3, minmax(0, 1fr));

@@ -1,0 +1,79 @@
+:host{display:block;min-width:0}
+.training-block{display:flex;flex-direction:column;gap:12px;min-width:0;border-top:1.5px dashed var(--border-subtle);padding-top:16px}
+.training-inline{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;align-items:end}
+.training-check{display:flex;align-items:center;gap:9px;font-family:var(--font-mono);font-size:0.72rem;font-weight:700;color:var(--text-main);cursor:pointer}
+.training-check input{width:16px;height:16px;accent-color:var(--accent-green)}
+.training-check--inline{padding-bottom:9px}
+.training-notes{resize:vertical;min-height:74px;font-family:var(--font-mono);font-size:0.72rem}
+.training-section-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.training-section-head .block-title{margin:0}
+.training-range{display:flex;align-items:flex-end;gap:8px;flex-wrap:wrap}
+.training-range .form-label{margin-bottom:0}
+.training-range .form-control{width:140px;padding:6px 8px;font-size:0.7rem}
+.training-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
+.training-link{border:0;background:none;padding:0;color:inherit;font:inherit;font-weight:800;text-align:left;cursor:pointer;text-decoration:underline;text-decoration-color:var(--border-color);text-underline-offset:3px}
+.training-link:hover{color:var(--accent-green);text-decoration-color:var(--accent-green)}
+.training-table{font-size:0.72rem}
+.training-danger{border-color:var(--accent-red);color:var(--accent-red)}
+.training-danger:hover{background:var(--accent-red);color:#fff}
+.training-danger-fill{background:var(--accent-red);border-color:var(--accent-red);color:#fff}
+.training-cleanup-select{width:auto;min-width:150px;padding:6px 8px;font-size:0.68rem}
+.training-status-badge{display:inline-flex;align-items:center;width:fit-content;border:1.5px solid var(--border-color);border-radius:var(--radius-pill);background:var(--bg-card);padding:2px 9px;font-family:var(--font-mono);font-size:0.58rem;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;white-space:nowrap}
+.training-status-badge[data-status='ACTIVE'],.training-status-badge[data-status='COMPLETED']{border-color:var(--accent-green);color:var(--accent-green)}
+.training-status-badge[data-status='PENDING'],.training-status-badge[data-status='RUNNING'],.training-status-badge[data-status='ARCHIVED']{border-color:var(--accent-amber);color:var(--accent-amber)}
+.training-status-badge[data-status='FAILED'],.training-status-badge[data-status='TIMEOUT']{border-color:var(--accent-red);color:var(--accent-red)}
+.training-job-status{border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-main);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.training-job-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.training-job-id{font-family:var(--font-mono);font-size:0.62rem;font-weight:700;color:var(--text-muted)}
+.training-error-text{color:var(--accent-red)}
+.training-summary{font-family:var(--font-mono);font-size:0.74rem;line-height:1.6;border-left:4px solid var(--accent-green);padding-left:12px;margin:0}
+.training-plan-title{display:flex;align-items:center;gap:10px;flex-wrap:wrap;min-width:0}
+.training-plan-tiles{grid-template-columns:repeat(auto-fit,minmax(140px,1fr))}
+.training-model{font-size:0.95rem}
+.workout-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.workout-card{display:flex;flex-direction:column;gap:7px;border:1.5px solid var(--border-color);border-left:5px solid var(--border-color);border-radius:var(--radius-md);background:var(--bg-main);padding:12px 14px;min-width:0}
+.workout-card[data-type='EASY']{border-left-color:var(--accent-green)}
+.workout-card[data-type='RECOVERY']{border-left-color:#7bbf8f}
+.workout-card[data-type='LONG_RUN']{border-left-color:#3f8fbf}
+.workout-card[data-type='TEMPO'],.workout-card[data-type='RACE_PACE']{border-left-color:var(--accent-amber)}
+.workout-card[data-type='INTERVALS'],.workout-card[data-type='HILLS']{border-left-color:#b06ad1}
+.workout-card[data-type='RACE']{border-left-color:var(--accent-red)}
+.workout-card[data-type='REST'],.workout-card[data-type='CROSS_TRAINING']{border-left-color:var(--text-muted)}
+.workout-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.workout-date{font-family:var(--font-mono);font-size:0.62rem;font-weight:800;text-transform:uppercase;color:var(--text-muted)}
+.workout-type{font-family:var(--font-mono);font-size:0.58rem;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;border:1.5px solid var(--border-color);border-radius:var(--radius-pill);padding:2px 8px;white-space:nowrap}
+.workout-title{font-family:var(--font-mono);font-size:0.82rem;font-weight:800}
+.workout-desc{margin:0;font-size:0.7rem;color:var(--text-muted);line-height:1.5}
+.workout-metrics{display:flex;flex-wrap:wrap;gap:6px}
+.workout-metrics span{font-family:var(--font-mono);font-size:0.62rem;font-weight:700;border:1.5px solid var(--border-subtle);border-radius:var(--radius-pill);background:var(--bg-card);padding:2px 8px;white-space:nowrap}
+.workout-set{margin:0;font-family:var(--font-mono);font-size:0.66rem;line-height:1.55;white-space:pre-wrap;border-top:1.5px dashed var(--border-subtle);padding-top:7px}
+.workout-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-top:auto}
+.workout-rpe{font-family:var(--font-mono);font-size:0.6rem;font-weight:800;color:var(--text-muted)}
+.workout-feedback{margin:0;font-size:0.66rem;color:var(--text-muted);font-style:italic;line-height:1.5}
+.week-calendar{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+.day-card{display:flex;flex-direction:column;gap:8px;border:1.5px solid var(--border-color);border-radius:var(--radius-md);background:var(--bg-main);padding:10px;min-width:0;min-height:250px}
+.day-card[data-type='EASY']{border-color:var(--accent-green)}
+.day-card[data-type='RECOVERY']{border-color:#7bbf8f}
+.day-card[data-type='LONG_RUN']{border-color:#3f8fbf}
+.day-card[data-type='TEMPO'],.day-card[data-type='RACE_PACE']{border-color:var(--accent-amber)}
+.day-card[data-type='INTERVALS'],.day-card[data-type='HILLS']{border-color:#b06ad1}
+.day-card[data-type='RACE']{border-color:var(--accent-red)}
+.day-card[data-type='REST'],.day-card[data-type='CROSS_TRAINING']{border-color:var(--text-muted)}
+.day-card.day-passed{opacity:0.6}
+.day-card.day-done{box-shadow:0 0 0 1.5px var(--accent-green)}
+.day-card--empty{border-style:dashed;opacity:0.55}
+.day-header{display:flex;justify-content:space-between;align-items:flex-start;gap:6px;margin-bottom:4px}
+.day-name{font-family:var(--font-mono);font-size:0.6rem;font-weight:800;text-transform:uppercase;color:var(--text-muted)}
+.day-date{font-family:var(--font-mono);font-size:0.58rem;color:var(--text-muted)}
+.day-badge{font-family:var(--font-mono);font-size:0.5rem;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;border:1.5px solid var(--border-color);border-radius:var(--radius-pill);padding:1px 6px;white-space:nowrap;color:var(--text-muted)}
+.day-title{font-family:var(--font-mono);font-size:0.85rem;font-weight:800;margin:6px 0 2px;overflow-wrap:anywhere;color:var(--text-main)}
+.day-desc{margin:0 0 6px;font-size:0.6rem;color:var(--text-muted);line-height:1.4;flex:1}
+.day-metrics{display:flex;gap:6px;margin:6px 0}
+.day-metric{font-family:var(--font-mono);font-size:0.6rem;font-weight:700;border:1.5px solid var(--border-subtle);border-radius:var(--radius-pill);background:var(--bg-card);padding:2px 8px;white-space:nowrap}
+.day-charge{display:flex;align-items:center;gap:6px;margin:4px 0}
+.charge-dot{width:7px;height:7px;border-radius:50%;background:var(--accent-green)}
+.day-detail{margin:4px 0 0;font-size:0.6rem;color:var(--text-muted);font-style:italic;line-height:1.4}
+.day-state{font-family:var(--font-mono);font-size:0.58rem;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;border:1.5px solid var(--border-color);border-radius:var(--radius-pill);padding:1px 8px;white-space:nowrap;color:var(--text-muted);margin-top:auto}
+.day-state.day-state--done{border-color:var(--accent-green);color:var(--accent-green);background:rgba(var(--accent-green-rgb, 34, 197, 94), 0.1)}
+.day-empty{font-family:var(--font-mono);font-size:0.6rem;color:var(--text-muted);font-style:italic;margin-top:auto;text-align:center}
+@media (max-width:900px){.training-inline,.training-range{grid-template-columns:1fr}.training-section-head{align-items:stretch}.training-actions{justify-content:flex-start}.week-calendar{grid-template-columns:repeat(4,1fr)}}

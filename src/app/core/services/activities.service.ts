@@ -8,6 +8,7 @@ import {
   CardiacDriftResponseDto,
   ElevationCoverageDto,
   HrZonesResponseDto,
+  MetricsRecalculationResponseDto,
   PageActivity,
   SplitDto,
   TrainingLoadResponseDto,
@@ -75,6 +76,17 @@ export class ActivitiesService {
   /** GET /api/v1/activities/elevation-coverage — cobertura de altitudes del usuario. */
   elevationCoverage(): Observable<ElevationCoverageDto> {
     return this.http.get<ElevationCoverageDto>(this.api.url('/api/v1/activities/elevation-coverage'));
+  }
+
+  /**
+   * POST /api/v1/activities/recalculate-metrics — recalcula en bloque el
+   * training load (TRIMP/HRSS), el VO2Max y la VAM de todas las carreras.
+   */
+  recalculateMetrics(): Observable<MetricsRecalculationResponseDto> {
+    return this.http.post<MetricsRecalculationResponseDto>(
+      this.api.url('/api/v1/activities/recalculate-metrics'),
+      {},
+    );
   }
 
   /** GET /api/v1/analytics/{id}/splits — splits por kilómetro. */

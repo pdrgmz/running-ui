@@ -99,13 +99,210 @@ function route(req, path, url, body, res) {
 
   // --- Estadísticas ---
   if (method === 'GET' && path === '/api/v1/stats/summary') {
-    return send(res, 200, summary());
+    const period = url.searchParams.get('period') ?? undefined;
+    const yearParam = url.searchParams.get('year');
+    const validPeriods = ['THIS_MONTH', 'LAST_MONTH', 'THIS_YEAR', 'LAST_YEAR'];
+    if (period && !validPeriods.includes(period)) {
+      return send(res, 400, error(400, 'Bad Request', `Periodo no válido: ${period}`));
+    }
+    const year = yearParam === null ? undefined : Number(yearParam);
+    if (yearParam !== null && (!Number.isInteger(year) || year < 1900 || year > 3000)) {
+      return send(res, 400, error(400, 'Bad Request', `Año no válido: ${yearParam}`));
+    }
+    return send(res, 200, summary(period, year));
   }
   if (method === 'GET' && path === '/api/v1/stats/records') {
     return send(res, 200, records());
   }
   if (method === 'POST' && path === '/api/v1/stats/recalculate') {
     return send(res, 200, { message: 'Estadísticas y récords recalculados' });
+  }
+
+  // --- Entrenamientos ---
+  if (method === 'GET' && path === '/api/v1/training/preferences') {
+    return send(res, 200, trainingPreferences);
+  }
+  if (method === 'PUT' && path === '/api/v1/training/preferences') {
+    const days = body?.daysPerWeek;
+    if (days !== undefined && (!Number.isInteger(days) || days < 1 || days > 7)) {
+      return send(res, 400, error(400, 'Bad Request', 'daysPerWeek debe estar entre 1 y 7'));
+    }
+    trainingPreferences = {
+      ...trainingPreferences,
+      enabled: body?.enabled ?? trainingPreferences.enabled,
+      timezone: body?.timezone ?? trainingPreferences.timezone,
+      daysPerWeek: days ?? trainingPreferences.daysPerWeek,
+      preferredLongRunDay: body?.preferredLongRunDay ?? trainingPreferences.preferredLongRunDay,
+      notes: body?.notes ?? trainingPreferences.notes,
+      configured: true,
+      updatedAt: new Date().toISOString(),
+    };
+    return send(res, 200, trainingPreferences);
+  }
+
+  if (method === 'POST' && path === '/api/v1/training/plans/generate') {
+    ensureSeedTraining();
+    const weekStart = body?.weekStart ?? nextMonday();
+    if (!isMonday(weekStart)) {
+      return send(res, 400, error(400, 'Bad Request', 'weekStart debe ser un lunes'));
+    }
+    const existing = [...trainingPlans.values()].filter(
+      (plan) => plan.weekStart === weekStart && plan.status === 'ACTIVE',
+    );
+    if (existing.length > 0 && !body?.replace) {
+      return send(res, 409, error(409, 'Conflict', 'Ya existe un plan activo para esa semana'));
+    }
+    if (body?.replace) {
+      for (const plan of existing) {
+        plan.status = 'ARCHIVED';
+      }
+    }
+    const requestId = `job-${++generationJobSeq}`;
+    const now = new Date().toISOString();
+    const job = {
+      requestId,
+      userId: 1,
+      weekStart,
+      status: 'PENDING',
+      source: 'n8n',
+      attempts: 0,
+      planId: null,
+      error: null,
+      createdAt: now,
+      updatedAt: now,
+      completedAt: null,
+    };
+    generationJobs.set(requestId, job);
+    // Simula el webhook de n8n: el job pasa a RUNNING y guarda el plan.
+    setTimeout(() => completeGenerationJob(requestId), 3500);
+    return send(res, 202, {
+      requestId,
+      weekStart,
+      status: 'PENDING',
+      message: 'Generación encolada',
+    });
+  }
+
+  if (method === 'GET' && path === '/api/v1/training/plans/current') {
+    ensureSeedTraining();
+    const currentWeek = currentMonday();
+    const active = [...trainingPlans.values()]
+      .filter((plan) => plan.status === 'ACTIVE')
+      .sort((a, b) => (a.weekStart < b.weekStart ? 1 : -1));
+    const plan = active.find((item) => item.weekStart === currentWeek) ?? active[0];
+    if (!plan) {
+      return send(res, 204, null);
+    }
+    return send(res, 200, plan);
+  }
+
+  let trainingMatch = path.match(/^\/api\/v1\/training\/plans\/week\/([^/]+)$/);
+  if (trainingMatch) {
+    ensureSeedTraining();
+    const weekStart = decodeURIComponent(trainingMatch[1]);
+    if (!isMonday(weekStart)) {
+      return send(res, 400, error(400, 'Bad Request', 'La fecha no es un lunes'));
+    }
+    if (method === 'GET') {
+      const plan = [...trainingPlans.values()]
+        .filter((item) => item.weekStart === weekStart)
+        .sort((a, b) => b.version - a.version)[0];
+      if (!plan) {
+        return send(res, 404, error(404, 'Not Found', 'No hay plan para esa semana'));
+      }
+      return send(res, 200, plan);
+    }
+    if (method === 'DELETE') {
+      let deleted = 0;
+      for (const [id, plan] of trainingPlans) {
+        if (plan.weekStart === weekStart) {
+          trainingPlans.delete(id);
+          deleted += 1;
+        }
+      }
+      return send(res, 200, { deleted });
+    }
+  }
+
+  if (method === 'GET' && path === '/api/v1/training/plans') {
+    ensureSeedTraining();
+    const from = url.searchParams.get('from');
+    const to = url.searchParams.get('to');
+    const list = [...trainingPlans.values()]
+      .filter((plan) => (!from || plan.weekStart >= from) && (!to || plan.weekStart <= to))
+      .sort((a, b) => (a.weekStart < b.weekStart ? 1 : -1))
+      .map(planSummary);
+    return send(res, 200, list);
+  }
+
+  trainingMatch = path.match(/^\/api\/v1\/training\/plans\/([^/]+)$/);
+  if (trainingMatch) {
+    ensureSeedTraining();
+    const planId = decodeURIComponent(trainingMatch[1]);
+    const plan = trainingPlans.get(planId);
+    if (!plan) {
+      return send(res, 404, error(404, 'Not Found', 'El plan no existe o no pertenece al usuario'));
+    }
+    if (method === 'GET') {
+      return send(res, 200, plan);
+    }
+    if (method === 'DELETE') {
+      trainingPlans.delete(planId);
+      for (const job of generationJobs.values()) {
+        if (job.planId === planId) {
+          job.planId = null;
+        }
+      }
+      return send(res, 204, null);
+    }
+  }
+
+  if (method === 'GET' && path === '/api/v1/training/generation-jobs') {
+    ensureSeedTraining();
+    const list = [...generationJobs.values()].sort((a, b) =>
+      a.createdAt < b.createdAt ? 1 : -1,
+    );
+    return send(res, 200, list);
+  }
+  if (method === 'DELETE' && path === '/api/v1/training/generation-jobs') {
+    const status = url.searchParams.get('status');
+    const force = url.searchParams.get('force') === 'true';
+    const validStatuses = ['PENDING', 'RUNNING', 'COMPLETED', 'FAILED', 'TIMEOUT'];
+    if (!status || !validStatuses.includes(status)) {
+      return send(res, 400, error(400, 'Bad Request', 'Estado no válido'));
+    }
+    if (status === 'RUNNING' && !force) {
+      return send(res, 409, error(409, 'Conflict', 'Los jobs RUNNING requieren force=true'));
+    }
+    let deleted = 0;
+    for (const [id, job] of generationJobs) {
+      if (job.status === status) {
+        generationJobs.delete(id);
+        deleted += 1;
+      }
+    }
+    return send(res, 200, { deleted });
+  }
+
+  trainingMatch = path.match(/^\/api\/v1\/training\/generation-jobs\/([^/]+)$/);
+  if (trainingMatch) {
+    ensureSeedTraining();
+    const requestId = decodeURIComponent(trainingMatch[1]);
+    const job = generationJobs.get(requestId);
+    if (!job) {
+      return send(res, 404, error(404, 'Not Found', 'El job no existe o no pertenece al usuario'));
+    }
+    if (method === 'GET') {
+      return send(res, 200, job);
+    }
+    if (method === 'DELETE') {
+      const force = url.searchParams.get('force') === 'true';
+      if (job.status === 'RUNNING' && !force) {
+        return send(res, 409, error(409, 'Conflict', 'El job está RUNNING y requiere force=true'));
+      }
+      generationJobs.delete(requestId);
+      return send(res, 204, null);
+    }
   }
 
   // --- Analítica global ---
@@ -130,6 +327,17 @@ function route(req, path, url, body, res) {
   }
 
   // --- Actividades ---
+  if (method === 'POST' && path === '/api/v1/activities/recalculate-metrics') {
+    const total = activities().length;
+    return send(res, 200, {
+      activitiesProcessed: total,
+      trainingLoadRecalculated: total,
+      vo2MaxRecalculated: Math.max(0, total - 2),
+      athleteMaxHrUsed: 195,
+      durationMs: 1840,
+    });
+  }
+
   if (method === 'GET' && path === '/api/v1/activities') {
     const page = Number(url.searchParams.get('page') ?? 0);
     const size = Number(url.searchParams.get('size') ?? 20);
@@ -462,6 +670,21 @@ const mcpSessionId = 'mock-mcp-session-0001';
 const DELETION_DURATION_MS = 2500;
 let deletionJob = null;
 
+/* Entrenamientos: preferencias, planes y jobs de generación en memoria. */
+let trainingPreferences = {
+  configured: false,
+  enabled: false,
+  timezone: 'Europe/Madrid',
+  daysPerWeek: 5,
+  preferredLongRunDay: 'SATURDAY',
+  notes: '',
+  updatedAt: null,
+};
+const trainingPlans = new Map();
+const generationJobs = new Map();
+let trainingPlanSeq = 0;
+let generationJobSeq = 0;
+
 /* Claves de API en memoria (el valor `key` solo se devuelve al crearlas). */
 let apiKeySeq = 4;
 const apiKeys = [
@@ -677,8 +900,32 @@ function activities() {
     .sort((a, b) => (a.startTime < b.startTime ? 1 : a.startTime > b.startTime ? -1 : 0));
 }
 
-function summary() {
-  const all = activities();
+function matchesPeriod(dateValue, period) {
+  const date = new Date(dateValue);
+  const now = new Date();
+  if (period === 'THIS_MONTH') {
+    return date.getFullYear() === now.getFullYear() && date.getMonth() === now.getMonth();
+  }
+  if (period === 'LAST_MONTH') {
+    const last = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    return date.getFullYear() === last.getFullYear() && date.getMonth() === last.getMonth();
+  }
+  if (period === 'THIS_YEAR') {
+    return date.getFullYear() === now.getFullYear();
+  }
+  if (period === 'LAST_YEAR') {
+    return date.getFullYear() === now.getFullYear() - 1;
+  }
+  return true;
+}
+
+function summary(period, year) {
+  let all = activities();
+  if (year !== undefined) {
+    all = all.filter((activity) => new Date(activity.startTime).getFullYear() === year);
+  } else if (period) {
+    all = all.filter((activity) => matchesPeriod(activity.startTime, period));
+  }
   if (all.length === 0) {
     return {
       totalActivities: 0,
@@ -743,9 +990,145 @@ function pmc(start, end) {
       atl: Number(atl.toFixed(2)),
       tsb: Number(tsb.toFixed(2)),
       acwr: Number((atl / ctl).toFixed(2)),
+      chronicLoad28: Number((ctl * 0.86).toFixed(2)),
     });
   }
   return points;
+}
+
+/* ------------------------------------------------------------------ */
+/* Entrenamientos: datos de demostración                               */
+/* ------------------------------------------------------------------ */
+
+function ensureSeedTraining() {
+  if (trainingPlans.size > 0) {
+    return;
+  }
+  const current = currentMonday();
+  const previous = isoDate(addDays(new Date(`${current}T00:00:00Z`), -7));
+  const activePlan = makeTrainingPlan(current, 'ACTIVE', 1);
+  const archivedPlan = makeTrainingPlan(previous, 'ARCHIVED', 1);
+  trainingPlans.set(activePlan.planId, activePlan);
+  trainingPlans.set(archivedPlan.planId, archivedPlan);
+
+  const now = new Date().toISOString();
+  const job = {
+    requestId: `job-${++generationJobSeq}`,
+    userId: 1,
+    weekStart: current,
+    status: 'COMPLETED',
+    source: 'n8n',
+    attempts: 1,
+    planId: activePlan.planId,
+    error: null,
+    createdAt: now,
+    updatedAt: now,
+    completedAt: now,
+  };
+  generationJobs.set(job.requestId, job);
+}
+
+function makeTrainingPlan(weekStart, status, version) {
+  trainingPlanSeq += 1;
+  const start = new Date(`${weekStart}T00:00:00Z`);
+  const workoutStatus = status === 'ARCHIVED' ? 'COMPLETED' : 'PENDING';
+  const templates = [
+    { offset: 0, type: 'RECOVERY', title: 'Rodaje de recuperación', distance: 6000, duration: 2100, pace: 5.8, zone: 1, load: 35, mainSet: '25 min suaves + 4×30 s de movilidad.' },
+    { offset: 1, type: 'INTERVALS', title: 'Series 6×800 m', distance: 10000, duration: 3300, pace: 4.6, zone: 4, load: 95, mainSet: 'Calentamiento 2 km + 6×800 m a 4:10-4:20 /km con 90 s de recuperación + 1,5 km suave.' },
+    { offset: 3, type: 'TEMPO', title: 'Tempo progresivo', distance: 9000, duration: 3000, pace: 4.8, zone: 3, load: 75, mainSet: '3 km suaves + 4 km a ritmo tempo + 2 km suaves.' },
+    { offset: 5, type: 'LONG_RUN', title: 'Tirada larga', distance: 16000, duration: 5400, pace: 5.3, zone: 2, load: 110, mainSet: 'Rodaje continuo en Z2, últimos 3 km a ritmo medio.' },
+  ];
+  const workouts = templates.map((template, index) => ({
+    id: trainingPlanSeq * 100 + index,
+    date: isoDate(addDays(start, template.offset)),
+    type: template.type,
+    title: template.title,
+    description: 'Sesión generada por el entrenador IA según tu carga y preferencias.',
+    targetDistanceMeters: template.distance,
+    targetDurationSeconds: template.duration,
+    targetPaceMinPerKm: template.pace,
+    targetHrZone: template.zone,
+    targetLoad: template.load,
+    mainSet: template.mainSet,
+    status: workoutStatus,
+    completedActivityId: '',
+    rpe: workoutStatus === 'COMPLETED' ? 6 : 0,
+    feedback: workoutStatus === 'COMPLETED' ? 'Sensaciones buenas, ritmo controlado.' : '',
+  }));
+  return {
+    planId: `plan-${trainingPlanSeq}`,
+    userId: 1,
+    weekStart,
+    weekEnd: isoDate(addDays(start, 6)),
+    status,
+    version,
+    requestId: `seed-job-${trainingPlanSeq}`,
+    summary: 'Semana de construcción con una sesión de calidad, un tempo y una tirada larga.',
+    coachNotes: 'Prioriza el descanso entre sesiones intensas y ajusta si el ACWR supera 1,4.',
+    targetWeeklyDistanceMeters: workouts.reduce((acc, workout) => acc + workout.targetDistanceMeters, 0),
+    targetWeeklyLoad: workouts.reduce((acc, workout) => acc + workout.targetLoad, 0),
+    model: 'gpt-4.1-mini',
+    promptVersion: 'v3',
+    generatedAt: new Date().toISOString(),
+    workouts,
+  };
+}
+
+function planSummary(plan) {
+  return {
+    planId: plan.planId,
+    weekStart: plan.weekStart,
+    weekEnd: plan.weekEnd,
+    status: plan.status,
+    version: plan.version,
+    summary: plan.summary,
+    targetWeeklyDistanceMeters: plan.targetWeeklyDistanceMeters,
+    targetWeeklyLoad: plan.targetWeeklyLoad,
+    workoutCount: plan.workouts.length,
+    generatedAt: plan.generatedAt,
+  };
+}
+
+function completeGenerationJob(requestId) {
+  const job = generationJobs.get(requestId);
+  if (!job) {
+    return;
+  }
+  job.status = 'RUNNING';
+  job.attempts += 1;
+  job.updatedAt = new Date().toISOString();
+
+  setTimeout(() => {
+    const current = generationJobs.get(requestId);
+    if (!current) {
+      return;
+    }
+    const version =
+      [...trainingPlans.values()].filter((plan) => plan.weekStart === current.weekStart).length + 1;
+    const plan = makeTrainingPlan(current.weekStart, 'ACTIVE', version);
+    trainingPlans.set(plan.planId, plan);
+    current.status = 'COMPLETED';
+    current.planId = plan.planId;
+    current.updatedAt = new Date().toISOString();
+    current.completedAt = current.updatedAt;
+  }, 1500);
+}
+
+function currentMonday() {
+  const now = new Date();
+  const diff = (now.getUTCDay() + 6) % 7;
+  return isoDate(
+    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - diff)),
+  );
+}
+
+function nextMonday() {
+  return isoDate(addDays(new Date(`${currentMonday()}T00:00:00Z`), 7));
+}
+
+function isMonday(value) {
+  const date = new Date(`${value}T00:00:00Z`);
+  return !Number.isNaN(date.getTime()) && date.getUTCDay() === 1 && isoDate(date) === value;
 }
 
 function splits(id) {

@@ -18,9 +18,11 @@ import {
   EddingtonStatsDto,
   ElevationCoverageDto,
   HrZonesResponseDto,
+  MetricsRecalculationResponseDto,
   PageActivity,
   PmcPointDto,
   RecordResponseDto,
+  SummaryPeriod,
   SummaryStatsDto,
 } from '../../core/models/api.models';
 import { ActivitiesService } from '../../core/services/activities.service';
@@ -47,8 +49,17 @@ import { PmcChart } from './widgets/pmc-chart/pmc-chart';
 import { PmcReading } from './widgets/pmc-reading/pmc-reading';
 import { RecordsGrid } from './widgets/records-grid/records-grid';
 import { SummaryStats } from './widgets/summary-stats/summary-stats';
+import { TrainingPanel } from './widgets/training-panel/training-panel';
 
-type Tab = 'overview' | 'records' | 'activities' | 'files' | 'heatmap' | 'mcp' | 'account';
+type Tab =
+  | 'overview'
+  | 'training'
+  | 'records'
+  | 'activities'
+  | 'files'
+  | 'heatmap'
+  | 'mcp'
+  | 'account';
 
 /** Actividades por página en el calendario (cada página cubre ~3 semanas). */
 const CALENDAR_PAGE_SIZE = 15;
@@ -85,6 +96,7 @@ interface TabDef {
     FilesPanel,
     McpPanel,
     ApiKeysPanel,
+    TrainingPanel,
     DurationPipe,
     KmPipe,
     PacePipe,
@@ -106,6 +118,7 @@ export class Dashboard implements OnInit {
 
   protected readonly tabs: TabDef[] = [
     { id: 'overview', label: 'Resumen' },
+    { id: 'training', label: 'Entrenamientos' },
     { id: 'records', label: 'Récords & Logros' },
     { id: 'activities', label: 'Actividades' },
     { id: 'files', label: 'Archivos' },
@@ -117,6 +130,9 @@ export class Dashboard implements OnInit {
   protected readonly activeTab = signal<Tab>('overview');
   protected readonly loading = signal(true);
   protected readonly recalibrating = signal(false);
+  protected readonly recalculatingMetrics = signal(false);
+  protected readonly metricsRecalculation = signal<MetricsRecalculationResponseDto | null>(null);
+  protected readonly summaryPeriod = signal<SummaryPeriod | 'ALL'>('ALL');
   protected readonly elevationCoverage = signal<ElevationCoverageDto | null>(null);
   protected readonly coverageLoading = signal(false);
   protected readonly coverageError = signal(false);
@@ -185,9 +201,12 @@ export class Dashboard implements OnInit {
     this.loading.set(true);
     this.recentZones.set({});
     this.milestones.refreshIfLoaded();
+    const period = this.summaryPeriod();
     forkJoin({
       me: this.auth.loadMe().pipe(catchError(() => of(null))),
-      summary: this.stats.summary().pipe(catchError(() => of(null))),
+      summary: this.stats
+        .summary(period === 'ALL' ? undefined : period)
+        .pipe(catchError(() => of(null))),
       records: this.stats.records().pipe(catchError(() => of([] as RecordResponseDto[]))),
       pmc: this.stats.pmc().pipe(catchError(() => of([] as PmcPointDto[]))),
       eddington: this.stats.eddington().pipe(catchError(() => of(null))),
@@ -314,6 +333,38 @@ export class Dashboard implements OnInit {
     this.toast.show(`SERVIDOR API: ${this.api.baseUrl() || '(mismo origen)'}`);
   }
 
+  /** GET /api/v1/stats/summary?period=… — cambia el rango del resumen. */
+  protected applySummaryPeriod(period: SummaryPeriod | 'ALL'): void {
+    this.summaryPeriod.set(period);
+    this.stats
+      .summary(period === 'ALL' ? undefined : period)
+      .pipe(catchError(() => of(null)))
+      .subscribe((summary) => {
+        if (summary) {
+          this.summary.set(summary);
+        }
+      });
+  }
+
+  /** POST /api/v1/activities/recalculate-metrics — TRIMP/HRSS, VO2Max y VAM. */
+  protected recalculateMetrics(): void {
+    if (this.recalculatingMetrics()) {
+      return;
+    }
+    this.recalculatingMetrics.set(true);
+    this.activities.recalculateMetrics().subscribe({
+      next: (result) => {
+        this.recalculatingMetrics.set(false);
+        this.metricsRecalculation.set(result);
+        this.toast.show(
+          `MÉTRICAS RECALCULADAS: ${result.trainingLoadRecalculated} CARGAS · ${result.vo2MaxRecalculated} VO2MAX`,
+        );
+        this.loadAll();
+      },
+      error: () => this.recalculatingMetrics.set(false),
+    });
+  }
+
   /** Fuerza el recálculo de estadísticas y récords en el backend. */
   protected recalculate(): void {
     if (this.recalibrating()) {
@@ -324,8 +375,11 @@ export class Dashboard implements OnInit {
       next: () => {
         this.recalibrating.set(false);
         this.toast.show('ESTADÍSTICAS Y RÉCORDS RECALCULADOS');
+        const period = this.summaryPeriod();
         forkJoin({
-          summary: this.stats.summary().pipe(catchError(() => of(null))),
+          summary: this.stats
+            .summary(period === 'ALL' ? undefined : period)
+            .pipe(catchError(() => of(null))),
           records: this.stats.records().pipe(catchError(() => of([] as RecordResponseDto[]))),
         }).subscribe((res) => {
           this.summary.set(res.summary);

@@ -1,6 +1,19 @@
 <article class="card-panel">
   <div class="card-header-bar">
     <span class="card-tag-badge">/STATS/SUMMARY</span>
+    <label class="summary-period">
+      <span class="summary-period-label">Periodo</span>
+      <select
+        class="summary-period-select"
+        [ngModel]="period()"
+        (ngModelChange)="onPeriodChange($event)"
+        aria-label="Periodo del resumen"
+      >
+        @for (option of periodOptions; track option.value) {
+          <option [value]="option.value">{{ option.label }}</option>
+        }
+      </select>
+    </label>
   </div>
 
   @if (summary(); as s) {

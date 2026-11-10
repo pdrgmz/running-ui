@@ -6,6 +6,7 @@ import {
   EddingtonStatsDto,
   PmcPointDto,
   RecordResponseDto,
+  SummaryPeriod,
   SummaryStatsDto,
 } from '../models/api.models';
 import { ApiConfigService } from './api-config.service';
@@ -19,9 +20,19 @@ export class StatsService {
   private readonly http = inject(HttpClient);
   private readonly api = inject(ApiConfigService);
 
-  /** GET /api/v1/stats/summary — resumen acumulado del corredor. */
-  summary(): Observable<SummaryStatsDto> {
-    return this.http.get<SummaryStatsDto>(this.api.url('/api/v1/stats/summary'));
+  /**
+   * GET /api/v1/stats/summary — resumen acumulado del corredor.
+   * Sin parámetros devuelve el total; `period` o `year` lo filtran.
+   */
+  summary(period?: SummaryPeriod, year?: number): Observable<SummaryStatsDto> {
+    let params = new HttpParams();
+    if (period) {
+      params = params.set('period', period);
+    }
+    if (year !== undefined) {
+      params = params.set('year', year);
+    }
+    return this.http.get<SummaryStatsDto>(this.api.url('/api/v1/stats/summary'), { params });
   }
 
   /** GET /api/v1/stats/records — marcas personales por distancia. */

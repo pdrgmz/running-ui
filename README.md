@@ -1,7 +1,7 @@
 # Running Tracker UI
 
 Panel de analítica del corredor construido en **Angular 20** sobre la
-**Running Tracker & Analytics API v1.4.0** (ver [`api-docs.json`](api-docs.json)),
+**Running Tracker & Analytics API v1.7.0** (ver [`api-docs.json`](api-docs.json)),
 con el sistema de diseño **Smart Dashboard UI Kit** (carpeta
 [`smart-dashboard-ui-kit/`](smart-dashboard-ui-kit)).
 
@@ -22,6 +22,14 @@ archivos** (TCX/GPX/FIT, ZIP masivo con progreso SSE y exportaciones ZIP),
 **vaciado asíncrono del historial** con progreso en tiempo real,
 **exportación GPX/GeoJSON** por actividad y un **panel MCP** para inicializar
 sesiones, listar/ejecutar tools y consumir el stream SSE.
+
+**Entrenamientos** (pestaña *Entrenamientos*): preferencias de planificación
+(activación semanal, zona horaria IANA, sesiones por semana, día de rodaje
+largo, notas para la IA), generación de planes semanales con IA (job asíncrono
+con polling en tiempo real), listado de planes con filtro por rango de semanas,
+detalle de plan con sesiones (tipo, distancia, ritmo, zona FC, carga, RPE,
+feedback), borrado de plan y borrado por semana, y limpieza de jobs de
+generación por estado.
 
 ## Puesta en marcha
 
@@ -153,19 +161,20 @@ src/app/
 │       ├── api-keys.service.ts       # claves de API (X-Api-Key) del usuario
 │       ├── stats.service.ts          # summary, records, pmc, eddington, acwr
 │       ├── milestones.service.ts     # logros automáticos sobre /activities
-│       ├── activities.service.ts     # actividades + analíticas + cobertura + vaciado
+│       ├── activities.service.ts     # actividades + analíticas + cobertura + vaciado + recálculo de métricas
 │       ├── files.service.ts          # importación/exportación de archivos
 │       ├── geo.service.ts            # exportación GPX / GeoJSON
 │       ├── mcp.service.ts            # cliente MCP JSON-RPC + SSE
 │       ├── telemetry.service.ts      # registro de tráfico HTTP para la consola
-│       └── toast.service.ts          # notificaciones
+│       ├── toast.service.ts          # notificaciones
+│       └── training.service.ts       # preferencias, planes y jobs de generación (/training/*)
 ├── features/
 │   ├── login/                        # pantalla de acceso / registro
 │   └── dashboard/
 │       ├── dashboard.*               # shell con pestañas y carga paralela
 │       └── widgets/
 │           ├── profile-card/         # identidad + sesión JWT
-│           ├── summary-stats/        # /stats/summary
+│           ├── summary-stats/        # /stats/summary + selector de periodo (ALL, THIS_MONTH, LAST_MONTH, THIS_YEAR, LAST_YEAR)
 │           ├── pmc-chart/            # SVG CTL/ATL/TSB (/analytics/pmc)
 │           ├── acwr-card/            # /analytics/acwr/current
 │           ├── eddington-card/       # /analytics/eddington
@@ -177,6 +186,7 @@ src/app/
 │           ├── activity-heatmap/     # mapa de calor con todas las trazas GPS
 │           ├── files-panel/          # subida individual/ZIP y exportaciones
 │           ├── mcp-panel/            # sesión MCP, tools y stream SSE
+│           ├── training-panel/       # /training/*: preferencias, generación, planes, jobs
 │           └── api-keys-panel/       # generar/revocar claves de API (X-Api-Key)
 └── shared/
     ├── pipes/format.pipes.ts         # duration, km, pace, kmh
@@ -189,15 +199,17 @@ src/app/
 | --- | --- |
 | Acceso / registro / sesión | `POST /api/v1/auth/login`, `/register`, `/refresh`, `GET /auth/me` |
 | Claves de API | `GET` · `POST /api/v1/auth/api-keys` · `DELETE /auth/api-keys/{id}` |
-| Resumen acumulado | `GET /api/v1/stats/summary` |
+| Resumen acumulado | `GET /api/v1/stats/summary` (con `period` y `year`) |
 | Récords (PB) | `GET /api/v1/stats/records` · `POST /stats/recalculate` |
 | Logros automáticos | Timeline cronológico derivado de `GET /api/v1/activities` (historial completo) + `records` + `eddington` |
 | PMC | `GET /api/v1/analytics/pmc?startDate&endDate` |
 | ACWR | `GET /api/v1/analytics/acwr/current` |
 | Eddington | `GET /api/v1/analytics/eddington` |
-| Actividades | `GET /api/v1/activities?page&size&sort` · `GET /activities/{id}` |
+| Actividades | `GET /api/v1/activities?page&size&sort` · `GET /activities/{id}` · `DELETE /activities/{id}` |
+| Recálculo de métricas | `POST /api/v1/activities/recalculate-metrics` |
 | GPS | `GET /api/v1/activities/{id}/trackpoints?resolution` |
 | Analítica de sesión | `GET /api/v1/analytics/{id}/(splits\|hr-zones\|training-load\|vo2max-vam\|cardiac-drift)` |
+| Entrenamientos | `GET/PUT /training/preferences` · `POST /training/plans/generate` · `GET /training/plans` · `GET/DELETE /training/plans/{id}` · `GET/DELETE /training/plans/week/{weekStart}` · `GET /training/plans/current` · `GET/DELETE /training/generation-jobs` · `GET/DELETE /training/generation-jobs/{requestId}` · `DELETE /training/generation-jobs?status` |
 | Archivos | `POST /api/v1/files/upload` · `/upload-bulk` · `GET /files/upload-status/{id}` · `/stream` · `GET /files/export-bulk` · `/export-backup-zip` |
 | Cobertura de altitudes | `GET /api/v1/activities/elevation-coverage` |
 | Borrado | `DELETE /api/v1/activities` (202 + `deleteId`) · `GET /activities/delete-status/{deleteId}` · `DELETE /activities/{id}` |

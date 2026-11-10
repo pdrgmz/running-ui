@@ -102,9 +102,19 @@
           <app-hr-zones-card [summary]="summary()" />
           <app-eddington-card [eddington]="eddington()" />
         </div>
-        <app-summary-stats class="col-12" [summary]="summary()" />
+        <app-summary-stats
+          class="col-12"
+          [summary]="summary()"
+          [period]="summaryPeriod()"
+          (periodChange)="applySummaryPeriod($event)"
+        />
         <app-pmc-chart class="col-12" [points]="pmcPoints()" />
         <app-pmc-reading class="col-12" [pmc]="pmcPoints()" [acwr]="acwr()" />
+      }
+
+      <!-- ENTRENAMIENTOS -->
+      @case ('training') {
+        <app-training-panel class="col-12" />
       }
 
       <!-- RÉCORDS Y LOGROS -->
@@ -291,6 +301,10 @@
               <span class="kv-val">POST /api/v1/stats/recalculate</span>
             </div>
             <div class="kv-row">
+              <span class="kv-key">Recalcular métricas derivadas</span>
+              <span class="kv-val">POST /api/v1/activities/recalculate-metrics</span>
+            </div>
+            <div class="kv-row">
               <span class="kv-key">Cobertura de altitudes</span>
               <span class="kv-val">GET /api/v1/activities/elevation-coverage</span>
             </div>
@@ -335,7 +349,41 @@
             >
               {{ coverageLoading() ? 'CONSULTANDO…' : 'COBERTURA DE ALTITUD' }}
             </button>
+            <button
+              type="button"
+              class="btn-outline-pill btn-compact"
+              [disabled]="recalculatingMetrics()"
+              [title]="recalculatingMetrics() ? 'Recalculando TRIMP/HRSS, VO2Max y VAM…' : 'Recalcular métricas derivadas de todas las carreras'"
+              (click)="recalculateMetrics()"
+            >
+              {{ recalculatingMetrics() ? 'RECALCULANDO…' : 'RECALCULAR MÉTRICAS' }}
+            </button>
           </div>
+
+          @if (metricsRecalculation(); as metrics) {
+            <div class="kv-list">
+              <div class="kv-row">
+                <span class="kv-key">Actividades procesadas</span>
+                <span class="kv-val">{{ metrics.activitiesProcessed }}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Cargas recalculadas</span>
+                <span class="kv-val">{{ metrics.trainingLoadRecalculated }}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">VO2Max / VAM recalculados</span>
+                <span class="kv-val">{{ metrics.vo2MaxRecalculated }}</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">FC máxima usada</span>
+                <span class="kv-val">{{ metrics.athleteMaxHrUsed }} bpm</span>
+              </div>
+              <div class="kv-row">
+                <span class="kv-key">Duración</span>
+                <span class="kv-val">{{ metrics.durationMs | number: '1.0-0' }} ms</span>
+              </div>
+            </div>
+          }
 
           @if (elevationCoverage(); as coverage) {
             <div class="kv-list">
@@ -470,6 +518,20 @@
       <polyline points="9 22 9 12 15 12 15 22" />
     </svg>
     <span>Resumen</span>
+  </button>
+
+  <button
+    type="button"
+    class="mobile-dock-item"
+    [class.active]="activeTab() === 'training'"
+    (click)="setTab('training'); scrollMobileTop()"
+    aria-label="Entrenamientos"
+  >
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path d="M6 4v16M18 4v16M4 8h4M4 16h4M16 8h4M16 16h4" />
+      <line x1="8" y1="12" x2="16" y2="12" />
+    </svg>
+    <span>Entreno</span>
   </button>
 
   <button

@@ -1,0 +1,667 @@
+<article class="card-panel training-panel">
+  <div class="card-header-bar">
+    <span class="card-tag-badge">/TRAINING</span>
+    <span class="card-tag-badge">{{ generationStatusLabel() }}</span>
+    <button
+      type="button"
+      class="btn-outline-pill btn-compact btn-icon-only"
+      title="Refrescar entrenamientos"
+      aria-label="Refrescar entrenamientos"
+      (click)="loadPreferences(); loadPlans(); loadCurrentPlan(); loadJobs()"
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <polyline points="23 4 23 10 17 10" />
+        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+      </svg>
+    </button>
+  </div>
+
+  <!-- 1. ENTRENAMIENTOS DE LA SEMANA ACTUAL (calendario tipo cards) -->
+  <section class="training-block">
+    <span class="block-title">Entrenamientos de la semana actual</span>
+
+    @if (currentPlan(); as plan) {
+      <div class="week-calendar">
+        @for (offset of weekOffsets; track offset) {
+          @if (workoutOf(plan, offset); as w) {
+            <article
+              class="day-card"
+              [class.day-passed]="isDayPassed(plan, offset)"
+              [class.day-done]="isWorkoutDone(plan, offset)"
+              [attr.data-type]="w.type"
+            >
+              <div class="day-header">
+                <span class="day-name">{{ dayLabel(offset) }}</span>
+                <span class="day-date">{{ planDayDate(plan, offset) | date: 'EEE dd MMM' }}</span>
+                <span class="day-badge">{{ workoutTypeShortLabel(w.type) }}</span>
+              </div>
+              <h3 class="day-title">{{ w.title || workoutTypeLabel(w.type) }}</h3>
+              <p class="day-desc">{{ w.description }}</p>
+              <div class="day-metrics">
+                @if (w.targetDistanceMeters > 0) {
+                  <span class="day-metric">{{ w.targetDistanceMeters | km }}</span>
+                }
+                @if (w.targetDurationSeconds > 0) {
+                  <span class="day-metric">{{ w.targetDurationSeconds | duration }}</span>
+                }
+                @if (w.targetPaceMinPerKm > 0) {
+                  <span class="day-metric">{{ w.targetPaceMinPerKm | pace }} /km</span>
+                }
+              </div>
+              @if (w.targetLoad > 0) {
+                <div class="day-charge">
+                  <span class="charge-dot"></span>
+                  <span>{{ w.targetLoad | number: '1.0-0' }} CARGA</span>
+                </div>
+              }
+              @if (w.mainSet) {
+                <p class="day-detail">{{ w.mainSet }}</p>
+              }
+              <span
+                class="day-state"
+                [class.day-state--done]="isWorkoutDone(plan, offset)"
+              >
+                {{ isWorkoutDone(plan, offset) ? 'CUMPL' : 'PLANNED' }}
+              </span>
+            </article>
+          } @else {
+            <article class="day-card day-card--empty">
+              <div class="day-header">
+                <span class="day-name">{{ dayLabel(offset) }}</span>
+                <span class="day-date">{{ planDayDate(plan, offset) | date: 'EEE dd MMM' }}</span>
+                <span class="day-badge">—</span>
+              </div>
+              <span class="day-empty">Sin sesión</span>
+            </article>
+          }
+        }
+      </div>
+
+      @if (plan.summary) {
+        <p class="training-summary">{{ plan.summary }}</p>
+      }
+      @if (plan.coachNotes) {
+        <p class="account-hint">{{ plan.coachNotes }}</p>
+      }
+    } @else {
+      <p class="empty-state">SIN PLAN ACTIVO PARA ESTA SEMANA.</p>
+    }
+  </section>
+
+  <!-- 2. RESUMEN DE LA SEMANA (estadísticas) -->
+  <section class="training-block">
+    <span class="block-title">Resumen de la semana</span>
+
+    @if (currentPlan(); as plan) {
+      <div class="stat-tiles-grid training-plan-tiles">
+        <div class="stat-tile">
+          <span class="stat-tile-label">Distancia objetivo</span>
+          <span class="stat-tile-value">{{ plan.targetWeeklyDistanceMeters | km }}</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-tile-label">Carga objetivo</span>
+          <span class="stat-tile-value">{{ plan.targetWeeklyLoad | number: '1.0-0' }}</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-tile-label">Sesiones</span>
+          <span class="stat-tile-value">{{ plan.workouts.length }}</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-tile-label">Modelo</span>
+          <span class="stat-tile-value training-model">{{ plan.model || '—' }}</span>
+        </div>
+      </div>
+    } @else {
+      <p class="empty-state">SIN PLAN ACTIVO PARA ESTA SEMANA.</p>
+    }
+  </section>
+
+  <!-- 3. LISTADO Y DETALLE DE PLANES SEMANALES -->
+  <section class="training-block">
+    <div class="training-section-head">
+      <span class="block-title">Planes semanales</span>
+      <div class="training-range">
+        <label class="form-label" for="training-from">Desde</label>
+        <input
+          id="training-from"
+          name="plansFrom"
+          type="date"
+          class="form-control"
+          [(ngModel)]="plansFrom"
+        />
+        <label class="form-label" for="training-to">Hasta</label>
+        <input
+          id="training-to"
+          name="plansTo"
+          type="date"
+          class="form-control"
+          [(ngModel)]="plansTo"
+        />
+        <button type="button" class="btn-outline-pill btn-compact" (click)="loadPlans()">
+          FILTRAR
+        </button>
+      </div>
+    </div>
+
+    @if (plans(); as list) {
+      @if (list.length > 0) {
+        <div class="data-table-wrap">
+          <table class="data-table training-table">
+            <thead>
+              <tr>
+                <th>Semana</th>
+                <th>Estado</th>
+                <th>V</th>
+                <th>Sesiones</th>
+                <th>Distancia</th>
+                <th>Carga</th>
+                <th>Generado</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (plan of list; track plan.planId) {
+                <tr [class.training-row--active]="displayedPlan()?.planId === plan.planId">
+                  <td class="cell-strong">
+                    <button
+                      type="button"
+                      class="training-link"
+                      (click)="selectPlan(plan.planId)"
+                    >
+                      {{ plan.weekStart | date: 'dd/MM/yy' }} – {{ plan.weekEnd | date: 'dd/MM/yy' }}
+                    </button>
+                  </td>
+                  <td>
+                    <span class="training-status-badge" [attr.data-status]="plan.status">
+                      {{ planStatusLabel(plan.status) }}
+                    </span>
+                  </td>
+                  <td>v{{ plan.version }}</td>
+                  <td>{{ plan.workoutCount }}</td>
+                  <td>{{ plan.targetWeeklyDistanceMeters | km }}</td>
+                  <td>{{ plan.targetWeeklyLoad | number: '1.0-0' }}</td>
+                  <td>{{ plan.generatedAt | date: 'dd/MM/yy HH:mm' }}</td>
+                  <td>
+                    <div class="training-actions">
+                      @if (confirmingPlanId() === plan.planId) {
+                        <button
+                          type="button"
+                          class="btn-pill-header btn-compact btn-icon-only training-danger-fill"
+                          [disabled]="deletingPlanId() === plan.planId"
+                          title="Confirmar borrado del plan"
+                          aria-label="Confirmar borrado del plan"
+                          (click)="deletePlan(plan.planId)"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn-outline-pill btn-compact btn-icon-only"
+                          title="Cancelar"
+                          aria-label="Cancelar"
+                          (click)="cancelDeletePlan()"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
+                        </button>
+                      } @else {
+                        <button
+                          type="button"
+                          class="btn-outline-pill btn-compact btn-icon-only"
+                          title="Ver plan"
+                          aria-label="Ver plan"
+                          [disabled]="planLoading()"
+                          (click)="selectPlan(plan.planId)"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                            <circle cx="12" cy="12" r="3" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn-outline-pill btn-compact btn-icon-only training-danger"
+                          title="Eliminar plan"
+                          aria-label="Eliminar plan"
+                          [disabled]="deletingPlanId() !== null"
+                          (click)="requestDeletePlan(plan.planId)"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty-state">SIN PLANES SEMANALES PARA EL RANGO INDICADO.</div>
+      }
+    } @else if (plansError()) {
+      <div class="empty-state">
+        <p>NO SE PUDIERON CARGAR LOS PLANES.</p>
+        <button type="button" class="btn-outline-pill btn-compact" (click)="loadPlans()">
+          REINTENTAR
+        </button>
+      </div>
+    } @else {
+      <p class="loading-text">CARGANDO PLANES SEMANALES…</p>
+    }
+  </section>
+
+  <!-- DETALLE DEL PLAN -->
+  @if (planLoading()) {
+    <p class="loading-text">CARGANDO DETALLE DEL PLAN…</p>
+  } @else if (displayedPlan(); as plan) {
+    <section class="training-block training-plan-detail">
+      <div class="training-section-head">
+        <div class="training-plan-title">
+          <span class="block-title">Plan {{ plan.weekStart | date: 'dd/MM/yyyy' }} – {{ plan.weekEnd | date: 'dd/MM/yyyy' }}</span>
+          <span class="training-status-badge" [attr.data-status]="plan.status">
+            {{ planStatusLabel(plan.status) }}
+          </span>
+          <span class="card-tag-badge">v{{ plan.version }}</span>
+          @if (selectedPlan()) {
+            <button type="button" class="training-link" (click)="showCurrentPlan()">
+              VER PLAN ACTUAL
+            </button>
+          }
+        </div>
+        @if (confirmingWeek() === plan.weekStart) {
+          <div class="training-actions">
+            <button
+              type="button"
+              class="btn-pill-header btn-compact"
+              [disabled]="deletingWeek() === plan.weekStart"
+              (click)="deleteWeek(plan.weekStart)"
+            >
+              CONFIRMAR BORRAR SEMANA
+            </button>
+            <button
+              type="button"
+              class="btn-outline-pill btn-compact"
+              (click)="cancelDeleteWeek()"
+            >
+              CANCELAR
+            </button>
+          </div>
+        } @else {
+          <button
+            type="button"
+            class="btn-outline-pill btn-compact training-danger"
+            (click)="requestDeleteWeek(plan.weekStart)"
+          >
+            BORRAR SEMANA
+          </button>
+        }
+      </div>
+
+      @if (plan.summary) {
+        <p class="training-summary">{{ plan.summary }}</p>
+      }
+      @if (plan.coachNotes) {
+        <p class="account-hint">{{ plan.coachNotes }}</p>
+      }
+
+      <div class="stat-tiles-grid training-plan-tiles">
+        <div class="stat-tile">
+          <span class="stat-tile-label">Distancia objetivo</span>
+          <span class="stat-tile-value">{{ plan.targetWeeklyDistanceMeters | km }}</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-tile-label">Carga objetivo</span>
+          <span class="stat-tile-value">{{ plan.targetWeeklyLoad | number: '1.0-0' }}</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-tile-label">Sesiones</span>
+          <span class="stat-tile-value">{{ plan.workouts.length }}</span>
+        </div>
+        <div class="stat-tile">
+          <span class="stat-tile-label">Modelo</span>
+          <span class="stat-tile-value training-model">{{ plan.model || '—' }}</span>
+        </div>
+      </div>
+
+      @if (plan.workouts.length > 0) {
+        <div class="workout-grid">
+          @for (workout of plan.workouts; track workout.id) {
+            <div class="workout-card" [attr.data-type]="workout.type">
+              <div class="workout-head">
+                <span class="workout-date">{{ workout.date | date: 'EEE d MMM' }}</span>
+                <span class="workout-type">{{ workoutTypeLabel(workout.type) }}</span>
+              </div>
+              <span class="workout-title">{{ workout.title || workoutTypeLabel(workout.type) }}</span>
+              @if (workout.description) {
+                <p class="workout-desc">{{ workout.description }}</p>
+              }
+              <div class="workout-metrics">
+                @if (workout.targetDistanceMeters > 0) {
+                  <span>{{ workout.targetDistanceMeters | km }}</span>
+                }
+                @if (workout.targetDurationSeconds > 0) {
+                  <span>{{ workout.targetDurationSeconds | duration }}</span>
+                }
+                @if (workout.targetPaceMinPerKm > 0) {
+                  <span>{{ workout.targetPaceMinPerKm | pace }}</span>
+                }
+                @if (workout.targetHrZone > 0) {
+                  <span>Z{{ workout.targetHrZone }}</span>
+                }
+                @if (workout.targetLoad > 0) {
+                  <span>CARGA {{ workout.targetLoad | number: '1.0-0' }}</span>
+                }
+              </div>
+              @if (workout.mainSet) {
+                <p class="workout-set">{{ workout.mainSet }}</p>
+              }
+              <div class="workout-foot">
+                <span class="training-status-badge" [attr.data-status]="workout.status || 'PENDING'">
+                  {{ workout.status || 'PENDIENTE' }}
+                </span>
+                @if (workout.rpe > 0) {
+                  <span class="workout-rpe">RPE {{ workout.rpe }}</span>
+                }
+              </div>
+              @if (workout.feedback) {
+                <p class="workout-feedback">{{ workout.feedback }}</p>
+              }
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="empty-state">ESTE PLAN NO TIENE SESIONES.</div>
+      }
+    </section>
+  }
+
+  <!-- 4. PREFERENCIAS DE PLANIFICACIÓN -->
+  <section class="training-block">
+    <span class="block-title">Preferencias de planificación</span>
+
+    @if (preferencesLoading()) {
+      <p class="loading-text">CARGANDO PREFERENCIAS…</p>
+    } @else {
+      @if (preferences(); as prefs) {
+        @if (!prefs.configured) {
+          <p class="account-hint">
+            Aún no has configurado la generación automática. Completa los campos y guarda para
+            activarla.
+          </p>
+        }
+      }
+
+      <label class="training-check">
+        <input type="checkbox" name="prefEnabled" [(ngModel)]="prefEnabled" />
+        <span>Activar generación automática semanal</span>
+      </label>
+
+      <div class="form-group">
+        <label class="form-label" for="training-timezone">Zona horaria (IANA)</label>
+        <input
+          id="training-timezone"
+          name="prefTimezone"
+          type="text"
+          class="form-control"
+          placeholder="Europe/Madrid"
+          [(ngModel)]="prefTimezone"
+        />
+      </div>
+
+      <div class="training-inline">
+        <div class="form-group">
+          <label class="form-label" for="training-days">Sesiones / semana</label>
+          <input
+            id="training-days"
+            name="prefDaysPerWeek"
+            type="number"
+            class="form-control"
+            min="1"
+            max="7"
+            [(ngModel)]="prefDaysPerWeek"
+          />
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="training-long-run">Día del rodaje largo</label>
+          <select
+            id="training-long-run"
+            name="prefLongRunDay"
+            class="form-control"
+            [(ngModel)]="prefLongRunDay"
+          >
+            @for (day of longRunDays; track day) {
+              <option [value]="day">{{ day }}</option>
+            }
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="training-notes">Notas o restricciones para la IA</label>
+        <textarea
+          id="training-notes"
+          name="prefNotes"
+          class="form-control training-notes"
+          rows="3"
+          placeholder="Objetivo, lesiones, disponibilidad, preferencias de terreno…"
+          [(ngModel)]="prefNotes"
+        ></textarea>
+      </div>
+
+      <button
+        type="button"
+        class="btn-pill-header btn-compact"
+        [disabled]="savingPreferences()"
+        (click)="savePreferences()"
+      >
+        {{ savingPreferences() ? 'GUARDANDO…' : 'GUARDAR PREFERENCIAS' }}
+      </button>
+    }
+  </section>
+
+  <!-- 5. GENERACIÓN CON IA -->
+  <section class="training-block">
+    <span class="block-title">Generar plan semanal con IA</span>
+    <p class="account-hint">
+      La generación es asíncrona: se encola un job y el plan aparece cuando n8n lo guarda en la
+      API. Aquí se sigue el estado en tiempo real.
+    </p>
+
+    <div class="training-inline">
+      <div class="form-group">
+        <label class="form-label" for="training-week">Lunes de la semana</label>
+        <input
+          id="training-week"
+          name="generateWeekStart"
+          type="date"
+          class="form-control"
+          [(ngModel)]="generateWeekStart"
+        />
+      </div>
+
+      <label class="training-check training-check--inline">
+        <input type="checkbox" name="generateReplace" [(ngModel)]="generateReplace" />
+        <span>Reemplazar plan existente</span>
+      </label>
+    </div>
+
+    <button
+      type="button"
+      class="btn-pill-header btn-compact"
+      [disabled]="generating()"
+      (click)="generatePlan()"
+    >
+      {{ generating() ? 'GENERANDO…' : 'GENERAR PLAN' }}
+    </button>
+
+    @if (generationJob(); as job) {
+      <div class="training-job-status">
+        <div class="training-job-head">
+          <span class="training-status-badge" [attr.data-status]="job.status">
+            {{ jobStatusLabel(job.status) }}
+          </span>
+          <span class="mono training-job-id">{{ job.requestId }}</span>
+        </div>
+        <div class="kv-list">
+          <div class="kv-row">
+            <span class="kv-key">Semana</span>
+            <span class="kv-val">{{ job.weekStart | date: 'dd/MM/yyyy' }}</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">Intentos</span>
+            <span class="kv-val">{{ job.attempts }}</span>
+          </div>
+          @if (job.planId) {
+            <div class="kv-row">
+              <span class="kv-key">Plan</span>
+              <span class="kv-val">{{ job.planId }}</span>
+            </div>
+          }
+          @if (job.error) {
+            <div class="kv-row">
+              <span class="kv-key">Error</span>
+              <span class="kv-val training-error-text">{{ job.error }}</span>
+            </div>
+          }
+        </div>
+      </div>
+    } @else if (generationResponse(); as response) {
+      <div class="training-job-status">
+        <div class="training-job-head">
+          <span class="training-status-badge" [attr.data-status]="response.status">
+            {{ jobStatusLabel(response.status) }}
+          </span>
+          <span class="mono training-job-id">{{ response.requestId }}</span>
+        </div>
+        <p class="account-hint">{{ response.message || 'Job de generación encolado.' }}</p>
+      </div>
+    }
+  </section>
+
+  <!-- 6. JOBS DE GENERACIÓN (último) -->
+  <section class="training-block">
+    <div class="training-section-head">
+      <span class="block-title">Jobs de generación</span>
+      <div class="training-actions">
+        <select
+          name="cleanupStatus"
+          class="form-control training-cleanup-select"
+          [(ngModel)]="cleanupStatus"
+          aria-label="Estado de los jobs a limpiar"
+        >
+          @for (status of cleanupStatuses; track status) {
+            <option [value]="status">{{ jobStatusLabel(status) }}</option>
+          }
+        </select>
+        <button
+          type="button"
+          class="btn-outline-pill btn-compact"
+          [disabled]="cleaningJobs()"
+          (click)="cleanupJobs()"
+        >
+          {{ cleaningJobs() ? 'LIMPIANDO…' : 'LIMPIAR POR ESTADO' }}
+        </button>
+      </div>
+    </div>
+
+    @if (jobs(); as list) {
+      @if (list.length > 0) {
+        <div class="data-table-wrap">
+          <table class="data-table training-table">
+            <thead>
+              <tr>
+                <th>Request</th>
+                <th>Semana</th>
+                <th>Estado</th>
+                <th>Intentos</th>
+                <th>Creado</th>
+                <th>Actualizado</th>
+                <th class="text-right">Acciones</th>
+              </tr>
+            </thead>
+            <tbody>
+              @for (job of list; track job.requestId) {
+                <tr>
+                  <td class="mono training-job-id">{{ job.requestId }}</td>
+                  <td>{{ job.weekStart | date: 'dd/MM/yy' }}</td>
+                  <td>
+                    <span class="training-status-badge" [attr.data-status]="job.status">
+                      {{ jobStatusLabel(job.status) }}
+                    </span>
+                  </td>
+                  <td>{{ job.attempts }}</td>
+                  <td>{{ job.createdAt | date: 'dd/MM/yy HH:mm' }}</td>
+                  <td>{{ job.updatedAt | date: 'dd/MM/yy HH:mm' }}</td>
+                  <td>
+                    <div class="training-actions">
+                      @if (confirmingJobId() === job.requestId) {
+                        <button
+                          type="button"
+                          class="btn-pill-header btn-compact btn-icon-only training-danger-fill"
+                          [disabled]="deletingJobId() === job.requestId"
+                          title="Confirmar borrado del job"
+                          aria-label="Confirmar borrado del job"
+                          (click)="deleteJob(job)"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        </button>
+                        <button
+                          type="button"
+                          class="btn-outline-pill btn-compact btn-icon-only"
+                          title="Cancelar"
+                          aria-label="Cancelar"
+                          (click)="cancelDeleteJob()"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="18" y1="6" x2="6" y2="18" />
+                            <line x1="6" y1="6" x2="18" y2="18" />
+                          </svg>
+                        </button>
+                      } @else {
+                        <button
+                          type="button"
+                          class="btn-outline-pill btn-compact btn-icon-only training-danger"
+                          title="Eliminar job"
+                          aria-label="Eliminar job"
+                          [disabled]="deletingJobId() !== null"
+                          (click)="requestDeleteJob(job.requestId)"
+                        >
+                          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          </table>
+        </div>
+      } @else {
+        <div class="empty-state">SIN JOBS DE GENERACIÓN.</div>
+      }
+    } @else if (jobsError()) {
+      <div class="empty-state">
+        <p>NO SE PUDIERON CARGAR LOS JOBS.</p>
+        <button type="button" class="btn-outline-pill btn-compact" (click)="loadJobs()">
+          REINTENTAR
+        </button>
+      </div>
+    } @else {
+      <p class="loading-text">CARGANDO JOBS DE GENERACIÓN…</p>
+    }
+  </section>
+</article>
