@@ -82,6 +82,11 @@ export class TrainingPanel implements OnInit {
   protected plansFrom = '';
   protected plansTo = '';
 
+  /* Navegación de semanas en el calendario */
+  protected readonly calendarPlan = signal<TrainingPlanResponseDto | null>(null);
+  protected readonly calendarPlanLoading = signal(false);
+  protected readonly calendarWeekOffset = signal(0); // 0 = semana actual
+
   /* Generación */
   protected generateWeekStart = nextMondayIso();
   protected generateReplace = false;
@@ -183,6 +188,7 @@ export class TrainingPanel implements OnInit {
     this.loadPreferences();
     this.loadPlans();
     this.loadCurrentPlan();
+    this.loadWeekPlan();
     this.loadJobs();
   }
 
@@ -261,6 +267,85 @@ export class TrainingPanel implements OnInit {
     this.training.currentPlan().subscribe({
       next: (plan) => this.currentPlan.set(plan),
       error: () => this.currentPlan.set(null),
+    });
+  }
+
+  /** Lunes de la semana actual en ISO. */
+  protected currentWeekStart(): string | null {
+    const plan = this.currentPlan();
+    return plan ? plan.weekStart : null;
+  }
+
+  /** Lunes de la semana que se está viendo en el calendario. */
+  protected calendarWeekStart(): string | null {
+    const base = this.currentWeekStart();
+    if (!base) {
+      return null;
+    }
+    const parts = base.split('-');
+    const year = Number(parts[0]);
+    const month = Number(parts[1]) - 1;
+    const day = Number(parts[2]);
+    const d = new Date(year, month, day + this.calendarWeekOffset() * 7);
+    return isoDate(d);
+  }
+
+  /** Rango de fechas legible de la semana vista en el calendario. */
+  protected calendarWeekRange(): string {
+    const start = this.calendarWeekStart();
+    if (!start) {
+      return '';
+    }
+    const parts = start.split('-');
+    const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+    const end = new Date(d);
+    end.setDate(d.getDate() + 6);
+    const fmt = (date: Date) => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const dd = String(date.getDate()).padStart(2, '0');
+      return `${dd}/${m}/${y}`;
+    };
+    return `${fmt(d)} – ${fmt(end)}`;
+  }
+
+  /** Navega a la semana anterior/siguiente en el calendario. */
+  protected changeCalendarWeek(delta: number): void {
+    this.calendarWeekOffset.set(this.calendarWeekOffset() + delta);
+    this.loadWeekPlan();
+  }
+
+  /** Vuelve a la semana actual. */
+  protected goToCurrentCalendarWeek(): void {
+    this.calendarWeekOffset.set(0);
+    this.loadWeekPlan();
+  }
+
+  /** Carga el plan de la semana que se está viendo en el calendario. */
+  protected loadWeekPlan(): void {
+    const weekStart = this.calendarWeekStart();
+    if (!weekStart) {
+      return;
+    }
+    // Primero buscar en los planes ya cargados
+    const existing = this.plans()?.find((p) => p.weekStart === weekStart);
+    if (existing) {
+      this.training.plan(existing.planId).subscribe({
+        next: (plan) => this.calendarPlan.set(plan),
+        error: () => this.calendarPlan.set(null),
+      });
+      return;
+    }
+    this.calendarPlanLoading.set(true);
+    this.training.planByWeek(weekStart).subscribe({
+      next: (plan) => {
+        this.calendarPlanLoading.set(false);
+        this.calendarPlan.set(plan);
+      },
+      error: () => {
+        this.calendarPlanLoading.set(false);
+        this.calendarPlan.set(null);
+      },
     });
   }
 
