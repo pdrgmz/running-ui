@@ -74,6 +74,19 @@
   max-height: none;
 }
 
+/* La misma consola cuando va agrupada en la columna de Cuenta & API */
+.dashboard-grid > .account-side .terminal-panel {
+  height: 360px;
+  display: flex;
+  flex-direction: column;
+}
+
+.dashboard-grid > .account-side .terminal-panel .terminal-lines-container {
+  flex: 1;
+  min-height: 0;
+  max-height: none;
+}
+
 /* --- Texto de carga / estados vacíos --- */
 .loading-text {
   font-family: var(--font-mono);

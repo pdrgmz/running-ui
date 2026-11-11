@@ -2,15 +2,14 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
-  DestroyRef,
   OnInit,
   computed,
   inject,
   signal,
 } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Subscription, switchMap, takeWhile, timer } from 'rxjs';
 import {
+  Activity,
   GenerateTrainingPlanResponseDto,
   PlanGenerationJobResponseDto,
   PlanGenerationStatus,
@@ -21,8 +20,10 @@ import {
   WorkoutType,
 } from '../../../../core/models/api.models';
 import { ToastService } from '../../../../core/services/toast.service';
+import { ActivitiesService } from '../../../../core/services/activities.service';
 import { TrainingService } from '../../../../core/services/training.service';
 import { DurationPipe, KmPipe, PacePipe } from '../../../../shared/pipes/format.pipes';
+import { Subscription, switchMap, takeWhile, timer } from 'rxjs';
 
 const LONG_RUN_DAYS = [
   'MONDAY',
@@ -34,18 +35,10 @@ const LONG_RUN_DAYS = [
   'SUNDAY',
 ] as const;
 
-const CLEANUP_STATUSES: PlanGenerationStatus[] = [
-  'PENDING',
-  'RUNNING',
-  'COMPLETED',
-  'FAILED',
-  'TIMEOUT',
-];
-
 /**
- * Entrenamientos (`/api/v1/training/*`): preferencias de planificación,
- * generación semanal con IA, planes (listado, detalle, borrado) y jobs de
- * generación asíncronos.
+ * Entrenamientos (`/api/v1/training/*`): preferencias de planificación y
+ * planes semanales (calendario, listado, detalle y borrado). La generación con
+ * IA y sus jobs viven en la pestaña Cuenta & API.
  */
 @Component({
   selector: 'app-training-panel',
@@ -56,11 +49,10 @@ const CLEANUP_STATUSES: PlanGenerationStatus[] = [
 })
 export class TrainingPanel implements OnInit {
   private readonly training = inject(TrainingService);
+  private readonly activities = inject(ActivitiesService);
   private readonly toast = inject(ToastService);
-  private readonly destroyRef = inject(DestroyRef);
 
   protected readonly longRunDays = LONG_RUN_DAYS;
-  protected readonly cleanupStatuses = CLEANUP_STATUSES;
 
   /* Preferencias */
   protected readonly preferences = signal<TrainingPreferencesDto | null>(null);
@@ -87,28 +79,15 @@ export class TrainingPanel implements OnInit {
   protected readonly calendarPlanLoading = signal(false);
   protected readonly calendarWeekOffset = signal(0); // 0 = semana actual
 
-  /* Generación */
-  protected generateWeekStart = nextMondayIso();
-  protected generateReplace = false;
-  protected readonly generating = signal(false);
-  protected readonly generationResponse = signal<GenerateTrainingPlanResponseDto | null>(null);
-  protected readonly generationJob = signal<PlanGenerationJobResponseDto | null>(null);
-  private generationSub: Subscription | null = null;
-
-  /* Jobs */
-  protected readonly jobs = signal<PlanGenerationJobResponseDto[] | null>(null);
-  protected readonly jobsLoading = signal(false);
-  protected readonly jobsError = signal(false);
-  protected cleanupStatus: PlanGenerationStatus = 'FAILED';
-  protected readonly cleaningJobs = signal(false);
+  /* Actividades de la semana para comparar con el plan */
+  protected readonly weekActivities = signal<Activity[] | null>(null);
+  protected readonly activitiesLoading = signal(false);
 
   /* Confirmaciones de borrado */
   protected readonly confirmingPlanId = signal<string | null>(null);
   protected readonly deletingPlanId = signal<string | null>(null);
   protected readonly confirmingWeek = signal<string | null>(null);
   protected readonly deletingWeek = signal<string | null>(null);
-  protected readonly confirmingJobId = signal<string | null>(null);
-  protected readonly deletingJobId = signal<string | null>(null);
 
   /** Plan visible: el seleccionado en el listado o el plan actual. */
   protected readonly displayedPlan = computed(() => this.selectedPlan() ?? this.currentPlan());
@@ -169,27 +148,97 @@ export class TrainingPanel implements OnInit {
     return Boolean(w && (w.status === 'COMPLETED' || (w.rpe ?? 0) > 0));
   }
 
+  /** Actividad realizada automáticamente vinculada por misma fecha al entrenamiento del día `offset`. */
+  protected activityForWorkout(plan: TrainingPlanResponseDto, offset: number): Activity | null {
+    const dateStr = this.planDayDate(plan, offset);
+    if (!dateStr) {
+      return null;
+    }
+    return this.weekActivities()?.find((a) => {
+      const activityDate = a.startTime.split('T')[0];
+      return activityDate === dateStr;
+    }) ?? null;
+  }
+
+  /** Calcula el % de acierto del entrenamiento real vs el planificado. */
+  protected calculateAccuracy(workout: WorkoutDto, activity: Activity): number {
+    const scores: number[] = [];
+
+    if (workout.targetDistanceMeters && workout.targetDistanceMeters > 0) {
+      scores.push(Math.min(100, Math.round((activity.distanceMeters / workout.targetDistanceMeters) * 100)));
+    }
+    if (workout.targetDurationSeconds && workout.targetDurationSeconds > 0) {
+      scores.push(Math.min(100, Math.round((activity.totalTimeSeconds / workout.targetDurationSeconds) * 100)));
+    }
+    if (workout.targetPaceMinPerKm && workout.targetPaceMinPerKm > 0 && activity.avgPaceMinPerKm > 0) {
+      scores.push(Math.min(100, Math.round((workout.targetPaceMinPerKm / activity.avgPaceMinPerKm) * 100)));
+    }
+
+    if (scores.length === 0) {
+      return 0;
+    }
+    return Math.round(scores.reduce((a, b) => a + b, 0) / scores.length);
+  }
+
+  /** Color del indicador de acierto según el porcentaje. */
+  protected accuracyColor(accuracy: number): string {
+    if (accuracy >= 90 && accuracy <= 110) {
+      return 'var(--accent-green)';
+    }
+    if (accuracy >= 75 && accuracy <= 125) {
+      return 'var(--accent-amber)';
+    }
+    return 'var(--accent-red)';
+  }
+
+  /** Etiqueta corta del acierto. */
+  protected accuracyLabel(accuracy: number): string {
+    if (accuracy >= 90 && accuracy <= 110) {
+      return 'ACERTADO';
+    }
+    if (accuracy >= 75 && accuracy <= 125) {
+      return 'CERCANO';
+    }
+    return 'DESVÍO';
+  }
+
   private addDays(date: Date, days: number): Date {
     const result = new Date(date);
     result.setDate(result.getDate() + days);
     return result;
   }
 
-  protected readonly generationStatusLabel = computed(() => {
-    const status = this.generationJob()?.status ?? this.generationResponse()?.status;
-    return status ? this.jobStatusLabel(status) : 'SIN GENERACIÓN';
-  });
-
-  constructor() {
-    this.destroyRef.onDestroy(() => this.stopGenerationPolling());
-  }
-
   ngOnInit(): void {
     this.loadPreferences();
     this.loadPlans();
     this.loadCurrentPlan();
-    this.loadWeekPlan();
-    this.loadJobs();
+  }
+
+  /** Carga las actividades de la semana que se está viendo en el calendario. */
+  protected loadWeekActivities(): void {
+    const weekStart = this.calendarWeekStart();
+    if (!weekStart) {
+      return;
+    }
+    this.activitiesLoading.set(true);
+    // Cargamos un buen número de actividades y filtramos por la semana del calendario en el frontend
+    this.activities.list(0, 100).subscribe({
+      next: (page) => {
+        const start = new Date(weekStart + 'T00:00:00');
+        const end = new Date(weekStart + 'T00:00:00');
+        end.setDate(end.getDate() + 7);
+        const weekActivities = page.content.filter((a) => {
+          const d = new Date(a.startTime);
+          return d >= start && d < end;
+        });
+        this.weekActivities.set(weekActivities);
+        this.activitiesLoading.set(false);
+      },
+      error: () => {
+        this.weekActivities.set([]);
+        this.activitiesLoading.set(false);
+      },
+    });
   }
 
   /* ------------------------------------------------------------------ */
@@ -265,8 +314,14 @@ export class TrainingPanel implements OnInit {
   /** GET /api/v1/training/plans/current */
   protected loadCurrentPlan(): void {
     this.training.currentPlan().subscribe({
-      next: (plan) => this.currentPlan.set(plan),
-      error: () => this.currentPlan.set(null),
+      next: (plan) => {
+        this.currentPlan.set(plan);
+        this.loadWeekPlan();
+      },
+      error: () => {
+        this.currentPlan.set(null);
+        this.loadWeekPlan();
+      },
     });
   }
 
@@ -331,8 +386,14 @@ export class TrainingPanel implements OnInit {
     const existing = this.plans()?.find((p) => p.weekStart === weekStart);
     if (existing) {
       this.training.plan(existing.planId).subscribe({
-        next: (plan) => this.calendarPlan.set(plan),
-        error: () => this.calendarPlan.set(null),
+        next: (plan) => {
+          this.calendarPlan.set(plan);
+          this.loadWeekActivities();
+        },
+        error: () => {
+          this.calendarPlan.set(null);
+          this.loadWeekActivities();
+        },
       });
       return;
     }
@@ -341,10 +402,12 @@ export class TrainingPanel implements OnInit {
       next: (plan) => {
         this.calendarPlanLoading.set(false);
         this.calendarPlan.set(plan);
+        this.loadWeekActivities();
       },
       error: () => {
         this.calendarPlanLoading.set(false);
         this.calendarPlan.set(null);
+        this.loadWeekActivities();
       },
     });
   }
@@ -392,7 +455,6 @@ export class TrainingPanel implements OnInit {
         this.toast.show('PLAN ELIMINADO');
         this.loadPlans();
         this.loadCurrentPlan();
-        this.loadJobs();
       },
       error: () => {
         this.deletingPlanId.set(null);
@@ -425,7 +487,6 @@ export class TrainingPanel implements OnInit {
         }
         this.loadPlans();
         this.loadCurrentPlan();
-        this.loadJobs();
       },
       error: () => {
         this.deletingWeek.set(null);
@@ -435,21 +496,34 @@ export class TrainingPanel implements OnInit {
   }
 
   /* ------------------------------------------------------------------ */
-  /* Generación                                                          */
+  /* Generación de plan desde el calendario                              */
   /* ------------------------------------------------------------------ */
 
-  /** POST /api/v1/training/plans/generate (202) + polling del job. */
-  protected generatePlan(): void {
+  protected readonly generating = signal(false);
+  protected readonly generationJob = signal<PlanGenerationJobResponseDto | null>(null);
+  protected readonly generationResponse = signal<GenerateTrainingPlanResponseDto | null>(null);
+  private generationSub: Subscription | null = null;
+
+  /** Genera el plan de la semana que se está viendo en el calendario (o la semana actual). */
+  protected generateCurrentWeekPlan(): void {
     if (this.generating()) {
       return;
     }
+    // Calcular el lunes de la semana actual basada en hoy, no depender de currentPlan
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const day = today.getDay(); // 0 = domingo, 1 = lunes...
+    const delta = ((day + 6) % 7) || 0; // días para retroceder hasta el lunes
+    today.setDate(today.getDate() - delta);
+    const weekStart = isoDate(today);
+
     this.generating.set(true);
     this.generationJob.set(null);
     this.generationResponse.set(null);
     this.training
       .generate({
-        weekStart: this.generateWeekStart || undefined,
-        replace: this.generateReplace,
+        weekStart: weekStart,
+        replace: true,
       })
       .subscribe({
         next: (res) => {
@@ -457,7 +531,10 @@ export class TrainingPanel implements OnInit {
           this.toast.show(res.message || 'GENERACIÓN DE PLAN ENCOLADA');
           this.pollGeneration(res.requestId);
         },
-        error: () => this.generating.set(false),
+        error: () => {
+          this.generating.set(false);
+          this.toast.error('NO SE PUDO GENERAR EL PLAN');
+        },
       });
   }
 
@@ -473,7 +550,6 @@ export class TrainingPanel implements OnInit {
         error: () => {
           this.stopGenerationPolling();
           this.generating.set(false);
-          this.loadJobs();
         },
       });
   }
@@ -486,7 +562,6 @@ export class TrainingPanel implements OnInit {
     }
     this.generating.set(false);
     this.stopGenerationPolling();
-    this.loadJobs();
     if (job.status === 'COMPLETED') {
       this.toast.show('PLAN SEMANAL GENERADO Y GUARDADO');
       this.loadPlans();
@@ -494,78 +569,14 @@ export class TrainingPanel implements OnInit {
       if (job.planId) {
         this.selectPlan(job.planId);
       }
-      return;
+    } else {
+      this.toast.error(job.error || `LA GENERACIÓN DEL PLAN ${this.jobStatusLabel(job.status)}`);
     }
-    this.toast.error(job.error || `LA GENERACIÓN DEL PLAN ${this.jobStatusLabel(job.status)}`);
   }
 
   private stopGenerationPolling(): void {
     this.generationSub?.unsubscribe();
     this.generationSub = null;
-  }
-
-  /* ------------------------------------------------------------------ */
-  /* Jobs                                                                */
-  /* ------------------------------------------------------------------ */
-
-  /** GET /api/v1/training/generation-jobs */
-  protected loadJobs(): void {
-    this.jobsLoading.set(true);
-    this.jobsError.set(false);
-    this.training.jobs().subscribe({
-      next: (list) => {
-        this.jobsLoading.set(false);
-        this.jobs.set(list);
-      },
-      error: () => {
-        this.jobsLoading.set(false);
-        this.jobsError.set(true);
-      },
-    });
-  }
-
-  protected requestDeleteJob(requestId: string): void {
-    this.confirmingJobId.set(requestId);
-  }
-
-  protected cancelDeleteJob(): void {
-    this.confirmingJobId.set(null);
-  }
-
-  /** DELETE /api/v1/training/generation-jobs/{requestId} */
-  protected deleteJob(job: PlanGenerationJobResponseDto): void {
-    if (this.deletingJobId()) {
-      return;
-    }
-    this.deletingJobId.set(job.requestId);
-    this.training.deleteJob(job.requestId, job.status === 'RUNNING').subscribe({
-      next: () => {
-        this.deletingJobId.set(null);
-        this.confirmingJobId.set(null);
-        this.toast.show('JOB DE GENERACIÓN ELIMINADO');
-        this.loadJobs();
-      },
-      error: () => {
-        this.deletingJobId.set(null);
-        this.confirmingJobId.set(null);
-      },
-    });
-  }
-
-  /** DELETE /api/v1/training/generation-jobs?status=... */
-  protected cleanupJobs(): void {
-    if (this.cleaningJobs()) {
-      return;
-    }
-    this.cleaningJobs.set(true);
-    this.training.deleteJobs(this.cleanupStatus, this.cleanupStatus === 'RUNNING').subscribe({
-      next: (res) => {
-        this.cleaningJobs.set(false);
-        this.toast.show(`${res.deleted} JOB(S) ${this.cleanupStatus} ELIMINADOS`);
-        this.loadJobs();
-      },
-      error: () => this.cleaningJobs.set(false),
-    });
   }
 
   /* ------------------------------------------------------------------ */
@@ -577,17 +588,6 @@ export class TrainingPanel implements OnInit {
       ACTIVE: 'ACTIVO',
       ARCHIVED: 'ARCHIVADO',
       COMPLETED: 'COMPLETADO',
-    };
-    return labels[status] ?? status;
-  }
-
-  protected jobStatusLabel(status: string): string {
-    const labels: Record<string, string> = {
-      PENDING: 'EN COLA',
-      RUNNING: 'GENERANDO',
-      COMPLETED: 'COMPLETADO',
-      FAILED: 'FALLIDO',
-      TIMEOUT: 'TIEMPO AGOTADO',
     };
     return labels[status] ?? status;
   }
@@ -625,10 +625,17 @@ export class TrainingPanel implements OnInit {
     };
     return labels[type] ?? type;
   }
-}
 
-function isJobTerminal(status: string | undefined): boolean {
-  return status === 'COMPLETED' || status === 'FAILED' || status === 'TIMEOUT';
+  protected jobStatusLabel(status: string): string {
+    const labels: Record<string, string> = {
+      PENDING: 'EN COLA',
+      RUNNING: 'GENERANDO',
+      COMPLETED: 'COMPLETADO',
+      FAILED: 'FALLIDO',
+      TIMEOUT: 'TIEMPO AGOTADO',
+    };
+    return labels[status] ?? status;
+  }
 }
 
 function defaultTimezone(): string {
@@ -639,18 +646,13 @@ function defaultTimezone(): string {
   }
 }
 
-/** Próximo lunes en formato yyyy-MM-dd (el que usa la API por defecto). */
-function nextMondayIso(): string {
-  const date = new Date();
-  const day = date.getDay();
-  const delta = ((8 - day) % 7) || 7;
-  date.setDate(date.getDate() + delta);
-  return isoDate(date);
-}
-
 function isoDate(date: Date): string {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, '0');
   const day = String(date.getDate()).padStart(2, '0');
   return `${year}-${month}-${day}`;
+}
+
+function isJobTerminal(status: string | undefined): boolean {
+  return status === 'COMPLETED' || status === 'FAILED' || status === 'TIMEOUT';
 }

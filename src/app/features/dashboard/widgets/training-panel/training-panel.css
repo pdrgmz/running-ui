@@ -1,22 +1,48 @@
 :host{display:block;min-width:0}
 
-/* ---------- Bloques de sección ---------- */
-.training-block{display:flex;flex-direction:column;gap:10px;min-width:0;border-top:1.5px solid var(--border-subtle);padding-top:14px}
-.training-block:first-child{border-top:none;padding-top:0}
-.training-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:6px}
-.training-section-head .block-title{margin:0;font-family:var(--font-mono);font-size:0.75rem;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:var(--text-main)}
-.training-section-head .management-badge{font-family:var(--font-mono);font-size:0.55rem;font-weight:800;letter-spacing:0.4px;text-transform:uppercase;border:1.5px solid var(--border-color);border-radius:var(--radius-pill);background:var(--bg-card);padding:1px 8px;color:var(--text-muted);white-space:nowrap}
+/* Evitar que las cards del panel de entrenamiento se estiren a 100% del grid
+   (el dashboard aplica height:100% a todos los card-panel) y dejen aire vacío debajo. */
+:host article.card-panel {
+  height: auto;
+  align-self: start;
+}
+
+/* Separación entre las tres cards del entrenamiento, como en el dashboard de resumen */
+:host article.card-panel:not(:last-child) {
+  margin-bottom: 20px;
+}
+
 .calendar-week-range{font-family:var(--font-mono);font-size:0.68rem;font-weight:800;color:var(--text-main);white-space:nowrap;letter-spacing:0.3px}
+
+/* Grid de dos columnas para la card de Gestión */
+.training-management-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:20px;
+  align-items:start;
+}
+
+/* Cabecera de sección interna (dentro de la card de gestión) */
+.training-section-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}
+.training-section-head .block-title{margin:0;font-family:var(--font-mono);font-size:0.75rem;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;color:var(--text-main)}
+
+/* Secciones de gestión dentro de la card */
+.management-section{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+  border:none;
+  padding:0;
+  margin:0;
+}
 
 /* ---------- Formularios ---------- */
 .training-inline{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;align-items:end}
+.form-row-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;align-items:end}
 .training-check{display:flex;align-items:center;gap:8px;font-family:var(--font-mono);font-size:0.7rem;font-weight:700;color:var(--text-main);cursor:pointer}
 .training-check input{width:16px;height:16px;accent-color:var(--accent-green)}
 .training-check--inline{padding-bottom:0}
 .training-notes{resize:vertical;min-height:74px;font-family:var(--font-mono);font-size:0.7rem}
-.form-label{font-family:var(--font-mono);font-size:0.6rem;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.4px;display:block;margin-bottom:4px}
-.form-control{font-family:var(--font-mono);font-size:0.72rem;padding:6px 8px;border:1.5px solid var(--border-color);border-radius:var(--radius-pill);background:var(--bg-input);color:var(--text-main);width:100%}
-.form-actions{display:flex;justify-content:flex-start;gap:6px;margin-top:8px}
 
 /* ---------- Botones y acciones ---------- */
 .training-actions{display:flex;align-items:center;justify-content:flex-end;gap:6px;flex-wrap:wrap}
@@ -27,7 +53,6 @@
 .training-danger:hover{background:var(--accent-red);color:#fff}
 .training-danger-fill{background:var(--accent-red);border-color:var(--accent-red);color:#fff}
 .training-danger-fill:disabled{opacity:0.55;cursor:not-allowed}
-.training-cleanup-select{width:auto;min-width:150px;padding:5px 8px;font-size:0.68rem}
 
 /* ---------- Badges de estado ---------- */
 .training-status-badge{display:inline-flex;align-items:center;width:fit-content;border:1.5px solid var(--border-color);border-radius:var(--radius-pill);background:var(--bg-card);padding:2px 9px;font-family:var(--font-mono);font-size:0.58rem;font-weight:800;letter-spacing:0.5px;text-transform:uppercase;white-space:nowrap}
@@ -105,23 +130,281 @@
 .workout-rpe{font-family:var(--font-mono);font-size:0.58rem;font-weight:800;color:var(--text-muted)}
 .workout-feedback{margin:0;font-size:0.64rem;color:var(--text-muted);font-style:italic;line-height:1.5}
 
-/* ---------- Jobs ---------- */
-.training-job-status{border:1.5px solid var(--border-color);border-radius:var(--radius-sm);background:var(--bg-main);padding:10px 12px;display:flex;flex-direction:column;gap:8px}
-.training-job-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.training-job-id{font-family:var(--font-mono);font-size:0.6rem;font-weight:700;color:var(--text-muted)}
-.training-error-text{color:var(--accent-red)}
+/* Switches */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+  vertical-align: middle;
+  margin: 0 8px 0 0;
+}
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+.switch-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: var(--border-color);
+  transition: 0.3s;
+  border-radius: 24px;
+}
+.switch-slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: #fff;
+  transition: 0.3s;
+  border-radius: 50%;
+}
+.switch input:checked + .switch-slider {
+  background-color: var(--accent-green);
+}
+.switch input:checked + .switch-slider:before {
+  transform: translateX(20px);
+}
+.switch[data-tooltip]:hover::after {
+  content: attr(data-tooltip);
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 6px;
+  padding: 4px 8px;
+  background: var(--bg-main);
+  color: var(--text-main);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  white-space: nowrap;
+  z-index: 10;
+  pointer-events: none;
+}
+.switch[data-tooltip]:hover::before {
+  content: "";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  margin-bottom: 2px;
+  border-width: 6px;
+  border-style: solid;
+  border-color: var(--border-color) transparent transparent transparent;
+  z-index: 11;
+  pointer-events: none;
+}
 
-/* ---------- Gestión (secciones al final) ---------- */
-.management-section{border-top:2px solid var(--border-color);padding-top:16px;margin-top:10px}
-.management-section .block-title{color:var(--text-main)}
 .account-hint{font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted);line-height:1.5;margin:6px 0}
 .empty-state{font-family:var(--font-mono);font-size:0.68rem;color:var(--text-muted);text-align:center;padding:20px}
 .loading-text{font-family:var(--font-mono);font-size:0.65rem;color:var(--text-muted)}
+.monday-hint{font-family:var(--font-mono);font-size:0.58rem;color:var(--text-muted);margin-top:2px;display:block}
+
+/* Actividad vinculada y acierto en el día del calendario */
+.day-activity{
+  display:flex;
+  flex-direction:column;
+  align-items:flex-start;
+  gap:6px;
+  margin-top:6px;
+  padding-top:6px;
+  border-top:1.5px dashed var(--border-subtle);
+  font-family:var(--font-mono);
+  font-size:0.62rem;
+}
+.day-activity-label{
+  font-weight:800;
+  text-transform:uppercase;
+  letter-spacing:0.3px;
+  color:var(--text-main);
+}
+.day-activity-metrics{
+  display:flex;
+  flex-wrap:wrap;
+  gap:5px;
+  width:100%;
+}
+.day-activity-metric{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  font-size:0.6rem;
+  color:var(--text-main);
+  background:var(--bg-card);
+  border:1.5px solid var(--border-color);
+  border-radius:var(--radius-pill);
+  padding:2px 8px;
+  white-space:nowrap;
+}
+.day-accuracy-badge{
+  display:inline-flex;
+  align-items:center;
+  gap:4px;
+  border:1.5px solid;
+  border-radius:var(--radius-pill);
+  padding:2px 8px;
+  font-size:0.58rem;
+  font-weight:800;
+  text-transform:uppercase;
+  white-space:nowrap;
+}
+.day-activity--missing{
+  flex-direction:column;
+  align-items:flex-start;
+  gap:4px;
+}
+.day-activity--missing .day-activity-label{
+  color:var(--accent-red);
+}
+.day-activity-unlink{
+  background:none;
+  border:none;
+  cursor:pointer;
+  padding:2px;
+  color:var(--text-muted);
+}
+.day-activity-unlink:hover{
+  color:var(--accent-red);
+}
+
+/* Día sin actividad y ya pasó */
+.day-activity--missing{
+  flex-direction:column;
+  align-items:flex-start;
+  gap:4px;
+}
+.day-activity--missing .day-activity-label{
+  color:var(--accent-red);
+}
+.day-activity-select{
+  width:100%;
+  font-size:0.62rem;
+  padding:4px 6px;
+}
 
 @media (max-width:900px){
+  .training-management-grid{grid-template-columns:1fr}
   .training-inline,.training-range{grid-template-columns:1fr}
   .training-section-head{align-items:stretch;flex-direction:column;align-items:flex-start}
-  .training-actions{justify-content:flex-start;width:100%}
+  .training-actions{justify-content:flex-start;width:100%;gap:8px}
   .week-calendar{grid-template-columns:repeat(4,1fr)}
   .day-card{min-height:210px}
+}
+
+/* ---------- Móvil (pantallas pequeñas) ---------- */
+@media (max-width:600px){
+  :host article.card-panel:not(:last-child){
+    margin-bottom:16px;
+  }
+
+  /* Header del calendario: botones en línea horizontal, más pequeños */
+  .training-actions{
+    flex-direction:row;
+    flex-wrap:wrap;
+    align-items:center;
+    gap:6px;
+    width:100%;
+  }
+  .training-actions .calendar-week-range{
+    font-size:0.65rem;
+    margin:0;
+    white-space:normal;
+    flex:1;
+    text-align:center;
+  }
+  .training-actions button{
+    font-size:0.65rem;
+    padding:6px 10px;
+  }
+  .training-actions .btn-icon-only{
+    width:auto;
+    padding:6px;
+  }
+
+  /* Calendario: un día sobre otro en móvil */
+  .week-calendar{
+    grid-template-columns:1fr;
+    gap:6px;
+  }
+  .day-card{
+    min-height:auto;
+    padding:8px 10px;
+    gap:5px;
+    min-width:0;
+  }
+  .day-badge{font-size:0.65rem;padding:1px 5px}
+  .day-name{font-size:0.6rem}
+  .day-date{font-size:0.58rem}
+  .day-title{font-size:0.75rem;margin:3px 0 2px}
+  .day-desc{font-size:0.55rem}
+  .day-metrics{gap:4px;margin:3px 0}
+  .day-metric{font-size:0.6rem;padding:1px 6px}
+  .day-state{font-size:0.58rem;padding:1px 6px}
+  .day-detail{font-size:0.55rem}
+
+  /* Actividad realizada en día */
+  .day-activity{
+    gap:4px;
+    margin-top:5px;
+    padding-top:4px;
+  }
+  .day-activity-label{font-size:0.62rem}
+  .day-activity-metrics{gap:5px}
+  .day-activity-metric{font-size:0.6rem;padding:2px 7px}
+  .day-accuracy-badge{font-size:0.58rem;padding:2px 7px}
+  .day-activity--missing{font-size:0.6rem}
+
+  /* Gestión: formularios en 1 columna */
+  .form-row-3{grid-template-columns:1fr}
+  .training-inline{grid-template-columns:1fr}
+  .form-group{width:100%}
+  .form-control{font-size:16px !important; /* evita zoom en iOS */}
+  .training-notes{min-height:70px;font-size:0.65rem}
+
+  /* Botones de acción: ancho completo en móvil */
+  .panel-actions-row{
+    flex-direction:column;
+    align-items:stretch;
+    gap:8px;
+  }
+  .panel-actions-row .btn-pill-header{
+    width:100%;
+    justify-content:center;
+    padding:8px 16px;
+    font-size:0.75rem;
+  }
+  .panel-actions-row .switch{
+    margin-right:0;
+  }
+  .panel-actions-row .switch-label,
+  .panel-actions-row .switch{
+    width:100%;
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+  }
+
+  /* Badges y textos más compactos */
+  .block-title{font-size:0.7rem}
+  .account-hint{font-size:0.62rem}
+  .empty-state{font-size:0.65rem;padding:16px}
+  .loading-text{font-size:0.62rem}
+  .calendar-week-range{font-size:0.7rem}
+}
+
+/* Evitar que los inputs hagan zoom involuntario en iOS */
+@media (max-width:768px){
+  input, select, textarea{
+    font-size:16px !important;
+  }
 }

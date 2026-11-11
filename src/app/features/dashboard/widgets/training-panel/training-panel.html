@@ -1,377 +1,276 @@
-<article class="card-panel training-panel">
+<article class="card-panel training-panel col-12">
   <div class="card-header-bar">
-    <span class="card-tag-badge">/TRAINING</span>
-    <span class="card-tag-badge">{{ generationStatusLabel() }}</span>
-    <button type="button" class="btn-outline-pill btn-compact btn-icon-only" title="Refrescar entrenamientos"
-      aria-label="Refrescar entrenamientos" (click)="loadPreferences(); loadPlans(); loadCurrentPlan(); loadJobs()">
-      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <polyline points="23 4 23 10 17 10" />
-        <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
-      </svg>
-    </button>
+    <span class="card-tag-badge">CALENDARIO</span>
+    <div class="training-actions">
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact btn-icon-only"
+        [disabled]="calendarWeekOffset() <= -4"
+        title="Semana anterior"
+        aria-label="Semana anterior"
+        (click)="changeCalendarWeek(-1)"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="19" y1="12" x2="5" y2="12" />
+          <polyline points="12 19 5 12 12 5" />
+        </svg>
+      </button>
+      <span class="calendar-week-range">{{ calendarWeekRange() }}</span>
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact btn-icon-only"
+        [disabled]="calendarWeekOffset() >= 4"
+        title="Semana siguiente"
+        aria-label="Semana siguiente"
+        (click)="changeCalendarWeek(1)"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="5" y1="12" x2="19" y2="12" />
+          <polyline points="12 5 19 12 12 19" />
+        </svg>
+      </button>
+      @if (calendarWeekOffset() !== 0) {
+        <button
+          type="button"
+          class="btn-outline-pill btn-compact"
+          title="Volver a la semana actual"
+          aria-label="Volver a la semana actual"
+          (click)="goToCurrentCalendarWeek()"
+        >
+          HOY
+        </button>
+      }
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact btn-icon-only"
+        [disabled]="deletingWeek()"
+        [title]="deletingWeek() ? 'Eliminando…' : 'Eliminar plan de esta semana'"
+        [attr.aria-label]="deletingWeek() ? 'Eliminando…' : 'Eliminar plan de esta semana'"
+        (click)="requestDeleteWeek(calendarWeekStart()!)"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          <line x1="10" y1="11" x2="10" y2="17" />
+          <line x1="14" y1="11" x2="14" y2="17" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact btn-icon-only"
+        title="Refrescar entrenamientos"
+        aria-label="Refrescar entrenamientos"
+        (click)="loadPreferences(); loadPlans(); loadCurrentPlan()"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+        </svg>
+      </button>
+      <button
+        type="button"
+        class="btn-pill-header btn-compact"
+        [disabled]="generating()"
+        title="Generar plan de esta semana"
+        aria-label="Generar plan de esta semana"
+        (click)="generateCurrentWeekPlan()"
+      >
+        {{ generating() ? 'GENERANDO…' : 'GENERAR PLAN' }}
+      </button>
+    </div>
   </div>
 
-  <!-- 1. CALENDARIO (cada día con toda su info) -->
-  <section class="training-block">
-    <div class="training-section-head">
-      <span class="block-title">Calendario</span>
-      <div class="training-actions">
-        <button
-          type="button"
-          class="btn-outline-pill btn-compact btn-icon-only"
-          [disabled]="calendarWeekOffset() <= -4"
-          title="Semana anterior"
-          aria-label="Semana anterior"
-          (click)="changeCalendarWeek(-1)"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="19" y1="12" x2="5" y2="12" />
-            <polyline points="12 19 5 12 12 5" />
-          </svg>
-        </button>
-        <span class="calendar-week-range">{{ calendarWeekRange() }}</span>
-        <button
-          type="button"
-          class="btn-outline-pill btn-compact btn-icon-only"
-          [disabled]="calendarWeekOffset() >= 4"
-          title="Semana siguiente"
-          aria-label="Semana siguiente"
-          (click)="changeCalendarWeek(1)"
-        >
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="5" y1="12" x2="19" y2="12" />
-            <polyline points="12 5 19 12 12 19" />
-          </svg>
-        </button>
-        @if (calendarWeekOffset() !== 0) {
-          <button
-            type="button"
-            class="btn-outline-pill btn-compact"
-            title="Volver a la semana actual"
-            aria-label="Volver a la semana actual"
-            (click)="goToCurrentCalendarWeek()"
-          >
-            HOY
-          </button>
-        }
-      </div>
+  @if (confirmingWeek()) {
+    <div class="panel-actions-row">
+      <p class="account-hint">
+        ¿Eliminar el plan de la semana <strong>{{ calendarWeekStart() }}</strong>? Esta acción no se puede deshacer.
+      </p>
+      <button type="button" class="btn-pill-header btn-compact account-danger-fill" (click)="deleteWeek(calendarWeekStart()!)" [disabled]="deletingWeek()">
+        {{ deletingWeek() ? 'ELIMINANDO…' : 'ELIMINAR PLAN' }}
+      </button>
+      <button type="button" class="btn-outline-pill btn-compact" (click)="cancelDeleteWeek()">CANCELAR</button>
     </div>
+  }
 
-    @if (calendarPlanLoading()) {
-      <p class="loading-text">CARGANDO SEMANA…</p>
-    } @else if (calendarPlan(); as plan) {
-      <div class="week-calendar">
-        @for (offset of weekOffsets; track offset) {
-        @if (workoutOf(plan, offset); as w) {
-        <article class="day-card" [class.day-passed]="isDayPassed(plan, offset)"
-          [class.day-done]="isWorkoutDone(plan, offset)" [attr.data-type]="w.type">
-          <span class="day-badge">{{ workoutTypeShortLabel(w.type) }}</span>
+  @if (calendarPlanLoading()) {
+    <p class="loading-text">CARGANDO SEMANA…</p>
+  } @else if (calendarPlan(); as plan) {
+    <div class="week-calendar">
+      @for (offset of weekOffsets; track offset) {
+      @if (workoutOf(plan, offset); as w) {
+      <article class="day-card" [class.day-passed]="isDayPassed(plan, offset)"
+        [class.day-done]="isWorkoutDone(plan, offset)" [attr.data-type]="w.type">
+        <span class="day-badge">{{ workoutTypeShortLabel(w.type) }}</span>
 
-          <div class="day-header">
-            <span class="day-name">{{ dayLabel(offset) }}</span>
-            <span class="day-date">{{ planDayDate(plan, offset) | date: 'EEE dd MMM' }}</span>
+        <div class="day-header">
+          <span class="day-name">{{ dayLabel(offset) }}</span>
+          <span class="day-date">{{ planDayDate(plan, offset) | date: 'EEE dd MMM' }}</span>
 
-          </div>
-          <h3 class="day-title">{{ w.title || workoutTypeLabel(w.type) }}</h3>
-          <p class="day-desc">{{ w.description }}</p>
+        </div>
+        <h3 class="day-title">{{ w.title || workoutTypeLabel(w.type) }}</h3>
+        <p class="day-desc">{{ w.description }}</p>
 
-          <div class="day-metrics">
-            @if (w.targetDistanceMeters > 0) {
-            <span class="day-metric">{{ w.targetDistanceMeters | km }}</span>
+        <div class="day-metrics">
+          @if (w.targetDistanceMeters > 0) {
+          <span class="day-metric">{{ w.targetDistanceMeters | km }}</span>
+          }
+          @if (w.targetDurationSeconds > 0) {
+          <span class="day-metric">{{ w.targetDurationSeconds | duration }}</span>
+          }
+          @if (w.targetPaceMinPerKm > 0) {
+          <span class="day-metric">{{ w.targetPaceMinPerKm | pace }} /km</span>
+          }
+          @if (w.targetHrZone > 0) {
+          <span class="day-metric">Z{{ w.targetHrZone }}</span>
+          }
+        </div>
+
+        @if (w.targetLoad > 0) {
+        <span class="day-metric">{{ w.targetLoad | number: '1.0-0' }} CARGA
+        </span>
+        }
+
+        @if (w.mainSet) {
+        <p class="day-detail">{{ w.mainSet }}</p>
+        }
+
+        <span class="day-state" [class.day-state--done]="isWorkoutDone(plan, offset)">
+          {{ isWorkoutDone(plan, offset) ? 'CUMPL' : 'PLANNED' }}
+        </span>
+
+        <!-- Actividad realizada automáticamente (misma fecha) y acierto vs plan -->
+        @if (activityForWorkout(plan, offset); as activity) {
+        <div class="day-activity">
+          <span class="day-activity-label">REALIZADO</span>
+          <div class="day-activity-metrics">
+            @if (activity.distanceMeters > 0) {
+            <span class="day-activity-metric">{{ activity.distanceMeters | km }}</span>
             }
-            @if (w.targetDurationSeconds > 0) {
-            <span class="day-metric">{{ w.targetDurationSeconds | duration }}</span>
+            @if (activity.totalTimeSeconds > 0) {
+            <span class="day-activity-metric">{{ activity.totalTimeSeconds | duration }}</span>
             }
-            @if (w.targetPaceMinPerKm > 0) {
-            <span class="day-metric">{{ w.targetPaceMinPerKm | pace }} /km</span>
+            @if (activity.avgPaceMinPerKm > 0) {
+            <span class="day-activity-metric">{{ activity.avgPaceMinPerKm | pace }}</span>
             }
             @if (w.targetHrZone > 0) {
-            <span class="day-metric">Z{{ w.targetHrZone }}</span>
+            <span class="day-activity-metric day-activity-zone">Z{{ w.targetHrZone }}</span>
             }
           </div>
-
-          @if (w.targetLoad > 0) {
-          <span class="day-metric">{{ w.targetLoad | number: '1.0-0' }} CARGA
+          <span
+            class="day-accuracy-badge"
+            [style.border-color]="accuracyColor(calculateAccuracy(w, activity))"
+            [style.color]="accuracyColor(calculateAccuracy(w, activity))"
+          >
+            {{ accuracyLabel(calculateAccuracy(w, activity)) }} {{ calculateAccuracy(w, activity) }}%
           </span>
-          }
-
-          @if (w.mainSet) {
-          <p class="day-detail">{{ w.mainSet }}</p>
-          }
-
-          <span class="day-state" [class.day-state--done]="isWorkoutDone(plan, offset)">
-            {{ isWorkoutDone(plan, offset) ? 'CUMPL' : 'PLANNED' }}
-          </span>
-
-        </article>
-        } @else {
-        <article class="day-card day-card--empty">
-          <span class="day-badge">—</span>
-          <div class="day-header">
-            <span class="day-name">{{ dayLabel(offset) }}</span>
-            <span class="day-date">{{ planDayDate(plan, offset) | date: 'EEE dd MMM' }}</span>
-            
-          </div>
-          <span class="day-empty">Sin sesión</span>
-        </article>
-        }
-        }
-      </div>
-    } @else {
-      <p class="empty-state">SIN PLAN PARA ESTA SEMANA.</p>
-      <button type="button" class="btn-outline-pill btn-compact" (click)="goToCurrentCalendarWeek()">
-        IR A SEMANA ACTUAL
-      </button>
-    }
-  </section>
-
-  <!-- 2. RESUMEN DE LA SEMANA (estadísticas) -->
-  <section class="training-block">
-    <span class="block-title">Resumen de la semana</span>
-
-    @if (currentPlan(); as plan) {
-    <div class="stat-tiles-grid training-plan-tiles">
-      <div class="stat-tile">
-        <span class="stat-tile-label">Distancia objetivo</span>
-        <span class="stat-tile-value">{{ plan.targetWeeklyDistanceMeters | km }}</span>
-      </div>
-      <div class="stat-tile">
-        <span class="stat-tile-label">Carga objetivo</span>
-        <span class="stat-tile-value">{{ plan.targetWeeklyLoad | number: '1.0-0' }}</span>
-      </div>
-      <div class="stat-tile">
-        <span class="stat-tile-label">Sesiones</span>
-        <span class="stat-tile-value">{{ plan.workouts.length }}</span>
-      </div>
-      <div class="stat-tile">
-        <span class="stat-tile-label">Modelo</span>
-        <span class="stat-tile-value training-model">{{ plan.model || '—' }}</span>
-      </div>
-    </div>
-    } @else {
-    <p class="empty-state">SIN PLAN ACTIVO PARA ESTA SEMANA.</p>
-    }
-  </section>
-
-  <!-- 3. GESTIÓN (preferencias, generación y jobs al final) -->
-  <section class="training-block management-section">
-    <span class="block-title">Preferencias de planificación</span>
-
-    @if (preferencesLoading()) {
-      <p class="loading-text">CARGANDO PREFERENCIAS…</p>
-    } @else {
-      @if (preferences(); as prefs) {
-        @if (!prefs.configured) {
-          <p class="account-hint">
-            Aún no has configurado la generación automática. Completa los campos y guarda para
-            activarla.
-          </p>
-        }
-      }
-
-      <div class="form-group">
-        <label class="training-check">
-          <input type="checkbox" name="prefEnabled" [(ngModel)]="prefEnabled" />
-          <span>Activar generación automática semanal</span>
-        </label>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="training-timezone">Zona horaria (IANA)</label>
-        <input id="training-timezone" name="prefTimezone" type="text" class="form-control" placeholder="Europe/Madrid"
-          [(ngModel)]="prefTimezone" />
-      </div>
-
-      <div class="training-inline">
-        <div class="form-group">
-          <label class="form-label" for="training-days">Sesiones / semana</label>
-          <input id="training-days" name="prefDaysPerWeek" type="number" class="form-control" min="1" max="7"
-            [(ngModel)]="prefDaysPerWeek" />
         </div>
-
-        <div class="form-group">
-          <label class="form-label" for="training-long-run">Día del rodaje largo</label>
-          <select id="training-long-run" name="prefLongRunDay" class="form-control" [(ngModel)]="prefLongRunDay">
-            @for (day of longRunDays; track day) {
-            <option [value]="day">{{ day }}</option>
-            }
-          </select>
+        } @else if (isDayPassed(plan, offset)) {
+        <div class="day-activity day-activity--missing">
+          <span class="day-activity-label">NO REALIZADO</span>
         </div>
-      </div>
+        }
+      </article>
+      } @else {
+      <article class="day-card day-card--empty">
+        <span class="day-badge">—</span>
+        <div class="day-header">
+          <span class="day-name">{{ dayLabel(offset) }}</span>
+          <span class="day-date">{{ planDayDate(plan, offset) | date: 'EEE dd MMM' }}</span>
 
-      <div class="form-group">
-        <label class="form-label" for="training-notes">Notas o restricciones para la IA</label>
-        <textarea id="training-notes" name="prefNotes" class="form-control training-notes" rows="3"
-          placeholder="Objetivo, lesiones, disponibilidad, preferencias de terreno…" [(ngModel)]="prefNotes"></textarea>
-      </div>
-
-      <div class="form-actions">
-        <button type="button" class="btn-pill-header btn-compact" [disabled]="savingPreferences()"
-          (click)="savePreferences()">
-          {{ savingPreferences() ? 'GUARDANDO…' : 'GUARDAR PREFERENCIAS' }}
-        </button>
-      </div>
+        </div>
+        <span class="day-empty">Sin sesión</span>
+      </article>
       }
-  </section>
-
-  <section class="training-block management-section">
-    <span class="block-title">Generar plan semanal con IA</span>
-    <p class="account-hint">
-      La generación es asíncrona: se encola un job y el plan aparece cuando n8n lo guarda en la
-      API. Aquí se sigue el estado en tiempo real.
-    </p>
-
-    <div class="training-inline">
-      <div class="form-group">
-        <label class="form-label" for="training-week">Lunes de la semana</label>
-        <input id="training-week" name="generateWeekStart" type="date" class="form-control"
-          [(ngModel)]="generateWeekStart" />
-      </div>
-
-      <label class="training-check training-check--inline">
-        <input type="checkbox" name="generateReplace" [(ngModel)]="generateReplace" />
-        <span>Reemplazar plan existente</span>
-      </label>
+      }
     </div>
-
-    <button type="button" class="btn-pill-header btn-compact" [disabled]="generating()" (click)="generatePlan()">
-      {{ generating() ? 'GENERANDO…' : 'GENERAR PLAN' }}
+  } @else {
+    <p class="empty-state">SIN PLAN PARA ESTA SEMANA.</p>
+    <button type="button" class="btn-outline-pill btn-compact" (click)="goToCurrentCalendarWeek()">
+      IR A SEMANA ACTUAL
     </button>
+  }
 
-    @if (generationJob(); as job) {
-    <div class="training-job-status">
-      <div class="training-job-head">
-        <span class="training-status-badge" [attr.data-status]="job.status">
-          {{ jobStatusLabel(job.status) }}
-        </span>
-        <span class="mono training-job-id">{{ job.requestId }}</span>
-      </div>
-      <div class="kv-list">
-        <div class="kv-row">
-          <span class="kv-key">Semana</span>
-          <span class="kv-val">{{ job.weekStart | date: 'dd/MM/yyyy' }}</span>
-        </div>
-        <div class="kv-row">
-          <span class="kv-key">Intentos</span>
-          <span class="kv-val">{{ job.attempts }}</span>
-        </div>
-        @if (job.planId) {
-        <div class="kv-row">
-          <span class="kv-key">Plan</span>
-          <span class="kv-val">{{ job.planId }}</span>
-        </div>
-        }
-        @if (job.error) {
-        <div class="kv-row">
-          <span class="kv-key">Error</span>
-          <span class="kv-val training-error-text">{{ job.error }}</span>
-        </div>
-        }
-      </div>
-    </div>
-    } @else if (generationResponse(); as response) {
-    <div class="training-job-status">
-      <div class="training-job-head">
-        <span class="training-status-badge" [attr.data-status]="response.status">
-          {{ jobStatusLabel(response.status) }}
-        </span>
-        <span class="mono training-job-id">{{ response.requestId }}</span>
-      </div>
-      <p class="account-hint">{{ response.message || 'Job de generación encolado.' }}</p>
-    </div>
-    }
-  </section>
+  <!-- Resumen de la semana dentro de la misma card -->
+  <div class="training-section-head">
+    <span class="block-title">Resumen de la semana</span>
+  </div>
 
-  <section class="training-block management-section">
-    <div class="training-section-head">
-      <span class="block-title">Jobs de generación</span>
-      <div class="training-actions">
-        <select name="cleanupStatus" class="form-control training-cleanup-select" [(ngModel)]="cleanupStatus"
-          aria-label="Estado de los jobs a limpiar">
-          @for (status of cleanupStatuses; track status) {
-          <option [value]="status">{{ jobStatusLabel(status) }}</option>
-          }
-        </select>
-        <button type="button" class="btn-outline-pill btn-compact" [disabled]="cleaningJobs()" (click)="cleanupJobs()">
-          {{ cleaningJobs() ? 'LIMPIANDO…' : 'LIMPIAR POR ESTADO' }}
-        </button>
-      </div>
+  @if (currentPlan(); as plan) {
+  <div class="stat-tiles-grid training-plan-tiles">
+    <div class="stat-tile">
+      <span class="stat-tile-label">Distancia objetivo</span>
+      <span class="stat-tile-value">{{ plan.targetWeeklyDistanceMeters | km }}</span>
     </div>
+    <div class="stat-tile">
+      <span class="stat-tile-label">Carga objetivo</span>
+      <span class="stat-tile-value">{{ plan.targetWeeklyLoad | number: '1.0-0' }}</span>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-tile-label">Sesiones</span>
+      <span class="stat-tile-value">{{ plan.workouts.length }}</span>
+    </div>
+    <div class="stat-tile">
+      <span class="stat-tile-label">Modelo</span>
+      <span class="stat-tile-value training-model">{{ plan.model || '—' }}</span>
+    </div>
+  </div>
+  } @else {
+  <p class="empty-state">SIN PLAN ACTIVO PARA ESTA SEMANA.</p>
+  }
+</article>
 
-    @if (jobs(); as list) {
-    @if (list.length > 0) {
-    <div class="data-table-wrap">
-      <table class="data-table training-table">
-        <thead>
-          <tr>
-            <th>Request</th>
-            <th>Semana</th>
-            <th>Estado</th>
-            <th>Intentos</th>
-            <th>Creado</th>
-            <th>Actualizado</th>
-            <th class="text-right">Acciones</th>
-          </tr>
-        </thead>
-        <tbody>
-          @for (job of list; track job.requestId) {
-          <tr>
-            <td class="mono training-job-id">{{ job.requestId }}</td>
-            <td>{{ job.weekStart | date: 'dd/MM/yy' }}</td>
-            <td>
-              <span class="training-status-badge" [attr.data-status]="job.status">
-                {{ jobStatusLabel(job.status) }}
-              </span>
-            </td>
-            <td>{{ job.attempts }}</td>
-            <td>{{ job.createdAt | date: 'dd/MM/yy HH:mm' }}</td>
-            <td>{{ job.updatedAt | date: 'dd/MM/yy HH:mm' }}</td>
-            <td>
-              <div class="training-actions">
-                @if (confirmingJobId() === job.requestId) {
-                <button type="button" class="btn-pill-header btn-compact btn-icon-only training-danger-fill"
-                  [disabled]="deletingJobId() === job.requestId" title="Confirmar borrado del job"
-                  aria-label="Confirmar borrado del job" (click)="deleteJob(job)">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="20 6 9 17 4 12" />
-                  </svg>
-                </button>
-                <button type="button" class="btn-outline-pill btn-compact btn-icon-only" title="Cancelar"
-                  aria-label="Cancelar" (click)="cancelDeleteJob()">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18" />
-                    <line x1="6" y1="6" x2="18" y2="18" />
-                  </svg>
-                </button>
-                } @else {
-                <button type="button" class="btn-outline-pill btn-compact btn-icon-only training-danger"
-                  title="Eliminar job" aria-label="Eliminar job" [disabled]="deletingJobId() !== null"
-                  (click)="requestDeleteJob(job.requestId)">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                  </svg>
-                </button>
-                }
-              </div>
-            </td>
-          </tr>
-          }
-        </tbody>
-      </table>
-    </div>
-    } @else {
-    <div class="empty-state">SIN JOBS DE GENERACIÓN.</div>
-    }
-    } @else if (jobsError()) {
-    <div class="empty-state">
-      <p>NO SE PUDIERON CARGAR LOS JOBS.</p>
-      <button type="button" class="btn-outline-pill btn-compact" (click)="loadJobs()">
-        REINTENTAR
-      </button>
-    </div>
-    } @else {
-    <p class="loading-text">CARGANDO JOBS DE GENERACIÓN…</p>
-    }
-  </section>
+<!-- Preferencias de planificación -->
+<article class="card-panel col-12">
+  <div class="card-header-bar">
+    <span class="card-tag-badge">GESTIÓN</span>
+  </div>
+
+  <section class="management-section">
+      <div class="training-section-head">
+        <span class="block-title">Preferencias de planificación</span>
+      </div>
+
+      @if (preferencesLoading()) {
+        <p class="loading-text">CARGANDO PREFERENCIAS…</p>
+      } @else {
+
+        <div class="form-row-3">
+          <div class="form-group">
+            <label class="form-label" for="training-timezone">Zona horaria</label>
+            <input id="training-timezone" name="prefTimezone" type="text" class="form-control" placeholder="Europe/Madrid"
+              [(ngModel)]="prefTimezone" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="training-days">Sesiones / semana</label>
+            <input id="training-days" name="prefDaysPerWeek" type="number" class="form-control" min="1" max="7"
+              [(ngModel)]="prefDaysPerWeek" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="training-long-run">Día largo</label>
+            <select id="training-long-run" name="prefLongRunDay" class="form-control" [(ngModel)]="prefLongRunDay">
+              @for (day of longRunDays; track day) {
+              <option [value]="day">{{ day }}</option>
+              }
+            </select>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="training-notes">Notas para la IA</label>
+          <textarea id="training-notes" name="prefNotes" class="form-control training-notes" rows="2"
+            placeholder="Objetivo, lesiones, disponibilidad…" [(ngModel)]="prefNotes"></textarea>
+        </div>
+
+        <div class="panel-actions-row">
+          <label class="switch" data-tooltip="Activar generación automática semanal">
+            <input type="checkbox" name="prefEnabled" [(ngModel)]="prefEnabled" />
+            <span class="switch-slider"></span>
+          </label>
+          <button type="button" class="btn-pill-header btn-compact" [disabled]="savingPreferences()"
+            (click)="savePreferences()">
+            {{ savingPreferences() ? 'GUARDANDO…' : 'GUARDAR PREFERENCIAS' }}
+          </button>
+        </div>
+      }
+    </section>
 </article>

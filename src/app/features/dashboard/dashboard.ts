@@ -47,6 +47,7 @@ import { McpPanel } from './widgets/mcp-panel/mcp-panel';
 import { MilestonesPanel } from './widgets/milestones-panel/milestones-panel';
 import { PmcChart } from './widgets/pmc-chart/pmc-chart';
 import { PmcReading } from './widgets/pmc-reading/pmc-reading';
+import { PlanGenerationPanel } from './widgets/plan-generation-panel/plan-generation-panel';
 import { RecordsGrid } from './widgets/records-grid/records-grid';
 import { SummaryStats } from './widgets/summary-stats/summary-stats';
 import { TrainingPanel } from './widgets/training-panel/training-panel';
@@ -97,6 +98,7 @@ interface TabDef {
     McpPanel,
     ApiKeysPanel,
     TrainingPanel,
+    PlanGenerationPanel,
     DurationPipe,
     KmPipe,
     PacePipe,

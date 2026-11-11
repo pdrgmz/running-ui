@@ -53,6 +53,38 @@
   line-height: 1.5;
 }
 
+/* Columna derecha de Cuenta & API: telemetría + generación de planes.
+   La generación ocupa el alto restante para igualar la tarjeta CONFIG. */
+.account-side {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  min-width: 0;
+  height: 100%;
+}
+
+.account-side > app-terminal-console {
+  display: block;
+  flex: 0 0 auto;
+}
+
+.account-side > app-plan-generation-panel {
+  display: flex;
+  flex-direction: column;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+@media (max-width: 900px) {
+  .account-side {
+    height: auto;
+  }
+
+  .account-side > app-plan-generation-panel {
+    flex: 0 0 auto;
+  }
+}
+
 /* Tarjetas de la pestaña Cuenta: reparten el contenido en la celda bento */
 article.card-panel .kv-list {
   flex: 1;

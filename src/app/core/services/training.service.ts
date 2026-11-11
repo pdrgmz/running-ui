@@ -12,6 +12,7 @@ import {
   TrainingPlanSummaryDto,
   TrainingPreferencesDto,
   UpdateTrainingPreferencesRequestDto,
+  WorkoutDto,
 } from '../models/api.models';
 import { ApiConfigService } from './api-config.service';
 
@@ -99,6 +100,18 @@ export class TrainingService {
   generate(request: GenerateTrainingPlanRequestDto): Observable<GenerateTrainingPlanResponseDto> {
     return this.http.post<GenerateTrainingPlanResponseDto>(
       this.api.url('/api/v1/training/plans/generate'),
+      request,
+    );
+  }
+
+  /** PUT /api/v1/training/plans/{planId}/workouts/{workoutId} — vincula/desvincula una actividad realizada a una sesión planificada. */
+  updateWorkout(
+    planId: string,
+    workoutId: number,
+    request: { completedActivityId?: string | null },
+  ): Observable<WorkoutDto> {
+    return this.http.put<WorkoutDto>(
+      this.api.url(`/api/v1/training/plans/${encodeURIComponent(planId)}/workouts/${workoutId}`),
       request,
     );
   }
