@@ -47,14 +47,11 @@ import { McpPanel } from './widgets/mcp-panel/mcp-panel';
 import { MilestonesPanel } from './widgets/milestones-panel/milestones-panel';
 import { PmcChart } from './widgets/pmc-chart/pmc-chart';
 import { PmcReading } from './widgets/pmc-reading/pmc-reading';
-import { PlanGenerationPanel } from './widgets/plan-generation-panel/plan-generation-panel';
 import { RecordsGrid } from './widgets/records-grid/records-grid';
 import { SummaryStats } from './widgets/summary-stats/summary-stats';
-import { TrainingPanel } from './widgets/training-panel/training-panel';
 
 type Tab =
   | 'overview'
-  | 'training'
   | 'records'
   | 'activities'
   | 'files'
@@ -97,8 +94,6 @@ interface TabDef {
     FilesPanel,
     McpPanel,
     ApiKeysPanel,
-    TrainingPanel,
-    PlanGenerationPanel,
     DurationPipe,
     KmPipe,
     PacePipe,
@@ -120,7 +115,6 @@ export class Dashboard implements OnInit {
 
   protected readonly tabs: TabDef[] = [
     { id: 'overview', label: 'Resumen' },
-    { id: 'training', label: 'Entrenamientos' },
     { id: 'records', label: 'Récords & Logros' },
     { id: 'activities', label: 'Actividades' },
     { id: 'files', label: 'Archivos' },

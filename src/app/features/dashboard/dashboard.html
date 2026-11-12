@@ -112,11 +112,6 @@
         <app-pmc-reading class="col-12" [pmc]="pmcPoints()" [acwr]="acwr()" />
       }
 
-      <!-- ENTRENAMIENTOS -->
-      @case ('training') {
-        <app-training-panel class="col-12" />
-      }
-
       <!-- RÉCORDS Y LOGROS -->
       @case ('records') {
         <app-records-grid class="col-12" [records]="records()" (openActivity)="openActivityById($event)" />
@@ -498,7 +493,6 @@
 
         <div class="account-side col-6">
           <app-terminal-console />
-          <app-plan-generation-panel />
         </div>
 
         <app-api-keys-panel class="col-12" />
@@ -521,20 +515,6 @@
       <polyline points="9 22 9 12 15 12 15 22" />
     </svg>
     <span>Resumen</span>
-  </button>
-
-  <button
-    type="button"
-    class="mobile-dock-item"
-    [class.active]="activeTab() === 'training'"
-    (click)="setTab('training'); scrollMobileTop()"
-    aria-label="Entrenamientos"
-  >
-    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
-      <path d="M6 4v16M18 4v16M4 8h4M4 16h4M16 8h4M16 16h4" />
-      <line x1="8" y1="12" x2="16" y2="12" />
-    </svg>
-    <span>Entreno</span>
   </button>
 
   <button
