@@ -1,24 +1,15 @@
-/* Columna derecha del resumen: zonas de FC sobre Eddington, junto al ACWR.
-   Las dos tarjetas se reparten el alto restante de la fila a partes iguales. */
-.overview-side {
-  display: grid;
-  grid-template-rows: 1fr 1fr;
-  gap: 20px;
-  min-width: 0;
-  height: 100%;
+/* Sección principal: últimas carreras + ACWR + entrenamiento del día */
+.overview-principal {
+  display: contents;
 }
 
-.overview-side > * {
-  min-width: 0;
-  min-height: 0;
-  display: flex;
+.overview-principal > .recent-sessions-panel {
+  grid-column: span 12;
 }
 
-@media (max-width: 900px) {
-  .overview-side {
-    grid-template-rows: auto auto;
-    height: auto;
-  }
+/* Sección resumen: eddington, stats y PMC */
+.overview-resumen {
+  display: contents;
 }
 
 .hsb-stats {
@@ -53,8 +44,8 @@
   line-height: 1.5;
 }
 
-/* Columna derecha de Cuenta & API: telemetría + generación de planes.
-   La generación ocupa el alto restante para igualar la tarjeta CONFIG. */
+/* Columna derecha de Cuenta & API: telemetría.
+   La generación de entrenamientos vive en su propia pestaña. */
 .account-side {
   display: flex;
   flex-direction: column;
@@ -68,20 +59,9 @@
   flex: 0 0 auto;
 }
 
-.account-side > app-plan-generation-panel {
-  display: flex;
-  flex-direction: column;
-  flex: 1 1 auto;
-  min-height: 0;
-}
-
 @media (max-width: 900px) {
   .account-side {
     height: auto;
-  }
-
-  .account-side > app-plan-generation-panel {
-    flex: 0 0 auto;
   }
 }
 

@@ -299,3 +299,125 @@ app-activity-profiles {
   }
 }
 
+/* Acción de exportación y borrado al final del detalle */
+.detail-action-bar--bottom {
+  flex-shrink: 0;
+  margin-top: 12px;
+  border-top: 1.5px solid var(--border-color);
+  padding-top: 10px;
+}
+
+/* Análisis IA de la actividad */
+.ai-analysis-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.ai-summary {
+  margin: 0;
+  font-size: 0.78rem;
+  line-height: 1.5;
+  color: var(--text-main);
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  border-left: 4px solid var(--accent-green);
+  font-family: var(--font-mono);
+}
+
+.ai-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-section-title {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--text-muted);
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 4px;
+  margin: 0;
+}
+
+.ai-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.ai-list-item {
+  display: flex;
+  gap: 8px;
+  align-items: flex-start;
+  font-size: 0.72rem;
+  line-height: 1.45;
+  color: var(--text-main);
+  font-family: var(--font-mono);
+}
+
+.ai-bullet {
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.ai-list--strengths .ai-bullet {
+  color: var(--accent-green);
+}
+
+.ai-list--weaknesses .ai-bullet {
+  color: var(--accent-red);
+}
+
+.ai-list--recommendations .ai-bullet {
+  color: var(--accent-amber);
+}
+
+.ai-meta {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+  color: var(--text-muted);
+  border-top: 1px dashed var(--border-subtle);
+  padding-top: 6px;
+  margin-top: auto;
+}
+
+.btn-regenerate {
+  margin-top: 8px;
+  width: 100%;
+}
+
+/* Contenedor que apila Splits y Zonas de FC una sobre la otra (span-6) */
+.flex-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  grid-column: span 6;
+  min-width: 0;
+}
+
+.flex-col .bento-card {
+  grid-column: auto;
+  width: 100%;
+}
+
+@media (min-width: 1140px) {
+  .detail-body .span-6 {
+    grid-column: span 6;
+  }
+}
+

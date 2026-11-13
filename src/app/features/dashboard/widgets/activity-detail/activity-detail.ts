@@ -1,4 +1,4 @@
-import { DatePipe, DecimalPipe } from '@angular/common';
+import { DatePipe, DecimalPipe, TitleCasePipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -15,10 +15,12 @@ import {
   viewChild,
 } from '@angular/core';
 import * as L from 'leaflet';
-import { catchError, forkJoin, of } from 'rxjs';
+import { catchError, forkJoin, of, switchMap, takeWhile, timer, Subscription } from 'rxjs';
 import {
   Activity,
   ActivityTrackpoint,
+  AnalyzeActivityResponseDto,
+  ActivityAnalysisJobResponseDto,
   CardiacDriftResponseDto,
   HrZonesResponseDto,
   SplitDto,
@@ -79,7 +81,7 @@ const ZONE_DEFS: { key: keyof HrZonesResponseDto['zones']; label: string; cls: s
  */
 @Component({
   selector: 'app-activity-detail',
-  imports: [DatePipe, DecimalPipe, DurationPipe, KmPipe, PacePipe, ActivityProfiles],
+  imports: [DatePipe, DecimalPipe, TitleCasePipe, DurationPipe, KmPipe, PacePipe, ActivityProfiles],
   templateUrl: './activity-detail.html',
   styleUrl: './activity-detail.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -102,6 +104,7 @@ export class ActivityDetail implements OnInit {
     { id: 'det-route', label: 'Mapa y perfiles' },
     { id: 'det-splits', label: 'Splits y zonas' },
     { id: 'det-summary', label: 'Resumen y análisis' },
+    { id: 'det-ai', label: 'Análisis IA' },
   ];
   protected readonly activeSection = signal('det-route');
 
@@ -122,6 +125,28 @@ export class ActivityDetail implements OnInit {
   protected readonly trackpoints = signal<ActivityTrackpoint[] | null>(null);
   /** Trackpoint activo compartido entre el mapa y los perfiles. */
   protected readonly hoverIndex = signal<number | null>(null);
+
+  /* ------------------------------------------------------------------ */
+  /* Análisis IA de la actividad                                        */
+  /* ------------------------------------------------------------------ */
+  protected readonly aiAnalysis = signal<string | null>(null);
+  /** Análisis IA parseado como objeto (summary, strengths, weaknesses, recommendations…). */
+  protected readonly aiAnalysisParsed = computed(() => {
+    const raw = this.aiAnalysis();
+    if (!raw) {
+      return null;
+    }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  });
+  protected readonly analysisLoading = signal(false);
+  protected readonly analysisError = signal(false);
+  protected readonly analysisJob = signal<ActivityAnalysisJobResponseDto | null>(null);
+
+  private analysisJobSub: Subscription | null = null;
 
   protected readonly zoneRows = computed<ZoneRow[]>(() => {
     const zones = this.hrZones()?.zones;
@@ -192,6 +217,7 @@ export class ActivityDetail implements OnInit {
       this.zone.runOutsideAngular(() => this.renderMap(el, pts));
     });
     inject(DestroyRef).onDestroy(() => {
+      this.stopAnalysisPolling();
       this.gpsResizeObserver?.disconnect();
       this.gpsResizeObserver = null;
       if (this.gpsWindowListener) {
@@ -234,6 +260,90 @@ export class ActivityDetail implements OnInit {
 
   ngOnInit(): void {
     this.loadDetail();
+    this.ensureAiAnalysis();
+  }
+
+  /** Lanza el análisis IA de la actividad. Si `replace` es true, sobreescribe el análisis existente. */
+  protected ensureAiAnalysis(replace = false): void {
+    const id = this.activity().id;
+
+    if (!replace && this.activity().aiAnalysis) {
+      this.aiAnalysis.set(this.activity().aiAnalysis);
+      return;
+    }
+
+    this.analysisLoading.set(true);
+    this.analysisError.set(false);
+
+    this.activities.analyze(id, replace).subscribe({
+      next: (response) => {
+        this.analysisJob.set({
+          requestId: response.requestId,
+          userId: 0,
+          activityId: id,
+          status: response.status,
+          source: 'n8n',
+          attempts: 0,
+          analysisResult: null,
+          error: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          completedAt: null,
+        });
+        this.pollAnalysisJob(id, response.requestId);
+      },
+      error: () => {
+        this.analysisLoading.set(false);
+        this.analysisError.set(true);
+        this.toast.error('NO SE PUDO INICIAR EL ANÁLISIS IA');
+      },
+    });
+  }
+
+  private pollAnalysisJob(id: string, requestId: string): void {
+    this.stopAnalysisPolling();
+    this.analysisJobSub = timer(0, 1800)
+      .pipe(
+        switchMap(() => this.activities.analysisJob(id, requestId)),
+        takeWhile((job) => !isAnalysisTerminal(job.status), true),
+      )
+      .subscribe({
+        next: (job) => {
+          this.analysisJob.set(job);
+          if (isAnalysisTerminal(job.status)) {
+            this.stopAnalysisPolling();
+            this.analysisLoading.set(false);
+            if (job.status === 'COMPLETED' && job.analysisResult) {
+              this.aiAnalysis.set(job.analysisResult);
+              this.toast.show('ANÁLISIS IA COMPLETADO');
+              /* Refresca la actividad para que quede persistido el aiAnalysis. */
+              this.activities.analysis(id).subscribe({
+                next: (updated) => {
+                  /* El componente padre recibe la actividad actualizada vía input; aquí solo guardamos localmente. */
+                  this.aiAnalysis.set(updated.aiAnalysis ?? null);
+                },
+                error: () => {
+                  /* No crítico: ya tenemos el análisisResult del job. */
+                },
+              });
+            } else if (job.status === 'FAILED' || job.status === 'TIMEOUT') {
+              this.analysisError.set(true);
+              this.toast.error(`EL ANÁLISIS IA TERMINÓ COMO ${job.status}`);
+            }
+          }
+        },
+        error: () => {
+          this.stopAnalysisPolling();
+          this.analysisLoading.set(false);
+          this.analysisError.set(true);
+          this.toast.error('NO SE PUDO CONSULTAR EL ESTADO DEL ANÁLISIS IA');
+        },
+      });
+  }
+
+  private stopAnalysisPolling(): void {
+    this.analysisJobSub?.unsubscribe();
+    this.analysisJobSub = null;
   }
 
   /** Carga (o recarga) toda la analítica de la actividad. */
@@ -472,4 +582,8 @@ export class ActivityDetail implements OnInit {
     }
     this.activeSection.set(current);
   }
+}
+
+function isAnalysisTerminal(status: string | undefined): boolean {
+  return status === 'COMPLETED' || status === 'FAILED' || status === 'TIMEOUT';
 }

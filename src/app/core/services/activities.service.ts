@@ -5,6 +5,8 @@ import {
   Activity,
   ActivityDeletionStatusDto,
   ActivityTrackpoint,
+  AnalyzeActivityResponseDto,
+  ActivityAnalysisJobResponseDto,
   CardiacDriftResponseDto,
   ElevationCoverageDto,
   HrZonesResponseDto,
@@ -117,6 +119,30 @@ export class ActivitiesService {
   cardiacDrift(id: string): Observable<CardiacDriftResponseDto> {
     return this.http.get<CardiacDriftResponseDto>(
       this.api.url(`/api/v1/analytics/${encodeURIComponent(id)}/cardiac-drift`),
+    );
+  }
+
+  /** POST /api/v1/activities/{id}/analyze — lanzar análisis IA de una carrera. */
+  analyze(id: string, replace = false): Observable<AnalyzeActivityResponseDto> {
+    return this.http.post<AnalyzeActivityResponseDto>(
+      this.api.url(`/api/v1/activities/${encodeURIComponent(id)}/analyze`),
+      { replace },
+    );
+  }
+
+  /** GET /api/v1/activities/{id}/analysis/jobs/{requestId} — estado del job de análisis. */
+  analysisJob(id: string, requestId: string): Observable<ActivityAnalysisJobResponseDto> {
+    return this.http.get<ActivityAnalysisJobResponseDto>(
+      this.api.url(
+        `/api/v1/activities/${encodeURIComponent(id)}/analysis/jobs/${encodeURIComponent(requestId)}`,
+      ),
+    );
+  }
+
+  /** GET /api/v1/activities/{id}/analysis — actividad con su análisis IA guardado. */
+  analysis(id: string): Observable<Activity> {
+    return this.http.get<Activity>(
+      this.api.url(`/api/v1/activities/${encodeURIComponent(id)}/analysis`),
     );
   }
 }

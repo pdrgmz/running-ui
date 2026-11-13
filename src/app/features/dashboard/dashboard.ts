@@ -39,6 +39,8 @@ import { ActivityDetail } from './widgets/activity-detail/activity-detail';
 import { ActivityHeatmap } from './widgets/activity-heatmap/activity-heatmap';
 import { AcwrCard } from './widgets/acwr-card/acwr-card';
 import { ApiKeysPanel } from './widgets/api-keys-panel/api-keys-panel';
+import { DailyRecommendationCard } from './widgets/daily-recommendation-card/daily-recommendation-card';
+import { DailyTrainingPanel } from './widgets/daily-training-panel/daily-training-panel';
 import { EddingtonCard } from './widgets/eddington-card/eddington-card';
 import { FilesPanel } from './widgets/files-panel/files-panel';
 import { HrZoneBar } from './widgets/hr-zone-bar/hr-zone-bar';
@@ -51,7 +53,9 @@ import { RecordsGrid } from './widgets/records-grid/records-grid';
 import { SummaryStats } from './widgets/summary-stats/summary-stats';
 
 type Tab =
-  | 'overview'
+  | 'principal'
+  | 'resumen'
+  | 'training'
   | 'records'
   | 'activities'
   | 'files'
@@ -83,9 +87,11 @@ interface TabDef {
     PmcChart,
     PmcReading,
     AcwrCard,
+    DailyRecommendationCard,
+    DailyTrainingPanel,
     EddingtonCard,
-    HrZonesCard,
     HrZoneBar,
+    HrZonesCard,
     RecordsGrid,
     MilestonesPanel,
     ActivityCalendar,
@@ -114,7 +120,9 @@ export class Dashboard implements OnInit {
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly tabs: TabDef[] = [
-    { id: 'overview', label: 'Resumen' },
+    { id: 'principal', label: 'Principal' },
+    { id: 'resumen', label: 'Resumen' },
+    { id: 'training', label: 'Entrenamiento' },
     { id: 'records', label: 'Récords & Logros' },
     { id: 'activities', label: 'Actividades' },
     { id: 'files', label: 'Archivos' },
@@ -123,7 +131,7 @@ export class Dashboard implements OnInit {
     { id: 'account', label: 'Cuenta & API' },
   ];
 
-  protected readonly activeTab = signal<Tab>('overview');
+  protected readonly activeTab = signal<Tab>('principal');
   protected readonly loading = signal(true);
   protected readonly recalibrating = signal(false);
   protected readonly recalculatingMetrics = signal(false);

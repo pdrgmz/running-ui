@@ -25,43 +25,6 @@
       </div>
     </div>
 
-    <!-- ACCIONES DE EXPORTACIÓN Y BORRADO -->
-    <div class="detail-action-bar">
-      <button
-        type="button"
-        class="btn-outline-pill btn-compact"
-        [disabled]="downloading() !== null"
-        (click)="downloadGpx()"
-      >
-        {{ downloading() === 'gpx' ? 'DESCARGANDO…' : 'GPX' }}
-      </button>
-      <button
-        type="button"
-        class="btn-outline-pill btn-compact"
-        [disabled]="downloading() !== null"
-        (click)="downloadGeoJson()"
-      >
-        {{ downloading() === 'geojson' ? 'DESCARGANDO…' : 'GEOJSON' }}
-      </button>
-      <span class="detail-action-spacer"></span>
-      @if (!confirmingDelete()) {
-        <button type="button" class="btn-outline-pill btn-compact detail-danger" (click)="requestDelete()">
-          ELIMINAR ACTIVIDAD
-        </button>
-      } @else {
-        <span class="detail-confirm-text">¿ELIMINAR DEFINITIVAMENTE?</span>
-        <button
-          type="button"
-          class="btn-pill-header btn-compact detail-danger-fill"
-          [disabled]="deleting()"
-          (click)="deleteActivity()"
-        >
-          {{ deleting() ? 'ELIMINANDO…' : 'CONFIRMAR' }}
-        </button>
-        <button type="button" class="btn-outline-pill btn-compact" (click)="cancelDelete()">CANCELAR</button>
-      }
-    </div>
-
     <nav class="nav-tabs-bar detail-tabs">
       @for (section of sections; track section.id) {
         <button
@@ -121,90 +84,186 @@
         }
       </section>
 
-      <!-- FILA 2 · SPLITS + TIEMPO EN ZONAS DE FC -->
-      <section id="det-splits" class="bento-card span-8">
-        <header class="section-head">
-          <span>Splits por kilómetro</span>
-        </header>
-        @if (splits(); as splitList) {
-          @if (splitBars().length > 0) {
-            <div class="splits-rows">
-              @for (bar of splitBars(); track bar.km) {
-                <div
-                  class="split-row"
-                  [title]="
-                    'KM ' + bar.km + ' · ' + (bar.pace | pace) + ' · ' + (bar.seconds | duration) + (bar.heartRate !== null ? ' · ' + bar.heartRate + ' bpm' : '')
-                  "
-                >
-                  <span class="split-km">KM {{ bar.km }}</span>
-                  <div class="split-track">
-                    <div
-                      class="split-bar"
-                      [class.split-bar--fastest]="bar.fastest"
-                      [style.width.%]="bar.widthPct"
-                    ></div>
+      <!-- FILA 2 · SPLITS Y ZONAS DE FC (apiladas) + ANÁLISIS IA -->
+      <div class="span-6 flex-col">
+        <section class="bento-card">
+          <header class="section-head">
+            <span>Splits por kilómetro</span>
+          </header>
+          @if (splits(); as splitList) {
+            @if (splitBars().length > 0) {
+              <div class="splits-rows">
+                @for (bar of splitBars(); track bar.km) {
+                  <div
+                    class="split-row"
+                    [title]="
+                      'KM ' + bar.km + ' · ' + (bar.pace | pace) + ' · ' + (bar.seconds | duration) + (bar.heartRate !== null ? ' · ' + bar.heartRate + ' bpm' : '')
+                    "
+                  >
+                    <span class="split-km">KM {{ bar.km }}</span>
+                    <div class="split-track">
+                      <div
+                        class="split-bar"
+                        [class.split-bar--fastest]="bar.fastest"
+                        [style.width.%]="bar.widthPct"
+                      ></div>
+                    </div>
+                    <span class="split-pace">{{ bar.pace | pace }}</span>
                   </div>
-                  <span class="split-pace">{{ bar.pace | pace }}</span>
+                }
+              </div>
+              <p class="chart-caption">
+                BARRA MÁS CORTA = KILÓMETRO MÁS RÁPIDO · VERDE = MEJOR KILÓMETRO (ESCALA RELATIVA)
+              </p>
+            } @else if (splitList.length > 0) {
+              <div class="empty-state">NO HAY DATOS DE RITMO PARA DIBUJAR LOS SPLITS.</div>
+            } @else {
+              <div class="empty-state">NO HAY SPLITS DISPONIBLES PARA ESTA ACTIVIDAD.</div>
+            }
+          } @else {
+            <p class="loading-text">CALCULANDO SPLITS POR KILÓMETRO…</p>
+          }
+        </section>
+
+        <section class="bento-card">
+          <header class="section-head">
+            <span>Tiempo en zonas de FC</span>
+          </header>
+          @if (hrZones(); as zones) {
+            <div class="zone-panel">
+              <span class="chart-note">FC MÁXIMA DE REFERENCIA {{ zones.maxHrUsed }} BPM</span>
+              @if (zoneRows().length > 0) {
+                <div class="zone-chart">
+                  <div
+                    class="zone-stack"
+                    role="img"
+                    aria-label="Distribución del tiempo en zonas de frecuencia cardíaca"
+                  >
+                    @for (row of zoneRows(); track row.label) {
+                      <div
+                        [class]="'zone-stack-seg ' + row.cls"
+                        [style.flex-grow]="row.percentage"
+                        [title]="row.label + ' · ' + (row.percentage | number: '1.1-1') + '% · ' + (row.seconds | duration)"
+                      ></div>
+                    }
+                  </div>
+                  <div class="zone-legend">
+                    @for (row of zoneRows(); track row.label) {
+                      <div class="zone-legend-row">
+                        <span [class]="'zone-dot ' + row.cls"></span>
+                        <span class="zone-legend-name">{{ row.label }}</span>
+                        <span class="zone-legend-val">
+                          {{ row.percentage | number: '1.0-1' }}% · {{ row.seconds | duration }}
+                        </span>
+                      </div>
+                    }
+                  </div>
                 </div>
+              } @else {
+                <div class="empty-state">SIN DATOS DE ZONAS CARDÍACAS.</div>
               }
             </div>
-            <p class="chart-caption">
-              BARRA MÁS CORTA = KILÓMETRO MÁS RÁPIDO · VERDE = MEJOR KILÓMETRO (ESCALA RELATIVA)
-            </p>
-          } @else if (splitList.length > 0) {
-            <div class="empty-state">NO HAY DATOS DE RITMO PARA DIBUJAR LOS SPLITS.</div>
           } @else {
-            <div class="empty-state">NO HAY SPLITS DISPONIBLES PARA ESTA ACTIVIDAD.</div>
+            <p class="loading-text">DISTRIBUYENDO TIEMPO EN ZONAS DE FC…</p>
           }
-        } @else {
-          <p class="loading-text">CALCULANDO SPLITS POR KILÓMETRO…</p>
-        }
-      </section>
+        </section>
+      </div>
 
-      <section class="bento-card span-4">
+      <!-- ANÁLISIS IA DE LA ACTIVIDAD -->
+      <section id="det-ai" class="bento-card span-6">
         <header class="section-head">
-          <span>Tiempo en zonas de FC</span>
+          <span>Análisis IA</span>
         </header>
-        @if (hrZones(); as zones) {
-          <div class="zone-panel">
-            <span class="chart-note">FC MÁXIMA DE REFERENCIA {{ zones.maxHrUsed }} BPM</span>
-            @if (zoneRows().length > 0) {
-              <div class="zone-chart">
-                <div
-                  class="zone-stack"
-                  role="img"
-                  aria-label="Distribución del tiempo en zonas de frecuencia cardíaca"
-                >
-                  @for (row of zoneRows(); track row.label) {
-                    <div
-                      [class]="'zone-stack-seg ' + row.cls"
-                      [style.flex-grow]="row.percentage"
-                      [title]="row.label + ' · ' + (row.percentage | number: '1.1-1') + '% · ' + (row.seconds | duration)"
-                    ></div>
+        @if (analysisLoading()) {
+          <p class="loading-text">ANALIZANDO CARRERA CON IA…</p>
+        } @else if (analysisError()) {
+          <div class="empty-state">NO SE PUDO GENERAR EL ANÁLISIS IA.</div>
+          <button
+            type="button"
+            class="btn-outline-pill btn-compact"
+            (click)="ensureAiAnalysis()"
+          >
+            REINTENTAR
+          </button>
+        } @else if (aiAnalysisParsed(); as analysis) {
+          <div class="ai-analysis-card">
+            <p class="ai-summary">{{ analysis.summary }}</p>
+
+            @if (analysis.strengths?.length > 0) {
+              <div class="ai-section">
+                <span class="ai-section-title">Fortalezas</span>
+                <ul class="ai-list ai-list--strengths">
+                  @for (item of analysis.strengths; track item) {
+                    <li class="ai-list-item">
+                      <span class="ai-bullet">+</span>
+                      {{ item }}
+                    </li>
                   }
-                </div>
-                <div class="zone-legend">
-                  @for (row of zoneRows(); track row.label) {
-                    <div class="zone-legend-row">
-                      <span [class]="'zone-dot ' + row.cls"></span>
-                      <span class="zone-legend-name">{{ row.label }}</span>
-                      <span class="zone-legend-val">
-                        {{ row.percentage | number: '1.0-1' }}% · {{ row.seconds | duration }}
-                      </span>
-                    </div>
-                  }
-                </div>
+                </ul>
               </div>
-            } @else {
-              <div class="empty-state">SIN DATOS DE ZONAS CARDÍACAS.</div>
             }
+
+            @if (analysis.weaknesses?.length > 0) {
+              <div class="ai-section">
+                <span class="ai-section-title">Áreas de mejora</span>
+                <ul class="ai-list ai-list--weaknesses">
+                  @for (item of analysis.weaknesses; track item) {
+                    <li class="ai-list-item">
+                      <span class="ai-bullet">-</span>
+                      {{ item }}
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+
+            @if (analysis.recommendations?.length > 0) {
+              <div class="ai-section">
+                <span class="ai-section-title">Recomendaciones</span>
+                <ul class="ai-list ai-list--recommendations">
+                  @for (item of analysis.recommendations; track item) {
+                    <li class="ai-list-item">
+                      <span class="ai-bullet">→</span>
+                      {{ item }}
+                    </li>
+                  }
+                </ul>
+              </div>
+            }
+
+            <div class="ai-meta">
+              @if (analysisJob(); as job) {
+                <span>{{ job.status | titlecase }} · {{ job.attempts }} intento{{ job.attempts !== 1 ? 's' : '' }}</span>
+              }
+              @if (analysis.model) {
+                <span>{{ analysis.model }}</span>
+              }
+              @if (analysis.promptVersion) {
+                <span>{{ analysis.promptVersion }}</span>
+              }
+            </div>
+
+            <button
+              type="button"
+              class="btn-outline-pill btn-compact btn-regenerate"
+              (click)="ensureAiAnalysis(true)"
+            >
+              REGENERAR ANÁLISIS
+            </button>
           </div>
         } @else {
-          <p class="loading-text">DISTRIBUYENDO TIEMPO EN ZONAS DE FC…</p>
+          <div class="empty-state">SIN ANÁLISIS IA DISPONIBLE.</div>
+          <button
+            type="button"
+            class="btn-outline-pill btn-compact"
+            (click)="ensureAiAnalysis()"
+          >
+            GENERAR ANÁLISIS IA
+          </button>
         }
       </section>
 
-      <!-- FILA 3 · RESUMEN + ESTIMACIÓN FISIOLÓGICA + CARGA -->
+      <!-- FILA 3 · RESUMEN GENERAL -->
       <section id="det-summary" class="bento-card span-4">
         <header class="section-head">
           <span>Resumen general</span>
@@ -217,6 +276,14 @@
           <div class="stat-tile stat-tile--highlight">
             <span class="stat-tile-label">Distancia</span>
             <span class="stat-tile-value">{{ activity().distanceMeters | km }}</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-tile-label">Velocidad media</span>
+            <span class="stat-tile-value">{{ activity().avgSpeed | number: '1.2-2' }} km/h</span>
+          </div>
+          <div class="stat-tile">
+            <span class="stat-tile-label">Velocidad máxima</span>
+            <span class="stat-tile-value">{{ activity().maxSpeed | number: '1.2-2' }} km/h</span>
           </div>
           <div class="stat-tile">
             <span class="stat-tile-label">Ritmo medio</span>
@@ -255,6 +322,7 @@
         </div>
       </section>
 
+      <!-- ESTIMACIÓN FISIOLÓGICA -->
       <section class="bento-card span-4">
         <header class="section-head">
           <span>Estimación fisiológica</span>
@@ -293,6 +361,7 @@
         }
       </section>
 
+      <!-- CARGA Y DESACOPLE -->
       <section class="bento-card span-4">
         <header class="section-head">
           <span>Carga y desacople</span>
@@ -372,6 +441,44 @@
             <pre class="extra-json">{{ extra }}</pre>
           </div>
         </section>
+      }
+
+    </div>
+
+    <!-- ACCIONES DE EXPORTACIÓN Y BORRADO (al final de toda la información) -->
+    <div class="detail-action-bar detail-action-bar--bottom">
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact"
+        [disabled]="downloading() !== null"
+        (click)="downloadGpx()"
+      >
+        {{ downloading() === 'gpx' ? 'DESCARGANDO…' : 'GPX' }}
+      </button>
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact"
+        [disabled]="downloading() !== null"
+        (click)="downloadGeoJson()"
+      >
+        {{ downloading() === 'geojson' ? 'DESCARGANDO…' : 'GEOJSON' }}
+      </button>
+      <span class="detail-action-spacer"></span>
+      @if (!confirmingDelete()) {
+        <button type="button" class="btn-outline-pill btn-compact detail-danger" (click)="requestDelete()">
+          ELIMINAR ACTIVIDAD
+        </button>
+      } @else {
+        <span class="detail-confirm-text">¿ELIMINAR DEFINITIVAMENTE?</span>
+        <button
+          type="button"
+          class="btn-pill-header btn-compact detail-danger-fill"
+          [disabled]="deleting()"
+          (click)="deleteActivity()"
+        >
+          {{ deleting() ? 'ELIMINANDO…' : 'CONFIRMAR' }}
+        </button>
+        <button type="button" class="btn-outline-pill btn-compact" (click)="cancelDelete()">CANCELAR</button>
       }
     </div>
   </div>

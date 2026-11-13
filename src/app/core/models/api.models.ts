@@ -199,11 +199,10 @@ export interface CardiacDriftResponseDto {
 }
 
 /* ------------------------------------------------------------------ */
-/* Entrenamientos (planes semanales generados por IA)                  */
+/* Entrenamientos (recomendación diaria generada por IA)               */
 /* ------------------------------------------------------------------ */
 
-export type TrainingPlanStatus = 'ACTIVE' | 'ARCHIVED' | 'COMPLETED';
-export type PlanGenerationStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'TIMEOUT';
+export type TrainingJobStatus = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'TIMEOUT';
 export type WorkoutType =
   | 'EASY'
   | 'RECOVERY'
@@ -217,108 +216,99 @@ export type WorkoutType =
   | 'REST'
   | 'OTHER';
 
-/** Preferencias para la generación automática de planes. */
+/** Preferencias para la generación automática de la recomendación diaria. */
 export interface TrainingPreferencesDto {
   configured: boolean;
-  enabled: boolean;
+  /** `null` en filas antiguas; la API lo normaliza a `false`. */
+  enabled: boolean | null;
   timezone: string;
-  daysPerWeek: number;
-  preferredLongRunDay: string;
-  notes: string;
+  /** Hora local (0-23) a la que se genera la recomendación. */
+  generationHour: number | null;
+  notes: string | null;
   updatedAt?: string;
 }
 
-/** Actualización de preferencias de planificación. */
+/** Actualización de preferencias de la recomendación diaria. */
 export interface UpdateTrainingPreferencesRequestDto {
   enabled?: boolean;
   timezone?: string;
-  daysPerWeek?: number;
-  preferredLongRunDay?: string;
+  generationHour?: number;
   notes?: string;
 }
 
-export interface GenerateTrainingPlanRequestDto {
-  /** Lunes de la semana a generar (yyyy-MM-dd). */
-  weekStart?: string;
-  /** Archiva la versión anterior y genera una nueva. */
-  replace?: boolean;
+/** Sesión recomendada para un día. */
+export interface DailyWorkoutDto {
+  type: WorkoutType;
+  title: string;
+  description: string | null;
+  targetDistanceMeters: number | null;
+  targetDurationSeconds: number | null;
+  targetPaceMinPerKm: number | null;
+  targetHrZone: number | null;
+  targetLoad: number | null;
+  mainSet: string | null;
 }
 
-export interface GenerateTrainingPlanResponseDto {
+/** Recomendación de entrenamiento para un día concreto. */
+export interface DailyRecommendationResponseDto {
+  recommendationId: string;
+  userId: number;
+  date: string;
   requestId: string;
-  weekStart: string;
-  status: PlanGenerationStatus;
-  message?: string;
+  summary: string | null;
+  analysis: string | null;
+  coachNotes: string | null;
+  workout: DailyWorkoutDto;
+  model: string | null;
+  promptVersion: string | null;
+  generatedAt: string;
 }
 
-/** Sesión planificada dentro de un plan semanal. */
-export interface WorkoutDto {
-  id: number;
+/** Resumen de una recomendación diaria para el histórico. */
+export interface DailyRecommendationSummaryDto {
+  recommendationId: string;
   date: string;
   type: WorkoutType;
   title: string;
-  description: string;
-  targetDistanceMeters: number;
-  targetDurationSeconds: number;
-  targetPaceMinPerKm: number;
-  targetHrZone: number;
-  targetLoad: number;
-  mainSet: string;
-  status: string;
-  completedActivityId: string;
-  rpe: number;
-  feedback: string;
-}
-
-/** Resumen de un plan semanal para listados. */
-export interface TrainingPlanSummaryDto {
-  planId: string;
-  weekStart: string;
-  weekEnd: string;
-  status: TrainingPlanStatus;
-  version: number;
-  summary: string;
-  targetWeeklyDistanceMeters: number;
-  targetWeeklyLoad: number;
-  workoutCount: number;
+  targetDistanceMeters: number | null;
+  targetDurationSeconds: number | null;
+  targetPaceMinPerKm: number | null;
+  targetHrZone: number | null;
+  targetLoad: number | null;
+  summary: string | null;
   generatedAt: string;
 }
 
-/** Plan semanal con sus sesiones. */
-export interface TrainingPlanResponseDto {
-  planId: string;
-  userId: number;
-  weekStart: string;
-  weekEnd: string;
-  status: TrainingPlanStatus;
-  version: number;
-  requestId: string;
-  summary: string;
-  coachNotes: string;
-  targetWeeklyDistanceMeters: number;
-  targetWeeklyLoad: number;
-  model: string;
-  promptVersion: string;
-  generatedAt: string;
-  workouts: WorkoutDto[];
+export interface GenerateDailyRecommendationRequestDto {
+  /** Día a recomendar (yyyy-MM-dd). Por defecto, hoy en la zona del atleta. */
+  date?: string;
+  /** Sobrescribe la recomendación existente de ese día. */
+  replace?: boolean;
 }
 
-/** Estado de un job de generación de plan. */
-export interface PlanGenerationJobResponseDto {
+export interface GenerateDailyRecommendationResponseDto {
+  requestId: string;
+  date: string;
+  status: TrainingJobStatus;
+  message?: string;
+}
+
+/** Estado de un job de generación de la recomendación diaria. */
+export interface DailyGenerationJobResponseDto {
   requestId: string;
   userId: number;
-  weekStart: string;
-  status: PlanGenerationStatus;
+  date: string;
+  status: TrainingJobStatus;
   source: string;
   attempts: number;
-  planId: string;
-  error: string;
+  recommendationId: string | null;
+  error: string | null;
   createdAt: string;
   updatedAt: string;
-  completedAt: string;
+  completedAt: string | null;
 }
 
-export interface DeletedPlansResponseDto {
+export interface DeletedRecommendationsResponseDto {
   deleted: number;
 }
 
@@ -354,6 +344,7 @@ export interface Activity {
   backupFilePath: string | null;
   sourceFileType: string | null;
   extraData: string | null;
+  aiAnalysis: string | null;
   createdAt: string;
 }
 
@@ -556,3 +547,30 @@ export const ACWR_ZONE_LABELS: Record<string, string> = {
   OVERLOAD: 'SOBRECARGA',
   UNDETERMINED: 'SIN DATOS',
 };
+
+/* ------------------------------------------------------------------ */
+/* Análisis de actividad con IA                                       */
+/* ------------------------------------------------------------------ */
+
+export type AnalysisJobState = 'PENDING' | 'RUNNING' | 'COMPLETED' | 'FAILED' | 'TIMEOUT';
+
+export interface AnalyzeActivityResponseDto {
+  requestId: string;
+  activityId: string;
+  status: AnalysisJobState | string;
+  message: string;
+}
+
+export interface ActivityAnalysisJobResponseDto {
+  requestId: string;
+  userId: number;
+  activityId: string;
+  status: AnalysisJobState | string;
+  source: string;
+  attempts: number;
+  analysisResult: string | null;
+  error: string | null;
+  createdAt: string;
+  updatedAt: string;
+  completedAt: string | null;
+}

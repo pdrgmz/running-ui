@@ -2,34 +2,33 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
 import {
+  DailyGenerationJobResponseDto,
+  DailyRecommendationResponseDto,
+  DailyRecommendationSummaryDto,
   DeletedJobsResponseDto,
-  DeletedPlansResponseDto,
-  GenerateTrainingPlanRequestDto,
-  GenerateTrainingPlanResponseDto,
-  PlanGenerationJobResponseDto,
-  PlanGenerationStatus,
-  TrainingPlanResponseDto,
-  TrainingPlanSummaryDto,
+  DeletedRecommendationsResponseDto,
+  GenerateDailyRecommendationRequestDto,
+  GenerateDailyRecommendationResponseDto,
+  TrainingJobStatus,
   TrainingPreferencesDto,
   UpdateTrainingPreferencesRequestDto,
-  WorkoutDto,
 } from '../models/api.models';
 import { ApiConfigService } from './api-config.service';
 
 /**
- * Entrenamientos (`/api/v1/training/*`): preferencias de planificación,
- * planes semanales generados por IA y jobs de generación asíncronos.
+ * Entrenamientos (`/api/v1/training/*`): recomendación diaria generada por IA,
+ * histórico, preferencias y jobs de generación asíncronos.
  *
- * La generación responde 202 con un `requestId`; el plan solo existe cuando
- * n8n llama a `save_weekly_plan` y la API lo persiste. El estado se sigue con
- * `GET /generation-jobs/{requestId}`.
+ * La generación responde 202 con un `requestId`; la recomendación solo existe
+ * cuando n8n llama a `save_daily_recommendation` y la API la persiste. El
+ * estado se sigue con `GET /generation-jobs/{requestId}`.
  */
 @Injectable({ providedIn: 'root' })
 export class TrainingService {
   private readonly http = inject(HttpClient);
   private readonly api = inject(ApiConfigService);
 
-  /** GET /api/v1/training/preferences — preferencias de planificación. */
+  /** GET /api/v1/training/preferences — preferencias de generación diaria. */
   preferences(): Observable<TrainingPreferencesDto> {
     return this.http.get<TrainingPreferencesDto>(this.api.url('/api/v1/training/preferences'));
   }
@@ -44,8 +43,21 @@ export class TrainingService {
     );
   }
 
-  /** GET /api/v1/training/plans — planes del usuario, filtrables por rango de semanas. */
-  plans(from?: string, to?: string): Observable<TrainingPlanSummaryDto[]> {
+  /**
+   * GET /api/v1/training/recommendations/today — recomendación de hoy en la
+   * zona horaria del atleta. Responde 204 (body `null`) si aún no existe.
+   */
+  today(): Observable<DailyRecommendationResponseDto | null> {
+    return this.http.get<DailyRecommendationResponseDto | null>(
+      this.api.url('/api/v1/training/recommendations/today'),
+    );
+  }
+
+  /** GET /api/v1/training/recommendations — histórico, filtrable por rango. */
+  recommendations(
+    from?: string,
+    to?: string,
+  ): Observable<DailyRecommendationSummaryDto[]> {
     let params = new HttpParams();
     if (from) {
       params = params.set('from', from);
@@ -53,79 +65,60 @@ export class TrainingService {
     if (to) {
       params = params.set('to', to);
     }
-    return this.http.get<TrainingPlanSummaryDto[]>(this.api.url('/api/v1/training/plans'), {
-      params,
-    });
-  }
-
-  /** GET /api/v1/training/plans/{id} — plan con todas sus sesiones. */
-  plan(id: string): Observable<TrainingPlanResponseDto> {
-    return this.http.get<TrainingPlanResponseDto>(
-      this.api.url(`/api/v1/training/plans/${encodeURIComponent(id)}`),
+    return this.http.get<DailyRecommendationSummaryDto[]>(
+      this.api.url('/api/v1/training/recommendations'),
+      { params },
     );
   }
 
-  /** GET /api/v1/training/plans/week/{weekStart} — plan de una semana (lunes). */
-  planByWeek(weekStart: string): Observable<TrainingPlanResponseDto> {
-    return this.http.get<TrainingPlanResponseDto>(
-      this.api.url(`/api/v1/training/plans/week/${encodeURIComponent(weekStart)}`),
+  /** GET /api/v1/training/recommendations/{id} — recomendación completa. */
+  recommendation(id: string): Observable<DailyRecommendationResponseDto> {
+    return this.http.get<DailyRecommendationResponseDto>(
+      this.api.url(`/api/v1/training/recommendations/${encodeURIComponent(id)}`),
     );
   }
 
-  /**
-   * GET /api/v1/training/plans/current — plan activo de la semana actual o,
-   * si no existe, el último activo. Responde 204 cuando aún no hay planes.
-   */
-  currentPlan(): Observable<TrainingPlanResponseDto | null> {
-    return this.http.get<TrainingPlanResponseDto | null>(
-      this.api.url('/api/v1/training/plans/current'),
+  /** GET /api/v1/training/recommendations/date/{date} — recomendación de un día. */
+  recommendationByDate(date: string): Observable<DailyRecommendationResponseDto> {
+    return this.http.get<DailyRecommendationResponseDto>(
+      this.api.url(`/api/v1/training/recommendations/date/${encodeURIComponent(date)}`),
     );
   }
 
-  /** DELETE /api/v1/training/plans/{id} — elimina un plan y sus sesiones. */
-  deletePlan(id: string): Observable<void> {
+  /** DELETE /api/v1/training/recommendations/{id} — recomendación y jobs asociados. */
+  deleteRecommendation(id: string): Observable<void> {
     return this.http.delete<void>(
-      this.api.url(`/api/v1/training/plans/${encodeURIComponent(id)}`),
+      this.api.url(`/api/v1/training/recommendations/${encodeURIComponent(id)}`),
     );
   }
 
-  /** DELETE /api/v1/training/plans/week/{weekStart} — todas las versiones de la semana. */
-  deletePlansByWeek(weekStart: string): Observable<DeletedPlansResponseDto> {
-    return this.http.delete<DeletedPlansResponseDto>(
-      this.api.url(`/api/v1/training/plans/week/${encodeURIComponent(weekStart)}`),
+  /** DELETE /api/v1/training/recommendations/date/{date} — recomendación de un día. */
+  deleteRecommendationByDate(date: string): Observable<void> {
+    return this.http.delete<void>(
+      this.api.url(`/api/v1/training/recommendations/date/${encodeURIComponent(date)}`),
     );
   }
 
-  /** POST /api/v1/training/plans/generate — encola la generación (202 Accepted). */
-  generate(request: GenerateTrainingPlanRequestDto): Observable<GenerateTrainingPlanResponseDto> {
-    return this.http.post<GenerateTrainingPlanResponseDto>(
-      this.api.url('/api/v1/training/plans/generate'),
-      request,
-    );
-  }
-
-  /** PUT /api/v1/training/plans/{planId}/workouts/{workoutId} — vincula/desvincula una actividad realizada a una sesión planificada. */
-  updateWorkout(
-    planId: string,
-    workoutId: number,
-    request: { completedActivityId?: string | null },
-  ): Observable<WorkoutDto> {
-    return this.http.put<WorkoutDto>(
-      this.api.url(`/api/v1/training/plans/${encodeURIComponent(planId)}/workouts/${workoutId}`),
+  /** POST /api/v1/training/recommendations/generate — encola la generación (202). */
+  generate(
+    request: GenerateDailyRecommendationRequestDto,
+  ): Observable<GenerateDailyRecommendationResponseDto> {
+    return this.http.post<GenerateDailyRecommendationResponseDto>(
+      this.api.url('/api/v1/training/recommendations/generate'),
       request,
     );
   }
 
   /** GET /api/v1/training/generation-jobs — últimos jobs de generación. */
-  jobs(): Observable<PlanGenerationJobResponseDto[]> {
-    return this.http.get<PlanGenerationJobResponseDto[]>(
+  jobs(): Observable<DailyGenerationJobResponseDto[]> {
+    return this.http.get<DailyGenerationJobResponseDto[]>(
       this.api.url('/api/v1/training/generation-jobs'),
     );
   }
 
   /** GET /api/v1/training/generation-jobs/{requestId} — estado de un job. */
-  job(requestId: string): Observable<PlanGenerationJobResponseDto> {
-    return this.http.get<PlanGenerationJobResponseDto>(
+  job(requestId: string): Observable<DailyGenerationJobResponseDto> {
+    return this.http.get<DailyGenerationJobResponseDto>(
       this.api.url(`/api/v1/training/generation-jobs/${encodeURIComponent(requestId)}`),
     );
   }
@@ -140,7 +133,7 @@ export class TrainingService {
   }
 
   /** DELETE /api/v1/training/generation-jobs?status=... — limpia jobs por estado. */
-  deleteJobs(status: PlanGenerationStatus, force = false): Observable<DeletedJobsResponseDto> {
+  deleteJobs(status: TrainingJobStatus, force = false): Observable<DeletedJobsResponseDto> {
     let params = new HttpParams().set('status', status);
     if (force) {
       params = params.set('force', true);

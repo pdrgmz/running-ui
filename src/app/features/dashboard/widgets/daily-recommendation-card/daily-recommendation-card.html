@@ -1,0 +1,70 @@
+<section class="card-panel daily-recommendation col-12">
+  @if (loading()) {
+    <p class="loading-text">CARGANDO ENTRENAMIENTO DEL DÍA…</p>
+  } @else if (recommendation(); as rec) {
+    <article class="recommendation-card" [attr.data-type]="rec.workout.type">
+      <div class="recommendation-head">
+        <span class="recommendation-type">{{ workoutLabel(rec.workout.type) }}</span>
+        <span class="recommendation-date">{{ rec.date | date: 'EEEE d MMMM y' }}</span>
+      </div>
+
+      <h3 class="recommendation-title">{{ rec.workout.title }}</h3>
+
+      @if (rec.summary) {
+        <p class="recommendation-summary">{{ rec.summary }}</p>
+      }
+
+      <div class="recommendation-metrics">
+        @if (rec.workout.targetDistanceMeters) {
+          <span class="recommendation-metric">{{ rec.workout.targetDistanceMeters | km }}</span>
+        }
+        @if (rec.workout.targetDurationSeconds) {
+          <span class="recommendation-metric">{{ rec.workout.targetDurationSeconds | duration }}</span>
+        }
+        @if (rec.workout.targetPaceMinPerKm) {
+          <span class="recommendation-metric">{{ rec.workout.targetPaceMinPerKm | pace }}</span>
+        }
+        @if (rec.workout.targetHrZone) {
+          <span class="recommendation-metric">Z{{ rec.workout.targetHrZone }}</span>
+        }
+        @if (rec.workout.targetLoad) {
+          <span class="recommendation-metric">
+            {{ rec.workout.targetLoad | number: '1.0-0' }} CARGA
+          </span>
+        }
+      </div>
+
+      @if (rec.workout.description) {
+        <p class="recommendation-text">{{ rec.workout.description }}</p>
+      }
+
+      @if (rec.workout.mainSet) {
+        <pre class="recommendation-set">{{ rec.workout.mainSet }}</pre>
+      }
+
+      @if (rec.analysis) {
+        <section class="recommendation-block">
+          <span class="block-title block-title--sub">Análisis del entrenador</span>
+          <p class="recommendation-text">{{ rec.analysis }}</p>
+        </section>
+      }
+
+      @if (rec.coachNotes) {
+        <section class="recommendation-block">
+          <span class="block-title block-title--sub">Consejos</span>
+          <p class="recommendation-text">{{ rec.coachNotes }}</p>
+        </section>
+      }
+
+      <div class="recommendation-foot">
+        <span>{{ rec.generatedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+        @if (rec.promptVersion) {
+          <span>{{ rec.promptVersion }}</span>
+        }
+        <span class="recommendation-id" [title]="rec.recommendationId">{{ rec.recommendationId }}</span>
+      </div>
+    </article>
+  } @else {
+    <div class="empty-state">SIN ENTRENAMIENTO RECOMENDADO PARA HOY.</div>
+  }
+</section>

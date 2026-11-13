@@ -74,42 +74,56 @@
 
   <main class="dashboard-grid">
     @switch (activeTab()) {
-      <!-- RESUMEN -->
-      @case ('overview') {
-        @if (recentActivities().length > 0) {
-          <div class="recent-sessions-panel col-12">
-            @for (recent of recentActivities(); track recent.id) {
-              <button type="button" class="session-row" (click)="openActivity(recent)">
-                <span class="session-row-info">
-                  <span class="hsb-label">{{ recent.startTime | date: 'EEEE d MMM y, HH:mm' }}</span>
-                  <span class="hsb-value">{{ recent.name || 'Carrera' }}</span>
-                </span>
-                <span class="session-row-tail">
-                  <span class="hsb-stats">
-                    <span>{{ recent.distanceMeters | km }}</span>
-                    <span>{{ recent.totalTimeSeconds | duration }}</span>
-                    <span>{{ recent.avgPaceMinPerKm | pace }}</span>
-                  </span>
-                  <app-hr-zone-bar [zones]="recentZones()[recent.id] ?? null" />
-                </span>
-              </button>
-            }
-          </div>
-        }
+      <!-- PRINCIPAL: últimas carreras, ACWR y entrenamiento del día -->
+      @case ('principal') {
+        <section class="overview-principal">
 
-        <app-acwr-card class="col-6" [acwr]="acwr()" [history]="pmcPoints()" />
-        <div class="overview-side col-6">
-          <app-hr-zones-card [summary]="summary()" />
-          <app-eddington-card [eddington]="eddington()" />
-        </div>
-        <app-summary-stats
-          class="col-12"
-          [summary]="summary()"
-          [period]="summaryPeriod()"
-          (periodChange)="applySummaryPeriod($event)"
-        />
-        <app-pmc-chart class="col-12" [points]="pmcPoints()" />
-        <app-pmc-reading class="col-12" [pmc]="pmcPoints()" [acwr]="acwr()" />
+          @if (recentActivities().length > 0) {
+            <div class="recent-sessions-panel col-12">
+              @for (recent of recentActivities(); track recent.id) {
+                <button type="button" class="session-row" (click)="openActivity(recent)">
+                  <span class="session-row-info">
+                    <span class="hsb-label">{{ recent.startTime | date: 'EEEE d MMM y, HH:mm' }}</span>
+                    <span class="hsb-value">{{ recent.name || 'Carrera' }}</span>
+                  </span>
+                  <span class="session-row-tail">
+                    <span class="hsb-stats">
+                      <span>{{ recent.distanceMeters | km }}</span>
+                      <span>{{ recent.totalTimeSeconds | duration }}</span>
+                      <span>{{ recent.avgPaceMinPerKm | pace }}</span>
+                    </span>
+                    <app-hr-zone-bar [zones]="recentZones()[recent.id] ?? null" />
+                  </span>
+                </button>
+              }
+            </div>
+          }
+
+          <app-acwr-card class="col-6" [acwr]="acwr()" [history]="pmcPoints()" />
+          <app-daily-recommendation-card class="col-6" />
+        </section>
+      }
+
+      <!-- RESUMEN: eddington, estadísticas y PMC -->
+      @case ('resumen') {
+        <section class="overview-resumen">
+
+          <app-eddington-card class="col-6" [eddington]="eddington()" />
+          <app-hr-zones-card class="col-6" [summary]="summary()" />
+          <app-summary-stats
+            class="col-12"
+            [summary]="summary()"
+            [period]="summaryPeriod()"
+            (periodChange)="applySummaryPeriod($event)"
+          />
+          <app-pmc-chart class="col-12" [points]="pmcPoints()" />
+          <app-pmc-reading class="col-12" [pmc]="pmcPoints()" [acwr]="acwr()" />
+        </section>
+      }
+
+      <!-- ENTRENAMIENTO: recomendación diaria generada por IA -->
+      @case ('training') {
+        <app-daily-training-panel class="col-12" />
       }
 
       <!-- RÉCORDS Y LOGROS -->
@@ -506,15 +520,29 @@
   <button
     type="button"
     class="mobile-dock-item"
-    [class.active]="activeTab() === 'overview'"
-    (click)="setTab('overview'); scrollMobileTop()"
-    aria-label="Resumen"
+    [class.active]="activeTab() === 'principal'"
+    (click)="setTab('principal'); scrollMobileTop()"
+    aria-label="Principal"
   >
     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
       <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
       <polyline points="9 22 9 12 15 12 15 22" />
     </svg>
-    <span>Resumen</span>
+    <span>Principal</span>
+  </button>
+
+  <button
+    type="button"
+    class="mobile-dock-item"
+    [class.active]="activeTab() === 'training'"
+    (click)="setTab('training'); scrollMobileTop()"
+    aria-label="Entrenamiento del día"
+  >
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+      <path d="M9 11l3 3L22 4" />
+      <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+    </svg>
+    <span>Entreno</span>
   </button>
 
   <button

@@ -1,0 +1,368 @@
+<article class="card-panel daily-training col-12">
+  <div class="card-header-bar">
+    <span class="card-tag-badge">RECOMENDACIÓN DIARIA · IA</span>
+    <div class="training-actions">
+      <button
+        type="button"
+        class="btn-outline-pill btn-compact btn-icon-only"
+        title="Refrescar recomendación, histórico y preferencias"
+        aria-label="Refrescar recomendación, histórico y preferencias"
+        (click)="refreshAll()"
+      >
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="23 4 23 10 17 10" />
+          <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+        </svg>
+      </button>
+    </div>
+  </div>
+
+  <p class="account-hint">
+    La IA analiza tus actividades, el ACWR y tu historial para proponer el entrenamiento del día.
+    La recomendación se guarda en la API y queda disponible en el histórico.
+  </p>
+
+  <div class="daily-layout">
+    <section class="daily-main">
+      <div class="daily-toolbar">
+        <div class="form-group daily-date-field">
+          <label class="form-label" for="daily-date">Día a recomendar</label>
+          <input
+            id="daily-date"
+            name="dailyDate"
+            type="date"
+            class="form-control"
+            [ngModel]="selectedDate()"
+            (ngModelChange)="onDateChange($event)"
+          />
+        </div>
+        <div class="daily-toolbar-actions">
+          <button
+            type="button"
+            class="btn-pill-header btn-compact"
+            [disabled]="busy()"
+            [title]="hasRecommendation() ? 'Volver a generar la recomendación de ese día' : 'Generar la recomendación de ese día'"
+            (click)="generate()"
+          >
+            {{ busy() ? 'GENERANDO…' : generateLabel() }}
+          </button>
+          @if (hasRecommendation()) {
+            <button
+              type="button"
+              class="btn-outline-pill btn-compact account-danger"
+              [disabled]="deleting()"
+              (click)="requestDelete()"
+            >
+              ELIMINAR
+            </button>
+          }
+        </div>
+      </div>
+
+      @if (confirmingDelete()) {
+        <div class="daily-confirm">
+          <p class="account-hint">
+            ¿Eliminar la recomendación del <strong>{{ selectedDate() }}</strong>? Esta acción no se
+            puede deshacer.
+          </p>
+          <div class="panel-actions-row">
+            <button
+              type="button"
+              class="btn-pill-header btn-compact account-danger-fill"
+              [disabled]="deleting()"
+              (click)="deleteRecommendation()"
+            >
+              {{ deleting() ? 'ELIMINANDO…' : 'CONFIRMAR' }}
+            </button>
+            <button type="button" class="btn-outline-pill btn-compact" (click)="cancelDelete()">
+              CANCELAR
+            </button>
+          </div>
+        </div>
+      }
+
+      @if (job(); as currentJob) {
+        <div class="job-strip" [attr.data-status]="currentJob.status">
+          <span class="job-status" [attr.data-status]="currentJob.status">
+            {{ jobStatusLabel(currentJob.status) }}
+          </span>
+          <span class="job-strip-meta">
+            {{ currentJob.date }} · {{ currentJob.source }} · intento {{ currentJob.attempts }}
+          </span>
+          @if (currentJob.error) {
+            <span class="job-strip-error">{{ currentJob.error }}</span>
+          }
+        </div>
+      }
+
+      @if (loadingRecommendation()) {
+        <p class="loading-text">CARGANDO RECOMENDACIÓN…</p>
+      } @else if (recommendation(); as rec) {
+        <article class="recommendation-card" [attr.data-type]="rec.workout.type">
+          <div class="recommendation-head">
+            <span class="recommendation-type">{{ workoutLabel(rec.workout.type) }}</span>
+            <span class="recommendation-date">{{ rec.date | date: 'EEEE d MMMM y' }}</span>
+          </div>
+
+          <h3 class="recommendation-title">{{ rec.workout.title }}</h3>
+
+          @if (rec.summary) {
+            <p class="recommendation-summary">{{ rec.summary }}</p>
+          }
+
+          <div class="recommendation-metrics">
+            @if (rec.workout.targetDistanceMeters) {
+              <span class="recommendation-metric">{{ rec.workout.targetDistanceMeters | km }}</span>
+            }
+            @if (rec.workout.targetDurationSeconds) {
+              <span class="recommendation-metric">{{ rec.workout.targetDurationSeconds | duration }}</span>
+            }
+            @if (rec.workout.targetPaceMinPerKm) {
+              <span class="recommendation-metric">{{ rec.workout.targetPaceMinPerKm | pace }}</span>
+            }
+            @if (rec.workout.targetHrZone) {
+              <span class="recommendation-metric">Z{{ rec.workout.targetHrZone }}</span>
+            }
+            @if (rec.workout.targetLoad) {
+              <span class="recommendation-metric">
+                {{ rec.workout.targetLoad | number: '1.0-0' }} CARGA
+              </span>
+            }
+          </div>
+
+          @if (rec.workout.description) {
+            <p class="recommendation-text">{{ rec.workout.description }}</p>
+          }
+
+          @if (rec.workout.mainSet) {
+            <pre class="recommendation-set">{{ rec.workout.mainSet }}</pre>
+          }
+
+          @if (rec.analysis) {
+            <section class="recommendation-block">
+              <span class="block-title block-title--sub">Análisis del entrenador</span>
+              <p class="recommendation-text">{{ rec.analysis }}</p>
+            </section>
+          }
+
+          @if (rec.coachNotes) {
+            <section class="recommendation-block">
+              <span class="block-title block-title--sub">Consejos</span>
+              <p class="recommendation-text">{{ rec.coachNotes }}</p>
+            </section>
+          }
+
+          <div class="recommendation-foot">
+            <span>{{ rec.generatedAt | date: 'dd/MM/yyyy HH:mm' }}</span>
+            @if (rec.promptVersion) {
+              <span>{{ rec.promptVersion }}</span>
+            }
+            <span class="recommendation-id" [title]="rec.recommendationId">{{ rec.recommendationId }}</span>
+          </div>
+        </article>
+      } @else {
+        <div class="empty-state">
+          @if (recommendationError()) {
+            NO SE PUDO CARGAR LA RECOMENDACIÓN DE ESTE DÍA.
+          } @else {
+            TODAVÍA NO HAY RECOMENDACIÓN PARA ESTE DÍA. PULSA «GENERAR».
+          }
+        </div>
+        @if (recommendationError()) {
+          <button
+            type="button"
+            class="btn-outline-pill btn-compact"
+            (click)="loadRecommendation(selectedDate())"
+          >
+            REINTENTAR
+          </button>
+        }
+      }
+    </section>
+
+    <aside class="daily-side">
+      <section class="daily-subcard">
+        <div class="training-section-head">
+          <span class="block-title">Generación automática</span>
+          @if (preferences(); as prefs) {
+            <span class="pref-state" [class.pref-state--on]="prefs.enabled">
+              {{ prefs.enabled ? 'ACTIVA' : 'DESACTIVADA' }}
+            </span>
+          }
+        </div>
+
+        @if (preferencesLoading()) {
+          <p class="loading-text">CARGANDO PREFERENCIAS…</p>
+        } @else {
+          <div class="pref-toggle-row">
+            <label class="switch" data-tooltip="Generar la recomendación automáticamente cada día">
+              <input type="checkbox" name="prefEnabled" [(ngModel)]="prefEnabled" />
+              <span class="switch-slider"></span>
+            </label>
+            <span class="pref-toggle-label">Generar cada día por la mañana</span>
+          </div>
+
+          <div class="form-row-2">
+            <div class="form-group">
+              <label class="form-label" for="pref-timezone">Zona horaria</label>
+              <input
+                id="pref-timezone"
+                name="prefTimezone"
+                type="text"
+                class="form-control"
+                placeholder="Europe/Madrid"
+                list="timezone-options"
+                [(ngModel)]="prefTimezone"
+              />
+              <datalist id="timezone-options">
+                <option value="Europe/Madrid"></option>
+                <option value="Atlantic/Canary"></option>
+                <option value="Europe/London"></option>
+                <option value="America/New_York"></option>
+                <option value="America/Mexico_City"></option>
+                <option value="America/Bogota"></option>
+                <option value="America/Santiago"></option>
+                <option value="America/Argentina/Buenos_Aires"></option>
+              </datalist>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="pref-hour">Hora local (0-23)</label>
+              <input
+                id="pref-hour"
+                name="prefGenerationHour"
+                type="number"
+                class="form-control"
+                min="0"
+                max="23"
+                [(ngModel)]="prefGenerationHour"
+              />
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="pref-notes">Notas para la IA</label>
+            <textarea
+              id="pref-notes"
+              name="prefNotes"
+              class="form-control training-notes"
+              rows="2"
+              placeholder="Objetivo, lesiones, disponibilidad…"
+              [(ngModel)]="prefNotes"
+            ></textarea>
+          </div>
+
+          <div class="panel-actions-row">
+            <button
+              type="button"
+              class="btn-pill-header btn-compact"
+              [disabled]="savingPreferences()"
+              (click)="savePreferences()"
+            >
+              {{ savingPreferences() ? 'GUARDANDO…' : 'GUARDAR PREFERENCIAS' }}
+            </button>
+          </div>
+
+          <p class="account-hint">
+            El cron de la API barre cada hora y genera cuando tu hora local alcanza la hora
+            configurada. Solo se crea una recomendación por día.
+          </p>
+        }
+      </section>
+
+      <section class="daily-subcard">
+        <div class="training-section-head">
+          <span class="block-title">Histórico ({{ history().length }})</span>
+          <button
+            type="button"
+            class="btn-outline-pill btn-compact btn-icon-only"
+            title="Recargar histórico"
+            aria-label="Recargar histórico"
+            (click)="loadHistory()"
+          >
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="23 4 23 10 17 10" />
+              <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+            </svg>
+          </button>
+        </div>
+
+        @if (historyLoading()) {
+          <p class="loading-text">CARGANDO HISTÓRICO…</p>
+        } @else if (historyError()) {
+          <div class="empty-state">NO SE PUDO CARGAR EL HISTÓRICO.</div>
+        } @else if (history().length === 0) {
+          <div class="empty-state">AÚN NO HAY RECOMENDACIONES GUARDADAS.</div>
+        } @else {
+          <div class="history-list">
+            @for (item of history(); track item.recommendationId) {
+              <button
+                type="button"
+                class="history-item"
+                [class.history-item--active]="item.date === selectedDate()"
+                [attr.data-type]="item.type"
+                (click)="selectHistory(item)"
+              >
+                <span class="history-head">
+                  <span class="history-date">{{ item.date | date: 'dd MMM y' }}</span>
+                  <span class="history-type">{{ workoutLabel(item.type) }}</span>
+                </span>
+                <span class="history-title">{{ item.title }}</span>
+                @if (item.summary) {
+                  <span class="history-summary">{{ item.summary }}</span>
+                }
+                <span class="history-metrics">
+                  @if (item.targetDistanceMeters) {
+                    <span>{{ item.targetDistanceMeters | km }}</span>
+                  }
+                  @if (item.targetDurationSeconds) {
+                    <span>{{ item.targetDurationSeconds | duration }}</span>
+                  }
+                  @if (item.targetPaceMinPerKm) {
+                    <span>{{ item.targetPaceMinPerKm | pace }}</span>
+                  }
+                </span>
+              </button>
+            }
+          </div>
+        }
+      </section>
+
+      <section class="daily-subcard">
+        <div class="training-section-head">
+          <span class="block-title">Generaciones</span>
+          @if (pendingJobsCount() > 0) {
+            <button
+              type="button"
+              class="btn-outline-pill btn-compact"
+              [disabled]="clearingPending()"
+              (click)="clearPendingJobs()"
+            >
+              {{ clearingPending() ? 'LIMPIANDO…' : 'LIMPIAR PENDIENTES' }}
+            </button>
+          }
+        </div>
+
+        @if (jobsLoading()) {
+          <p class="loading-text">CARGANDO GENERACIONES…</p>
+        } @else if (recentJobs().length === 0) {
+          <div class="empty-state">SIN GENERACIONES RECIENTES.</div>
+        } @else {
+          <div class="jobs-list">
+            @for (item of recentJobs(); track item.requestId) {
+              <div class="job-row">
+                <span class="job-status" [attr.data-status]="item.status">
+                  {{ jobStatusLabel(item.status) }}
+                </span>
+                <span class="job-row-date">{{ item.date }}</span>
+                <span class="job-row-source">{{ item.source }}</span>
+                @if (item.error) {
+                  <span class="job-row-error" [title]="item.error">{{ item.error }}</span>
+                }
+              </div>
+            }
+          </div>
+        }
+      </section>
+    </aside>
+  </div>
+</article>

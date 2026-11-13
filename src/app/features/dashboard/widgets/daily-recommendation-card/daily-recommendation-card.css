@@ -1,0 +1,158 @@
+:host {
+  display: block;
+  min-width: 0;
+}
+
+.recommendation-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  border: 1.5px solid var(--border-color);
+  border-left: 6px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-main);
+  padding: 14px 16px;
+  min-width: 0;
+}
+
+.recommendation-card[data-type='EASY'] {
+  border-left-color: var(--accent-green);
+}
+
+.recommendation-card[data-type='RECOVERY'] {
+  border-left-color: #7bbf8f;
+}
+
+.recommendation-card[data-type='LONG_RUN'] {
+  border-left-color: #3f8fbf;
+}
+
+.recommendation-card[data-type='TEMPO'],
+.recommendation-card[data-type='RACE_PACE'] {
+  border-left-color: var(--accent-amber);
+}
+
+.recommendation-card[data-type='INTERVALS'],
+.recommendation-card[data-type='HILLS'] {
+  border-left-color: #b06ad1;
+}
+
+.recommendation-card[data-type='RACE'] {
+  border-left-color: var(--accent-red);
+}
+
+.recommendation-card[data-type='REST'],
+.recommendation-card[data-type='CROSS_TRAINING'] {
+  border-left-color: var(--text-muted);
+}
+
+.recommendation-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.recommendation-type {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  padding: 2px 9px;
+  color: var(--text-main);
+}
+
+.recommendation-date {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.recommendation-title {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 800;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.recommendation-summary {
+  margin: 0;
+  font-size: 0.82rem;
+  font-weight: 700;
+  line-height: 1.45;
+}
+
+.recommendation-metrics {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.recommendation-metric {
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  padding: 2px 8px;
+  white-space: nowrap;
+}
+
+.recommendation-text {
+  margin: 0;
+  font-size: 0.76rem;
+  color: var(--text-muted);
+  line-height: 1.55;
+  overflow-wrap: anywhere;
+}
+
+.recommendation-set {
+  margin: 0;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  border: 1.5px solid var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  padding: 10px 12px;
+}
+
+.recommendation-block {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  border-top: 1.5px dashed var(--border-subtle);
+  padding-top: 8px;
+}
+
+.recommendation-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  border-top: 1.5px dashed var(--border-subtle);
+  padding-top: 8px;
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.recommendation-id {
+  margin-left: auto;
+  max-width: 46%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

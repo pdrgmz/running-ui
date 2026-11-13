@@ -25,6 +25,7 @@
   flex-direction: column;
   gap: 10px;
   transition: background-color var(--transition-smooth);
+  min-height: 400px;
 }
 
 .record-card:hover {
@@ -68,6 +69,28 @@ button.record-card:focus-visible {
 
 .record-badge-muted {
   opacity: 0.35;
+}
+
+/* Minimapa de la ruta dentro de la card de PB */
+.record-route-map-card {
+  flex: 0 0 auto;
+  min-height: 190px;
+  margin-top: 8px;
+}
+
+.record-route-map-card .record-route-map {
+  height: 180px;
+  min-height: 180px;
+}
+
+.record-route-map-card .record-route-caption {
+  font-size: 0.6rem;
+  margin-top: 2px;
+}
+
+.record-route-map-card .record-route-caption .legend-swatch {
+  width: 14px;
+  height: 3px;
 }
 
 .record-time {

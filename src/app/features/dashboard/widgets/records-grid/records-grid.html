@@ -18,6 +18,9 @@
           </div>
 
           <span class="record-time">{{ r.bestTimeSeconds | duration }}</span>
+
+          <app-record-route-map class="record-route-map-card" [activityId]="r.activityId" />
+
           <div class="kv-list">
             <div class="kv-row">
               <span class="kv-key">Ritmo</span>

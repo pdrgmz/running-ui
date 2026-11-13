@@ -1,0 +1,53 @@
+.record-route-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+
+.record-route-map {
+  position: relative;
+  z-index: 0;
+  overflow: hidden;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+  height: 180px;
+  min-height: 180px;
+  width: 100%;
+}
+
+.record-route-caption {
+  font-size: 0.62rem;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin: 0;
+}
+
+.record-route-caption .legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.record-route-caption .legend-swatch {
+  width: 16px;
+  height: 3px;
+  border-radius: 2px;
+  display: inline-block;
+}
+
+.record-route-error,
+.record-route-empty {
+  font-size: 0.68rem;
+  height: 120px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  border: 1.5px dashed var(--border-subtle);
+  border-radius: var(--radius-sm);
+  background: var(--bg-card);
+}

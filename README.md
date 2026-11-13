@@ -167,7 +167,7 @@ src/app/
 │       ├── mcp.service.ts            # cliente MCP JSON-RPC + SSE
 │       ├── telemetry.service.ts      # registro de tráfico HTTP para la consola
 │       ├── toast.service.ts          # notificaciones
-│       └── training.service.ts       # preferencias, planes y jobs de generación (/training/*)
+│       └── training.service.ts       # recomendación diaria, histórico, preferencias y jobs (/training/*)
 ├── features/
 │   ├── login/                        # pantalla de acceso / registro
 │   └── dashboard/
@@ -186,7 +186,7 @@ src/app/
 │           ├── activity-heatmap/     # mapa de calor con todas las trazas GPS
 │           ├── files-panel/          # subida individual/ZIP y exportaciones
 │           ├── mcp-panel/            # sesión MCP, tools y stream SSE
-│           ├── training-panel/       # /training/*: preferencias, generación, planes, jobs
+│           ├── daily-training-panel/ # /training/*: recomendación del día, histórico, preferencias y jobs
 │           └── api-keys-panel/       # generar/revocar claves de API (X-Api-Key)
 └── shared/
     ├── pipes/format.pipes.ts         # duration, km, pace, kmh
@@ -209,7 +209,7 @@ src/app/
 | Recálculo de métricas | `POST /api/v1/activities/recalculate-metrics` |
 | GPS | `GET /api/v1/activities/{id}/trackpoints?resolution` |
 | Analítica de sesión | `GET /api/v1/analytics/{id}/(splits\|hr-zones\|training-load\|vo2max-vam\|cardiac-drift)` |
-| Entrenamientos | `GET/PUT /training/preferences` · `POST /training/plans/generate` · `GET /training/plans` · `GET/DELETE /training/plans/{id}` · `GET/DELETE /training/plans/week/{weekStart}` · `GET /training/plans/current` · `GET/DELETE /training/generation-jobs` · `GET/DELETE /training/generation-jobs/{requestId}` · `DELETE /training/generation-jobs?status` |
+| Entrenamientos | `GET/PUT /training/preferences` · `GET /training/recommendations/today` · `GET /training/recommendations` · `GET/DELETE /training/recommendations/{id}` · `GET/DELETE /training/recommendations/date/{date}` · `POST /training/recommendations/generate` · `GET/DELETE /training/generation-jobs` · `GET/DELETE /training/generation-jobs/{requestId}` · `DELETE /training/generation-jobs?status` |
 | Archivos | `POST /api/v1/files/upload` · `/upload-bulk` · `GET /files/upload-status/{id}` · `/stream` · `GET /files/export-bulk` · `/export-backup-zip` |
 | Cobertura de altitudes | `GET /api/v1/activities/elevation-coverage` |
 | Borrado | `DELETE /api/v1/activities` (202 + `deleteId`) · `GET /activities/delete-status/{deleteId}` · `DELETE /activities/{id}` |

@@ -1,0 +1,15 @@
+<div class="record-route-wrap">
+  @if (loading()) {
+    <p class="loading-text">CARGA DE RUTA…</p>
+  } @else if (error()) {
+    <div class="empty-state record-route-error">SIN RUTA DISPONIBLE</div>
+  } @else if (validRoutePoints(); as pts) {
+    <div class="record-route-map" #routeMap role="img" aria-label="Recorrido GPS de la marca personal"></div>
+    <p class="record-route-caption mono muted">
+      <span class="legend-item"><span class="legend-swatch" style="background: #00e676"></span> INICIO</span>
+      <span class="legend-item"><span class="legend-swatch" style="background: #1a1a1a"></span> FINAL</span>
+    </p>
+  } @else {
+    <div class="empty-state record-route-empty">SIN COORDENADAS GPS</div>
+  }
+</div>

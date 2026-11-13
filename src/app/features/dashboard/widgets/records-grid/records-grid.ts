@@ -2,6 +2,7 @@ import { DatePipe, DecimalPipe } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RecordResponseDto } from '../../../../core/models/api.models';
 import { DurationPipe, KmhPipe, PacePipe } from '../../../../shared/pipes/format.pipes';
+import { RecordRouteMap } from '../record-route-map/record-route-map';
 
 interface RecordCard {
   category: string;
@@ -13,7 +14,7 @@ const CATEGORIES = ['1k', '5k', '10k', '15k', '21k', '42k'];
 /** Marcas personales (PB) por distancia (`/stats/records`). */
 @Component({
   selector: 'app-records-grid',
-  imports: [DatePipe, DecimalPipe, DurationPipe, PacePipe, KmhPipe],
+  imports: [DatePipe, DecimalPipe, DurationPipe, PacePipe, KmhPipe, RecordRouteMap],
   templateUrl: './records-grid.html',
   styleUrl: './records-grid.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
