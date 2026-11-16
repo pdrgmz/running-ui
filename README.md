@@ -31,6 +31,16 @@ detalle de plan con sesiones (tipo, distancia, ritmo, zona FC, carga, RPE,
 feedback), borrado de plan y borrado por semana, y limpieza de jobs de
 generación por estado.
 
+**Corredor** (pestaña *Corredor*): ficha completa del atleta con la identidad de
+`/auth/me`, preferencias de entrenamiento, trayectoria acumulada, métricas
+fisiológicas derivadas de las últimas sesiones (FC máxima, VO2Max, VAM,
+cadencia, ritmo y desnivel), perfil de zonas de frecuencia cardíaca y de ritmo
+de `/zones`, predicción de marca estimada desde el VO2Max, estado de forma
+(PMC + ACWR), récords personales, calidad del historial (formatos, respaldos y
+cobertura de altitud) y logros de constancia. La última tarjeta enumera los
+campos de perfil deportivo que aún no expone la API para integrarlos cuando
+exista el recurso de atleta.
+
 ## Puesta en marcha
 
 ```bash
@@ -179,6 +189,7 @@ src/app/
 │           ├── acwr-card/            # /analytics/acwr/current
 │           ├── eddington-card/       # /analytics/eddington
 │           ├── records-grid/         # /stats/records
+│           ├── runner-profile/       # ficha del corredor: identidad, zonas, fisiología, trayectoria, PB y logros
 │           ├── milestone-timeline/   # timeline de logros con fecha, recientes primero
 │           ├── milestones-panel/     # logros: resumen, filtros y próximos objetivos
 │           ├── activity-calendar/    # historial en calendario con scroll infinito
@@ -205,6 +216,8 @@ src/app/
 | PMC | `GET /api/v1/analytics/pmc?startDate&endDate` |
 | ACWR | `GET /api/v1/analytics/acwr/current` |
 | Eddington | `GET /api/v1/analytics/eddington` |
+| Ficha del corredor | `GET /api/v1/auth/me` · `GET /training/preferences` · `GET /stats/summary` · `GET /stats/records` · `GET /analytics/pmc` · `GET /analytics/acwr/current` · `GET /activities/elevation-coverage` · `GET /zones` |
+| Zonas del corredor | `GET /api/v1/zones` · `POST /zones/calculate` · `PUT /zones` (FC máxima, FC de reposo, umbral y rangos) |
 | Actividades | `GET /api/v1/activities?page&size&sort` · `GET /activities/{id}` · `DELETE /activities/{id}` |
 | Recálculo de métricas | `POST /api/v1/activities/recalculate-metrics` |
 | GPS | `GET /api/v1/activities/{id}/trackpoints?resolution` |

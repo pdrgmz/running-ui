@@ -1,0 +1,648 @@
+<!-- BANNER: identidad rápida del corredor -->
+<article class="card-panel col-12 runner-banner">
+  <div class="runner-banner-main">
+    <div class="runner-avatar runner-avatar--lg">{{ initials() }}</div>
+    <div class="runner-banner-text">
+      <span class="runner-overline">FICHA DEL CORREDOR</span>
+      <span class="runner-email">{{ auth.user()?.email ?? 'SIN SESIÓN' }}</span>
+      <span class="runner-meta">
+        #{{ auth.user()?.id ?? '—' }} · {{ auth.user()?.role ?? '—' }}
+        @if (preferences()?.timezone) {
+          · {{ preferences()?.timezone }}
+        }
+      </span>
+    </div>
+    <span [class]="openToneClass(preferencesStatus().tone)">{{ preferencesStatus().label }}</span>
+  </div>
+
+  <div class="runner-banner-facts">
+    <div class="runner-fact">
+      <span class="runner-fact-value">{{ careerSummary()?.totalActivities ?? '—' }}</span>
+      <span class="runner-fact-label">Carreras</span>
+    </div>
+    <div class="runner-fact">
+      <span class="runner-fact-value">{{ fmt(careerSummary()?.totalDistanceKm ?? null, 0) }}</span>
+      <span class="runner-fact-label">Km totales</span>
+    </div>
+    <div class="runner-fact">
+      <span class="runner-fact-value">{{ eddington()?.eddingtonNumber ?? '—' }}</span>
+      <span class="runner-fact-label">Eddington</span>
+    </div>
+    <div class="runner-fact">
+      <span class="runner-fact-value">{{ bestStreak() ?? '—' }}</span>
+      <span class="runner-fact-label">Racha (sem.)</span>
+    </div>
+    <div class="runner-fact">
+      <span class="runner-fact-value">{{ activeDays28() }}</span>
+      <span class="runner-fact-label">Días activos 28 d</span>
+    </div>
+  </div>
+</article>
+
+<!-- IDENTIDAD Y CONTEXTO -->
+<article class="card-panel col-6">
+  <div class="card-header-bar">
+    <span class="card-tag-badge">/AUTH/ME · IDENTIDAD</span>
+    @if (latestSession()) {
+      <button type="button" class="btn-outline-pill btn-compact" (click)="openLatest()">
+        ÚLTIMA SESIÓN
+      </button>
+    }
+  </div>
+
+  <div class="runner-hero">
+    <div class="runner-avatar">{{ initials() }}</div>
+    <div class="runner-hero-text">
+      <span class="runner-email">{{ auth.user()?.email ?? 'SIN SESIÓN' }}</span>
+      <span class="runner-meta">ID #{{ auth.user()?.id ?? '—' }} · {{ auth.user()?.role ?? 'SIN ROL' }}</span>
+    </div>
+  </div>
+
+  <span class="runner-block-title">Cuenta y preferencias</span>
+  <div class="kv-list">
+    <div class="kv-row">
+      <span class="kv-key">Zona horaria</span>
+      <span class="kv-val">{{ preferences()?.timezone ?? '—' }}</span>
+    </div>
+    <div class="kv-row">
+      <span class="kv-key">Generación diaria</span>
+      <span class="kv-val">{{ generationHourLabel() }}</span>
+    </div>
+    <div class="kv-row">
+      <span class="kv-key">Recomendación IA</span>
+      <span class="kv-val">{{ preferencesStatus().label }}</span>
+    </div>
+    <div class="kv-row">
+      <span class="kv-key">Última actualización</span>
+      <span class="kv-val">
+        {{ preferences()?.updatedAt ? (preferences()?.updatedAt | date: 'dd/MM/yyyy HH:mm') : '—' }}
+      </span>
+    </div>
+  </div>
+
+  @if (preferences()?.notes; as notes) {
+    <div class="runner-note">
+      <span class="runner-block-title">Notas para el entrenador / IA</span>
+      <p>{{ notes }}</p>
+    </div>
+  }
+
+  <span class="runner-block-title">Trayectoria en la app</span>
+  <div class="kv-list">
+    <div class="kv-row">
+      <span class="kv-key">Primera carrera</span>
+      <span class="kv-val">
+        {{ oldestActivity()?.startTime ? (oldestActivity()?.startTime | date: 'dd/MM/yyyy') : '—' }}
+      </span>
+    </div>
+    <div class="kv-row">
+      <span class="kv-key">Última carrera</span>
+      <span class="kv-val">
+        @if (latestSession(); as latest) {
+          {{ latest.startTime | date: 'dd/MM/yyyy HH:mm' }}
+        } @else {
+          —
+        }
+      </span>
+    </div>
+    <div class="kv-row">
+      <span class="kv-key">Desde la última</span>
+      <span class="kv-val">{{ lastRunLabel() }}</span>
+    </div>
+    <div class="kv-row">
+      <span class="kv-key">Historial registrado</span>
+      <span class="kv-val">{{ historySpanLabel() }}</span>
+    </div>
+    <div class="kv-row">
+      <span class="kv-key">Actividades importadas</span>
+      <span class="kv-val">{{ careerSummary()?.totalActivities ?? '—' }}</span>
+    </div>
+  </div>
+</article>
+
+<!-- MÉTRICAS FISIOLÓGICAS -->
+<article class="card-panel col-6">
+  <div class="card-header-bar">
+    <span class="card-tag-badge">/RUNNER · FISIOLOGÍA</span>
+  </div>
+
+  <p class="runner-card-hint">
+    Derivado de las métricas que la API expone por sesión. Se calcula sobre las
+    últimas {{ recentActivities().length }} carreras cargadas.
+  </p>
+
+  @if (recentActivities().length > 0) {
+    <div class="stat-tiles-grid">
+      <div class="stat-tile stat-tile--highlight">
+        <span class="stat-tile-label">FC máxima histórica</span>
+        <span class="stat-tile-value">{{ careerSummary()?.maxHeartRateGlobal ?? '—' }}</span>
+        <span class="stat-tile-sub">bpm · referencia de la API</span>
+      </div>
+      <div class="stat-tile stat-tile--highlight">
+        <span class="stat-tile-label">Mejor VO2Max estimado</span>
+        <span class="stat-tile-value">{{ fmt(bestVo2()) }}</span>
+        <span class="stat-tile-sub">ml/kg/min</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Mejor VAM</span>
+        <span class="stat-tile-value">{{ fmt(bestVam()) }}</span>
+        <span class="stat-tile-sub">km/h aeróbico</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Cadencia media</span>
+        <span class="stat-tile-value">{{ fmt(avgCadence(), 0) }}</span>
+        <span class="stat-tile-sub">spm</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Ritmo más rápido</span>
+        <span class="stat-tile-value">{{ fastestPace() | pace }}</span>
+        <span class="stat-tile-sub">media de sesión</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Velocidad punta</span>
+        <span class="stat-tile-value">{{ maxSpeed() | kmh }}</span>
+        <span class="stat-tile-sub">máxima registrada</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Carrera más larga</span>
+        <span class="stat-tile-value">{{ fmtKm(longestRecent()) }}</span>
+        <span class="stat-tile-sub">últimas sesiones</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Mayor desnivel</span>
+        <span class="stat-tile-value">{{ fmtMeters(biggestClimb()) }}</span>
+        <span class="stat-tile-sub">D+ por sesión</span>
+      </div>
+    </div>
+
+    <p class="runner-footnote">
+      La FC máxima y el VO2Max son estimaciones calculadas por el backend a partir
+      de la telemetría; no sustituyen una prueba de laboratorio.
+    </p>
+  } @else {
+    <div class="empty-state">IMPORTA CARRERAS PARA CALCULAR LAS MÉTRICAS FISIOLÓGICAS.</div>
+  }
+</article>
+
+<!-- ZONAS DEL CORREDOR -->
+<article class="card-panel col-12">
+  <div class="card-header-bar">
+    <span class="card-tag-badge">/ZONES · ZONAS</span>
+    <span class="runner-chip runner-chip--neutral">{{ zonesSourceLabel() }}</span>
+  </div>
+
+  @if (zones(); as profile) {
+    <div class="zones-grid">
+      <div class="zones-column">
+        <span class="runner-block-title">Frecuencia cardíaca</span>
+
+        <div class="kv-list">
+          <div class="kv-row">
+            <span class="kv-key">FC máxima</span>
+            <span class="kv-val">{{ profile.heartRate.maxHeartRate }} bpm</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">FC de reposo</span>
+            <span class="kv-val">{{ profile.heartRate.restingHeartRate }} bpm</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">Método</span>
+            <span class="kv-val">{{ hrMethodLabel() }}</span>
+          </div>
+        </div>
+
+        <div class="zone-table">
+          <div class="zone-head">
+            <span>Zona</span>
+            <span>Rango</span>
+            <span>% FC máx</span>
+          </div>
+          @for (zone of hrZones(); track zone.zone) {
+            <div class="zone-row">
+              <span class="zone-name">
+                <span class="zone-index">Z{{ zone.zone }}</span>
+                {{ zone.name }}
+              </span>
+              <span class="zone-range">{{ zone.minBpm }}–{{ zone.maxBpm }} bpm</span>
+              <span class="zone-percent">
+                {{ fmt(zone.minPercent, 0) }}–{{ fmt(zone.maxPercent, 0) }}%
+              </span>
+            </div>
+          }
+        </div>
+      </div>
+
+      <div class="zones-column">
+        <span class="runner-block-title">Ritmo</span>
+
+        <div class="kv-list">
+          <div class="kv-row">
+            <span class="kv-key">Ritmo umbral</span>
+            <span class="kv-val">{{ thresholdPace() ?? '—' }}</span>
+          </div>
+          <div class="kv-row">
+            <span class="kv-key">Método</span>
+            <span class="kv-val">{{ paceMethodLabel() }}</span>
+          </div>
+        </div>
+
+        <div class="zone-table">
+          <div class="zone-head">
+            <span>Zona</span>
+            <span>Ritmo</span>
+            <span>% umbral</span>
+          </div>
+          @for (zone of paceZones(); track zone.zone) {
+            <div class="zone-row">
+              <span class="zone-name">
+                <span class="zone-index">Z{{ zone.zone }}</span>
+                {{ zone.name }}
+              </span>
+              <span class="zone-range">
+                {{ zone.fastestPaceFormatted }}–{{ zone.slowestPaceFormatted }}
+              </span>
+              <span class="zone-percent">
+                {{ fmt(zone.minPercentOfThreshold, 0) }}–{{ fmt(zone.maxPercentOfThreshold, 0) }}%
+              </span>
+            </div>
+          }
+        </div>
+      </div>
+    </div>
+
+    <p class="runner-footnote">
+      @if (profile.configured) {
+        Perfil guardado en la cuenta.
+        @if (profile.updatedAt) {
+          Última actualización: {{ profile.updatedAt | date: 'dd/MM/yyyy HH:mm' }}.
+        }
+      } @else {
+        Perfil por defecto calculado desde el historial; aún no está guardado en la cuenta.
+      }
+      Añade FC máxima y de reposo reales para mejorar el cálculo.
+    </p>
+  } @else if (profileLoading()) {
+    <p class="loading-text">CALCULANDO LAS ZONAS DEL CORREDOR…</p>
+  } @else {
+    <div class="empty-state">NO SE PUDIERON CARGAR LAS ZONAS DEL CORREDOR.</div>
+  }
+</article>
+
+<!-- TRAYECTORIA ACUMULADA -->
+<article class="card-panel col-12">
+  <div class="card-header-bar">
+    <span class="card-tag-badge">/STATS/SUMMARY · TRAYECTORIA</span>
+    <span class="runner-overline">HISTÓRICO COMPLETO</span>
+  </div>
+
+  @if (careerSummary(); as career) {
+    <div class="stat-tiles-grid">
+      <div class="stat-tile stat-tile--highlight">
+        <span class="stat-tile-label">Actividades</span>
+        <span class="stat-tile-value">{{ career.totalActivities | number }}</span>
+        <span class="stat-tile-sub">sesiones importadas</span>
+      </div>
+      <div class="stat-tile stat-tile--highlight">
+        <span class="stat-tile-label">Distancia total</span>
+        <span class="stat-tile-value">{{ career.totalDistanceKm | number: '1.0-0' }} km</span>
+        <span class="stat-tile-sub">{{ career.totalDistanceMeters | number: '1.0-0' }} m</span>
+      </div>
+      <div class="stat-tile stat-tile--highlight">
+        <span class="stat-tile-label">Tiempo en movimiento</span>
+        <span class="stat-tile-value">{{ career.totalTimeSeconds | duration }}</span>
+        <span class="stat-tile-sub">{{ career.totalTimeFormatted }}</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Desnivel positivo</span>
+        <span class="stat-tile-value">{{ career.totalElevationGain | number: '1.0-0' }} m</span>
+        <span class="stat-tile-sub">D+ acumulado</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Calorías</span>
+        <span class="stat-tile-value">{{ career.totalCalories | number }}</span>
+        <span class="stat-tile-sub">kcal registradas</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Media por sesión</span>
+        <span class="stat-tile-value">{{ career.avgDistanceKm | number: '1.2-2' }} km</span>
+        <span class="stat-tile-sub">distancia / carrera</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Ritmo medio global</span>
+        <span class="stat-tile-value">{{ careerAvgPace() | pace }}</span>
+        <span class="stat-tile-sub">tiempo / distancia</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Maratones equivalentes</span>
+        <span class="stat-tile-value">{{ fmt(marathonEquivalents()) }}×</span>
+        <span class="stat-tile-sub">42,195 km por unidad</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Eddington</span>
+        <span class="stat-tile-value">E={{ eddington()?.eddingtonNumber ?? '—' }}</span>
+        <span class="stat-tile-sub">constancia acumulada</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Mejor racha</span>
+        <span class="stat-tile-value">{{ bestStreak() ?? '—' }}</span>
+        <span class="stat-tile-sub">semanas consecutivas</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Logros</span>
+        <span class="stat-tile-value">
+          {{ milestoneSummary().unlocked }}/{{ milestoneSummary().total }}
+        </span>
+        <span class="stat-tile-sub">objetivos desbloqueados</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">PB registrados</span>
+        <span class="stat-tile-value">{{ pbRows().length }}</span>
+        <span class="stat-tile-sub">de 6 distancias</span>
+      </div>
+    </div>
+  } @else if (profileLoading()) {
+    <p class="loading-text">CARGANDO TRAYECTORIA DEL CORREDOR…</p>
+  } @else {
+    <div class="empty-state">NO SE PUDO CARGAR EL RESUMEN HISTÓRICO.</div>
+  }
+</article>
+
+<!-- ESTADO DE FORMA -->
+<article class="card-panel col-6">
+  <div class="card-header-bar">
+    <span class="card-tag-badge">/ANALYTICS/PMC · FORMA</span>
+    <span [class]="openToneClass(acwrZone().tone)">ACWR {{ acwrZone().label }}</span>
+  </div>
+
+  @if (latestPmc(); as pmc) {
+    <div class="stat-tiles-grid">
+      <div class="stat-tile stat-tile--highlight">
+        <span class="stat-tile-label">Aptitud · CTL 42 d</span>
+        <span class="stat-tile-value">{{ pmc.ctl | number: '1.1-1' }}</span>
+        <span class="stat-tile-sub">fitness acumulado</span>
+      </div>
+      <div class="stat-tile stat-tile--highlight">
+        <span class="stat-tile-label">Fatiga · ATL 7 d</span>
+        <span class="stat-tile-value">{{ pmc.atl | number: '1.1-1' }}</span>
+        <span class="stat-tile-sub">carga aguda</span>
+      </div>
+      <div class="stat-tile stat-tile--highlight">
+        <span class="stat-tile-label">Forma · TSB</span>
+        <span class="stat-tile-value">{{ pmc.tsb | number: '1.1-1' }}</span>
+        <span class="stat-tile-sub">CTL − ATL</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">ACWR</span>
+        <span class="stat-tile-value">{{ fmt(acwr()?.acwr ?? pmc.acwr, 2) }}</span>
+        <span class="stat-tile-sub">aguda / crónica</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Días con carga 28 d</span>
+        <span class="stat-tile-value">{{ activeDays28() }}</span>
+        <span class="stat-tile-sub">sesiones registradas</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Carga semanal media</span>
+        <span class="stat-tile-value">{{ fmt(weeklyLoad28(), 0) }}</span>
+        <span class="stat-tile-sub">TRIMP · últimas 4 semanas</span>
+      </div>
+    </div>
+
+    @if (acwr()?.recommendation; as recommendation) {
+      <p class="runner-recommendation">{{ recommendation }}</p>
+    }
+
+    <div class="kv-list">
+      <div class="kv-row">
+        <span class="kv-key">Fecha de evaluación</span>
+        <span class="kv-val">{{ acwr()?.date ?? pmc.date }}</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-key">Carga aguda / crónica</span>
+        <span class="kv-val">
+          {{ fmt(acwr()?.acuteLoad ?? null) }} / {{ fmt(acwr()?.chronicLoad ?? null) }}
+        </span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-key">Zona de riesgo</span>
+        <span class="kv-val">{{ acwrZone().label }}</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-key">Rango objetivo ACWR</span>
+        <span class="kv-val">0,80 – 1,30</span>
+      </div>
+    </div>
+  } @else {
+    <p class="loading-text">CALCULANDO EL ESTADO DE FORMA…</p>
+  }
+</article>
+
+<!-- RÉCORDS PERSONALES -->
+<article class="card-panel col-6">
+  <div class="card-header-bar">
+    <span class="card-tag-badge">/STATS/RECORDS · PB</span>
+    <span class="runner-overline">{{ pbRows().length }} DISTANCIAS</span>
+  </div>
+
+  @if (pbRows().length > 0) {
+    <div class="pb-list">
+      <div class="pb-head">
+        <span>Distancia</span>
+        <span>Mejor tiempo</span>
+        <span>Ritmo</span>
+        <span>Fecha</span>
+      </div>
+      @for (row of pbRows(); track row.distanceCategory) {
+        <button type="button" class="pb-row" (click)="openRecord(row)" title="Abrir la carrera del récord">
+          <span class="pb-distance">{{ row.distanceCategory }}</span>
+          <span class="pb-time">{{ row.bestTimeSeconds | duration }}</span>
+          <span class="pb-pace">{{ row.avgPaceMinPerKm | pace }}</span>
+          <span class="pb-date">{{ row.activityDate | date: 'dd/MM/yyyy' }}</span>
+        </button>
+      }
+    </div>
+
+    <div class="kv-list">
+      <div class="kv-row">
+        <span class="kv-key">Mejor ritmo de PB</span>
+        <span class="kv-val">{{ pbPace() | pace }}</span>
+      </div>
+      <div class="kv-row">
+        <span class="kv-key">Distancia con récord más larga</span>
+        <span class="kv-val">{{ pbRows()[pbRows().length - 1].distanceCategory }}</span>
+      </div>
+    </div>
+  } @else {
+    <div class="empty-state">TODAVÍA NO HAY MARCAS PERSONALES REGISTRADAS.</div>
+  }
+
+  @if (predictionRows().length > 0) {
+    <span class="runner-block-title">Predicción de marca (estimada)</span>
+    <div class="prediction-grid">
+      @for (row of predictionRows(); track row.label) {
+        <div class="prediction-item">
+          <span class="prediction-distance">{{ row.label }}</span>
+          <span class="prediction-time">{{ row.value }}</span>
+        </div>
+      }
+    </div>
+    <p class="runner-footnote">
+      Proyección del backend desde el VO2Max de la última sesión con datos
+      fisiológicos ({{ predictionHint() }}).
+    </p>
+  }
+</article>
+
+<!-- CALIDAD DE DATOS Y FUENTES -->
+<article class="card-panel col-6">
+  <div class="card-header-bar">
+    <span class="card-tag-badge">/ACTIVITIES · DATOS</span>
+  </div>
+
+  @if (sourceBreakdown().length > 0) {
+    <span class="runner-block-title">Formatos de las últimas sesiones</span>
+    <div class="source-list">
+      @for (slice of sourceBreakdown(); track slice.source) {
+        <div class="source-row">
+          <span class="source-name">{{ slice.source }}</span>
+          <div class="source-track">
+            <div class="source-fill" [style.width.%]="slice.percent"></div>
+          </div>
+          <span class="source-count">{{ slice.count }} · {{ slice.percent }}%</span>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="empty-state">SIN SESIONES RECIENTES PARA ANALIZAR LAS FUENTES.</div>
+  }
+
+  <span class="runner-block-title">Calidad del historial</span>
+  <div class="kv-list">
+    <div class="kv-row">
+      <span class="kv-key">Respaldo físico disponible</span>
+      <span class="kv-val">
+        {{ backupCoverage().covered }} / {{ backupCoverage().total }}
+        ({{ backupCoverage().percent }}%)
+      </span>
+    </div>
+    <div class="kv-row">
+      <span class="kv-key">Trackpoints con altitud</span>
+      <span class="kv-val">{{ fmtPercent(elevationCoverage()?.withElevationPercent ?? null) }}</span>
+    </div>
+    <div class="kv-row">
+      <span class="kv-key">Altitud pendiente</span>
+      <span class="kv-val">{{ fmtPercent(elevationCoverage()?.missingElevationPercent ?? null) }}</span>
+    </div>
+    <div class="kv-row">
+      <span class="kv-key">Altitud constante sospechosa</span>
+      <span class="kv-val">
+        {{ elevationCoverage()?.trackpointsWithFlatElevation ?? '—' }}
+        @if (elevationCoverage(); as coverage) {
+          ({{ fmtPercent(coverage.flatElevationPercent) }})
+        }
+      </span>
+    </div>
+  </div>
+
+  <p class="runner-footnote">
+    La cobertura de altitud se calcula sobre todos los trackpoints de la cuenta;
+    el respaldo y los formatos, sobre las últimas sesiones mostradas.
+  </p>
+</article>
+
+<!-- LOGROS Y CONSTANCIA -->
+<article class="card-panel col-6">
+  <div class="card-header-bar">
+    <span class="card-tag-badge">/MILESTONES · CONSTANCIA</span>
+    @if (bestStreak() !== null) {
+      <span class="runner-overline">MEJOR RACHA {{ bestStreak() }} SEM.</span>
+    }
+  </div>
+
+  @if (milestones.status() === 'loading') {
+    <p class="loading-text">RECORRIENDO EL HISTORIAL PARA CALCULAR LOS LOGROS…</p>
+  } @else if (milestones.status() === 'error') {
+    <div class="empty-state">NO SE PUDIERON CALCULAR LOS LOGROS DEL HISTORIAL.</div>
+    <button type="button" class="btn-outline-pill btn-compact" (click)="retryMilestones()">
+      REINTENTAR
+    </button>
+  } @else {
+    <div class="stat-tiles-grid">
+      <div class="stat-tile stat-tile--highlight">
+        <span class="stat-tile-label">Logros desbloqueados</span>
+        <span class="stat-tile-value">
+          {{ milestoneSummary().unlocked }}/{{ milestoneSummary().total }}
+        </span>
+        <span class="stat-tile-sub">objetivos del historial</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Progreso global</span>
+        <span class="stat-tile-value">{{ milestoneSummary().percent }}%</span>
+        <span class="stat-tile-sub">del catálogo</span>
+      </div>
+      <div class="stat-tile">
+        <span class="stat-tile-label">Mejor racha</span>
+        <span class="stat-tile-value">{{ bestStreak() ?? '—' }}</span>
+        <span class="stat-tile-sub">semanas consecutivas</span>
+      </div>
+    </div>
+
+    <div class="milestone-progress-track">
+      <div class="milestone-progress-fill" [style.width.%]="milestoneSummary().percent"></div>
+    </div>
+
+    @if (milestoneSummary().next; as next) {
+      <div class="next-milestone">
+        <span class="next-milestone-label">PRÓXIMO OBJETIVO</span>
+        <span class="next-milestone-title">{{ next.title }}</span>
+        <div class="milestone-progress-track milestone-progress-track--slim">
+          <div class="milestone-progress-fill" [style.width.%]="next.progress * 100"></div>
+        </div>
+        <div class="next-milestone-values">
+          <span>{{ milestoneValue(next) }} / {{ milestoneTarget(next) }}</span>
+          <span>{{ milestoneRemaining(next) }}</span>
+        </div>
+      </div>
+    } @else {
+      <p class="runner-footnote">TODOS LOS LOGROS DEL CATÁLOGO ESTÁN DESBLOQUEADOS.</p>
+    }
+  }
+</article>
+
+<!-- DATOS PENDIENTES EN EL BACKEND -->
+<article class="card-panel col-12 missing-profile-card">
+  <div class="card-header-bar">
+    <span class="card-tag-badge">/ATHLETE/PROFILE · PENDIENTE</span>
+    <span class="runner-chip runner-chip--low">NO DISPONIBLE EN LA API v1.8.0</span>
+  </div>
+
+  <p class="runner-card-hint">
+    Estos datos enriquecerían la ficha del corredor, pero la API todavía no los
+    expone ni permite editarlos. La interfaz está preparada para mostrarlos en
+    cuanto exista el recurso de perfil del atleta.
+  </p>
+
+  <div class="missing-groups">
+    @for (group of missingProfileGroups; track group.id) {
+      <div class="missing-group">
+        <span class="missing-group-title">{{ group.title }}</span>
+        <div class="missing-items">
+          @for (item of group.items; track item) {
+            <span class="missing-chip">{{ item }}</span>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="missing-endpoint">
+    <span class="missing-endpoint-label">PROPUESTA DE CONTRATO</span>
+    <code>GET /api/v1/athlete/profile</code>
+    <code>PUT /api/v1/athlete/profile</code>
+    <span class="missing-endpoint-note">
+      Con nombre, peso, altura, fecha de nacimiento, sexo, VO2Max de laboratorio,
+      objetivos, material y disponibilidad semanal. Las zonas de FC y ritmo, la
+      FC máxima y la FC de reposo ya se obtienen de /api/v1/zones.
+    </span>
+  </div>
+</article>

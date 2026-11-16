@@ -1,0 +1,644 @@
+/* La ficha del corredor se despliega como tarjetas bento dentro del dashboard */
+:host {
+  display: contents;
+}
+
+article.card-panel {
+  min-width: 0;
+}
+
+/* ---------- Banner de identidad ---------- */
+.runner-banner {
+  gap: 18px;
+}
+
+.runner-banner-main {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.runner-banner-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  flex: 1;
+}
+
+.runner-avatar {
+  width: 52px;
+  height: 52px;
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-dark-panel);
+  color: var(--bg-main);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.runner-avatar--lg {
+  width: 68px;
+  height: 68px;
+  font-size: 1.3rem;
+}
+
+.runner-overline {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.7px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.runner-email {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  font-weight: 800;
+  overflow-wrap: anywhere;
+  line-height: 1.2;
+}
+
+.runner-meta {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  color: var(--text-muted);
+  overflow-wrap: anywhere;
+}
+
+.runner-banner-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 10px;
+}
+
+.runner-fact {
+  background: var(--bg-main);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.runner-fact-value {
+  font-family: var(--font-mono);
+  font-size: 1.35rem;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.runner-fact-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 700;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* ---------- Chips de estado ---------- */
+.runner-chip {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  background: var(--bg-main);
+  padding: 4px 10px;
+  white-space: nowrap;
+}
+
+.runner-chip--ok {
+  border-color: var(--accent-green);
+  color: #0b6b39;
+  background: rgba(0, 230, 118, 0.14);
+}
+
+.runner-chip--warn {
+  border-color: var(--accent-amber);
+  color: #7a5700;
+  background: rgba(201, 143, 0, 0.12);
+}
+
+.runner-chip--risk {
+  border-color: var(--accent-red);
+  color: #8f2b24;
+  background: rgba(201, 79, 69, 0.12);
+}
+
+.runner-chip--low,
+.runner-chip--neutral {
+  color: var(--text-muted);
+}
+
+/* ---------- Tarjetas ---------- */
+.runner-hero {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.runner-hero-text {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.runner-block-title {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  border-bottom: 1px dashed var(--border-subtle);
+  padding-bottom: 7px;
+}
+
+.runner-card-hint,
+.runner-footnote {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 600;
+  line-height: 1.55;
+  color: var(--text-muted);
+}
+
+.runner-footnote {
+  font-size: 0.62rem;
+}
+
+.runner-note {
+  background: var(--bg-main);
+  border: 1.5px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.runner-note p {
+  font-size: 0.78rem;
+  line-height: 1.5;
+  overflow-wrap: anywhere;
+}
+
+.runner-recommendation {
+  border: 1.5px solid var(--border-color);
+  border-left: 6px solid var(--accent-green);
+  border-radius: var(--radius-sm);
+  background: var(--bg-main);
+  padding: 10px 12px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  line-height: 1.55;
+}
+
+/* ---------- Zonas del corredor ---------- */
+.zones-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 18px;
+}
+
+.zones-column {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.zone-table {
+  display: flex;
+  flex-direction: column;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-main);
+  overflow: hidden;
+}
+
+.zone-head,
+.zone-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr) minmax(0, 0.85fr);
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  font-family: var(--font-mono);
+}
+
+.zone-head {
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border-bottom: 1.5px solid var(--border-color);
+}
+
+.zone-head span:last-child {
+  text-align: right;
+}
+
+.zone-row {
+  font-size: 0.72rem;
+  font-weight: 600;
+  border-bottom: 1px dashed var(--border-subtle);
+}
+
+.zone-row:last-child {
+  border-bottom: none;
+}
+
+.zone-name {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zone-index {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  min-width: 28px;
+  padding: 1px 6px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  font-size: 0.6rem;
+  font-weight: 800;
+}
+
+.zone-percent {
+  text-align: right;
+  color: var(--text-muted);
+  font-size: 0.66rem;
+  white-space: nowrap;
+}
+
+/* ---------- Predicción de marca ---------- */
+.prediction-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
+  gap: 10px;
+}
+
+.prediction-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  background: var(--bg-main);
+  padding: 10px 8px;
+  min-width: 0;
+}
+
+.prediction-distance {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.prediction-time {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* ---------- Récords personales ---------- */
+.pb-list {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.pb-head,
+.pb-row {
+  display: grid;
+  grid-template-columns: 72px minmax(0, 1fr) minmax(0, 1fr) 88px;
+  align-items: center;
+  gap: 10px;
+}
+
+.pb-head {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+  padding: 0 4px 8px;
+  border-bottom: 1.5px solid var(--border-color);
+}
+
+.pb-head span:last-child {
+  text-align: right;
+}
+
+.pb-row {
+  width: 100%;
+  background: transparent;
+  border: none;
+  border-bottom: 1px dashed var(--border-subtle);
+  padding: 9px 4px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+  color: var(--text-main);
+  transition: background-color var(--transition-fast);
+}
+
+.pb-row:hover {
+  background: var(--bg-card-hover);
+}
+
+.pb-row:last-child {
+  border-bottom: none;
+}
+
+.pb-distance {
+  display: inline-flex;
+  justify-content: center;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  background: var(--bg-main);
+  padding: 2px 8px;
+  font-size: 0.64rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pb-time {
+  font-weight: 800;
+}
+
+.pb-pace,
+.pb-date {
+  color: var(--text-muted);
+  font-size: 0.7rem;
+}
+
+.pb-date {
+  text-align: right;
+}
+
+/* ---------- Fuentes y calidad de datos ---------- */
+.source-list {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+
+.source-row {
+  display: grid;
+  grid-template-columns: 74px minmax(0, 1fr) 74px;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.source-name {
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: var(--text-muted);
+}
+
+.source-track {
+  height: 14px;
+  border: 1.5px solid var(--border-color);
+  border-radius: 4px;
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.source-fill {
+  height: 100%;
+  background: var(--border-color);
+  border-right: 1.5px solid var(--border-color);
+  transition: width var(--transition-smooth);
+}
+
+.source-count {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ---------- Logros y constancia ---------- */
+.milestone-progress-track {
+  height: 12px;
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  background: var(--bg-input);
+  overflow: hidden;
+}
+
+.milestone-progress-track--slim {
+  height: 8px;
+}
+
+.milestone-progress-fill {
+  height: 100%;
+  background: var(--border-color);
+  transition: width var(--transition-smooth);
+}
+
+.next-milestone {
+  border: 1.5px dashed var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.next-milestone-label {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.next-milestone-title {
+  font-family: var(--font-mono);
+  font-size: 0.88rem;
+  font-weight: 800;
+  line-height: 1.3;
+  text-transform: uppercase;
+}
+
+.next-milestone-values {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+/* ---------- Perfil pendiente en backend ---------- */
+.missing-profile-card {
+  border-style: dashed;
+}
+
+.missing-groups {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(215px, 1fr));
+  gap: 12px;
+}
+
+.missing-group {
+  background: var(--bg-main);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  min-width: 0;
+}
+
+.missing-group-title {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.missing-items {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.missing-chip {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  font-weight: 600;
+  border: 1.5px dashed var(--border-subtle);
+  border-radius: var(--radius-pill);
+  background: var(--bg-card);
+  padding: 3px 9px;
+  color: var(--text-muted);
+}
+
+.missing-endpoint {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  border-top: 1.5px dashed var(--border-color);
+  padding-top: 14px;
+}
+
+.missing-endpoint-label {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.missing-endpoint code {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  background: var(--bg-dark-panel);
+  color: var(--bg-main);
+  border-radius: var(--radius-pill);
+  padding: 4px 10px;
+}
+
+.missing-endpoint-note {
+  flex-basis: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.64rem;
+  font-weight: 600;
+  line-height: 1.5;
+  color: var(--text-muted);
+}
+
+@media (max-width: 540px) {
+  .runner-avatar {
+    width: 44px;
+    height: 44px;
+    font-size: 0.85rem;
+  }
+
+  .runner-avatar--lg {
+    width: 54px;
+    height: 54px;
+    font-size: 1rem;
+  }
+
+  .pb-head,
+  .pb-row {
+    grid-template-columns: 62px minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .pb-head span:last-child,
+  .pb-date {
+    display: none;
+  }
+
+  .source-row {
+    grid-template-columns: 62px minmax(0, 1fr) 64px;
+  }
+
+  .zone-head,
+  .zone-row {
+    grid-template-columns: minmax(0, 1.3fr) minmax(0, 1fr) minmax(0, 0.7fr);
+    padding: 7px 8px;
+  }
+
+  .zone-row {
+    font-size: 0.64rem;
+  }
+
+  .zone-percent {
+    font-size: 0.6rem;
+  }
+}

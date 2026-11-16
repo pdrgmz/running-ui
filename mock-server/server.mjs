@@ -444,6 +444,32 @@ function route(req, path, url, body, res) {
     });
   }
 
+  // --- Zonas del corredor ---
+  if (method === 'GET' && path === '/api/v1/zones') {
+    return send(res, 200, runnerZones);
+  }
+  if (method === 'POST' && path === '/api/v1/zones/calculate') {
+    runnerZones = buildZones('CALCULATED');
+    return send(res, 200, runnerZones);
+  }
+  if (method === 'PUT' && path === '/api/v1/zones') {
+    const hr = body?.heartRate ?? {};
+    const pace = body?.pace ?? {};
+    runnerZones = buildZones('MANUAL', {
+      maxHeartRate: hr.maxHeartRate ?? runnerZones.heartRate.maxHeartRate,
+      restingHeartRate: hr.restingHeartRate ?? runnerZones.heartRate.restingHeartRate,
+      thresholdPaceSecondsPerKm:
+        pace.thresholdPaceSecondsPerKm ?? runnerZones.pace.thresholdPaceSecondsPerKm,
+    });
+    if (hr.method) {
+      runnerZones.heartRate.method = hr.method;
+    }
+    if (pace.method) {
+      runnerZones.pace.method = pace.method;
+    }
+    return send(res, 200, runnerZones);
+  }
+
   // --- Archivos ---
   if (method === 'POST' && path === '/api/v1/files/upload') {
     uploadSeq += 1;
@@ -684,6 +710,9 @@ const trainingPlans = new Map();
 const generationJobs = new Map();
 let trainingPlanSeq = 0;
 let generationJobSeq = 0;
+
+/* Zonas del corredor (v1.8.0) en memoria; se recalculan o editan al vuelo. */
+let runnerZones = buildZones('CALCULATED');
 
 /* Claves de API en memoria (el valor `key` solo se devuelve al crearlas). */
 let apiKeySeq = 4;
@@ -1148,6 +1177,71 @@ function splits(id) {
     });
   }
   return list;
+}
+
+function buildZones(source = 'CALCULATED', overrides = {}) {
+  const maxHeartRate = overrides.maxHeartRate ?? 190;
+  const restingHeartRate = overrides.restingHeartRate ?? 52;
+  const hrBounds = [50, 60, 70, 80, 90, 100];
+  const zoneNames = ['Recuperación', 'Resistencia', 'Tempo', 'Umbral', 'Anaeróbico'];
+
+  const heartRateZones = zoneNames.map((name, index) => ({
+    zone: index + 1,
+    name,
+    minBpm: Math.round((maxHeartRate * hrBounds[index]) / 100),
+    maxBpm: Math.round((maxHeartRate * hrBounds[index + 1]) / 100),
+    minPercent: hrBounds[index],
+    maxPercent: hrBounds[index + 1],
+  }));
+
+  const thresholdPaceSecondsPerKm = overrides.thresholdPaceSecondsPerKm ?? 270;
+  // Rangos de más lenta (Z1) a más rápida (Z5), en segundos por kilómetro.
+  const paceRanges = [
+    [421, 480],
+    [361, 420],
+    [316, 360],
+    [286, 315],
+    [240, 285],
+  ];
+  const paceZones = zoneNames.map((name, index) => {
+    const [fastest, slowest] = paceRanges[index];
+    return {
+      zone: index + 1,
+      name,
+      fastestPaceSecondsPerKm: fastest,
+      slowestPaceSecondsPerKm: slowest,
+      fastestPaceFormatted: paceLabel(fastest),
+      slowestPaceFormatted: paceLabel(slowest),
+      minPercentOfThreshold: Math.round((fastest / thresholdPaceSecondsPerKm) * 100),
+      maxPercentOfThreshold: Math.round((slowest / thresholdPaceSecondsPerKm) * 100),
+    };
+  });
+
+  const now = new Date().toISOString();
+  return {
+    configured: source !== 'DEFAULT',
+    source,
+    calculatedAt: source === 'CALCULATED' ? now : null,
+    updatedAt: now,
+    heartRate: {
+      maxHeartRate,
+      restingHeartRate,
+      method: 'MAX_HR_PERCENT',
+      zones: heartRateZones,
+    },
+    pace: {
+      thresholdPaceSecondsPerKm,
+      thresholdPaceFormatted: paceLabel(thresholdPaceSecondsPerKm),
+      method: 'THRESHOLD_PACE_PERCENT',
+      zones: paceZones,
+    },
+  };
+}
+
+function paceLabel(seconds) {
+  const minutes = Math.floor(seconds / 60);
+  const rest = Math.round(seconds % 60);
+  return `${minutes}:${String(rest).padStart(2, '0')}`;
 }
 
 function hrZones(id) {

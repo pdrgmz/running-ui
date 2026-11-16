@@ -199,6 +199,88 @@ export interface CardiacDriftResponseDto {
 }
 
 /* ------------------------------------------------------------------ */
+/* Zonas del corredor (/api/v1/zones, v1.8.0)                          */
+/* ------------------------------------------------------------------ */
+
+export type ZonesSource = 'DEFAULT' | 'CALCULATED' | 'MANUAL';
+export type HeartRateZoneMethod = 'MAX_HR_PERCENT' | 'HEART_RATE_RESERVE' | 'CUSTOM';
+export type PaceZoneMethod = 'THRESHOLD_PACE_PERCENT' | 'CUSTOM';
+
+export interface HeartRateZoneDto {
+  zone: number;
+  name: string;
+  minBpm: number;
+  maxBpm: number;
+  minPercent: number;
+  maxPercent: number;
+}
+
+export interface HeartRateZonesProfileDto {
+  maxHeartRate: number;
+  restingHeartRate: number;
+  method: HeartRateZoneMethod;
+  zones: HeartRateZoneDto[];
+}
+
+export interface PaceZoneDto {
+  zone: number;
+  name: string;
+  fastestPaceSecondsPerKm: number;
+  slowestPaceSecondsPerKm: number;
+  fastestPaceFormatted: string;
+  slowestPaceFormatted: string;
+  minPercentOfThreshold: number;
+  maxPercentOfThreshold: number;
+}
+
+export interface PaceZonesProfileDto {
+  thresholdPaceSecondsPerKm: number;
+  thresholdPaceFormatted: string;
+  method: PaceZoneMethod;
+  zones: PaceZoneDto[];
+}
+
+export interface RunnerZonesResponseDto {
+  configured: boolean;
+  source: ZonesSource;
+  calculatedAt: string | null;
+  updatedAt: string | null;
+  heartRate: HeartRateZonesProfileDto;
+  pace: PaceZonesProfileDto;
+}
+
+/** Envío manual de zonas: los rangos exigen method CUSTOM y 5 zonas sin solapes. */
+export interface HeartRateZoneRange {
+  zone: number;
+  minBpm: number;
+  maxBpm: number;
+}
+
+export interface PaceZoneRange {
+  zone: number;
+  fastestPaceSecondsPerKm: number;
+  slowestPaceSecondsPerKm: number;
+}
+
+export interface HeartRateZones {
+  maxHeartRate?: number;
+  restingHeartRate?: number;
+  method?: HeartRateZoneMethod;
+  zones?: HeartRateZoneRange[];
+}
+
+export interface PaceZones {
+  thresholdPaceSecondsPerKm?: number;
+  method?: PaceZoneMethod;
+  zones?: PaceZoneRange[];
+}
+
+export interface UpdateRunnerZonesRequestDto {
+  heartRate?: HeartRateZones;
+  pace?: PaceZones;
+}
+
+/* ------------------------------------------------------------------ */
 /* Entrenamientos (recomendación diaria generada por IA)               */
 /* ------------------------------------------------------------------ */
 

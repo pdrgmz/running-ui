@@ -104,6 +104,18 @@
         </section>
       }
 
+      <!-- FICHA DEL CORREDOR: identidad, fisiología, trayectoria y logros -->
+      @case ('runner') {
+        <app-runner-profile
+          [records]="records()"
+          [pmc]="pmcPoints()"
+          [acwr]="acwr()"
+          [eddington]="eddington()"
+          [recentActivities]="activitiesPage()?.content ?? []"
+          (openActivity)="openActivityById($event)"
+        />
+      }
+
       <!-- RESUMEN: eddington, estadísticas y PMC -->
       @case ('resumen') {
         <section class="overview-resumen">

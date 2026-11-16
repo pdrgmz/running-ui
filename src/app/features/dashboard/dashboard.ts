@@ -50,10 +50,12 @@ import { MilestonesPanel } from './widgets/milestones-panel/milestones-panel';
 import { PmcChart } from './widgets/pmc-chart/pmc-chart';
 import { PmcReading } from './widgets/pmc-reading/pmc-reading';
 import { RecordsGrid } from './widgets/records-grid/records-grid';
+import { RunnerProfile } from './widgets/runner-profile/runner-profile';
 import { SummaryStats } from './widgets/summary-stats/summary-stats';
 
 type Tab =
   | 'principal'
+  | 'runner'
   | 'resumen'
   | 'training'
   | 'records'
@@ -94,6 +96,7 @@ interface TabDef {
     HrZonesCard,
     RecordsGrid,
     MilestonesPanel,
+    RunnerProfile,
     ActivityCalendar,
     ActivityHeatmap,
     ActivityDetail,
@@ -121,6 +124,7 @@ export class Dashboard implements OnInit {
 
   protected readonly tabs: TabDef[] = [
     { id: 'principal', label: 'Principal' },
+    { id: 'runner', label: 'Corredor' },
     { id: 'resumen', label: 'Resumen' },
     { id: 'training', label: 'Entrenamiento' },
     { id: 'records', label: 'Récords & Logros' },
