@@ -6,12 +6,7 @@
   <div class="records-grid">
     @for (card of cards(); track card.category) {
       @if (card.record; as r) {
-        <button
-          type="button"
-          class="record-card"
-          title="Abrir detalle de la actividad"
-          (click)="openActivity.emit(r.activityId)"
-        >
+        <div class="record-card">
           <div class="record-card-top">
             <span class="edu-badge-tag">{{ card.category }}</span>
             <span class="badge-tag">PB</span>
@@ -43,7 +38,20 @@
               <span class="kv-val kv-val--token" [title]="r.activityId">{{ r.activityId }}</span>
             </div>
           </div>
-        </button>
+
+          <button
+            type="button"
+            class="record-open-btn"
+            [attr.aria-label]="'Ver la actividad del récord de ' + card.category"
+            (click)="openActivity.emit(r.activityId)"
+          >
+            VER ACTIVIDAD
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="5" y1="12" x2="19" y2="12" />
+              <polyline points="12 5 19 12 12 19" />
+            </svg>
+          </button>
+        </div>
       } @else {
         <div class="record-card record-card--empty">
           <div class="record-card-top">

@@ -55,13 +55,19 @@
   </header>
 
   <!-- NAVEGACIÓN POR PESTAÑAS -->
-  <nav class="nav-tabs-bar">
-    @for (tab of tabs; track tab.id) {
+  <nav class="nav-tabs-bar" role="tablist" aria-label="Secciones del panel del corredor">
+    @for (tab of tabs; track tab.id; let i = $index) {
       <button
         type="button"
         class="nav-tab-item"
+        role="tab"
+        [id]="'dashboard-tab-' + tab.id"
+        [attr.aria-selected]="activeTab() === tab.id"
+        [attr.aria-controls]="'dashboard-panel-' + tab.id"
+        [attr.tabindex]="activeTab() === tab.id ? 0 : -1"
         [class.active]="activeTab() === tab.id"
         (click)="setTab(tab.id)"
+        (keydown)="onTabKeydown($event, i)"
       >
         {{ tab.label }}
       </button>
@@ -69,10 +75,15 @@
   </nav>
 
   @if (loading()) {
-    <p class="loading-text">SINCRONIZANDO PERFIL, ESTADÍSTICAS Y ANALÍTICA DEL CORREDOR…</p>
+    <p class="loading-text" role="status">SINCRONIZANDO PERFIL, ESTADÍSTICAS Y ANALÍTICA DEL CORREDOR…</p>
   }
 
-  <main class="dashboard-grid">
+  <main
+    class="dashboard-grid"
+    role="tabpanel"
+    [id]="'dashboard-panel-' + activeTab()"
+    [attr.aria-labelledby]="'dashboard-tab-' + activeTab()"
+  >
     @switch (activeTab()) {
       <!-- PRINCIPAL: últimas carreras, ACWR y entrenamiento del día -->
       @case ('principal') {
@@ -533,6 +544,7 @@
     type="button"
     class="mobile-dock-item"
     [class.active]="activeTab() === 'principal'"
+    [attr.aria-current]="activeTab() === 'principal' ? 'page' : null"
     (click)="setTab('principal'); scrollMobileTop()"
     aria-label="Principal"
   >
@@ -547,6 +559,7 @@
     type="button"
     class="mobile-dock-item"
     [class.active]="activeTab() === 'training'"
+    [attr.aria-current]="activeTab() === 'training' ? 'page' : null"
     (click)="setTab('training'); scrollMobileTop()"
     aria-label="Entrenamiento del día"
   >
@@ -561,6 +574,7 @@
     type="button"
     class="mobile-dock-item"
     [class.active]="activeTab() === 'records'"
+    [attr.aria-current]="activeTab() === 'records' ? 'page' : null"
     (click)="setTab('records'); scrollMobileTop()"
     aria-label="Récords y logros"
   >
@@ -575,6 +589,7 @@
     type="button"
     class="mobile-dock-item"
     [class.active]="activeTab() === 'activities'"
+    [attr.aria-current]="activeTab() === 'activities' ? 'page' : null"
     (click)="setTab('activities'); scrollMobileTop()"
     aria-label="Historial de carreras"
   >
@@ -591,6 +606,7 @@
     type="button"
     class="mobile-dock-item"
     [class.active]="activeTab() === 'heatmap'"
+    [attr.aria-current]="activeTab() === 'heatmap' ? 'page' : null"
     (click)="setTab('heatmap'); scrollMobileTop()"
     aria-label="Mapa de calor GPS"
   >
@@ -606,6 +622,7 @@
     type="button"
     class="mobile-dock-item"
     [class.active]="activeTab() === 'account' || activeTab() === 'files' || activeTab() === 'mcp'"
+    [attr.aria-current]="activeTab() === 'account' || activeTab() === 'files' || activeTab() === 'mcp' ? 'page' : null"
     (click)="setTab('account'); scrollMobileTop()"
     aria-label="Cuenta y configuración"
   >

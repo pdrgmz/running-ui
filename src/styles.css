@@ -892,7 +892,9 @@
     padding: 10px;
     padding-left: max(10px, env(safe-area-inset-left));
     padding-right: max(10px, env(safe-area-inset-right));
-    padding-bottom: max(10px, env(safe-area-inset-bottom));
+    /* Deja hueco para la barra de navegación fija del pulgar: sin esto la
+       última tarjeta queda tapada por el dock. */
+    padding-bottom: max(80px, calc(env(safe-area-inset-bottom) + 68px));
     min-height: 100dvh;
   }
 
@@ -1207,6 +1209,59 @@
 
   .mobile-dock-item:active {
     transform: scale(0.92);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Accesibilidad global
+   -------------------------------------------------------------------------- */
+
+/* Anillo de foco único para toda la app. Se usa verde de acento porque
+   contrasta tanto sobre el fondo crema como sobre paneles oscuros. */
+:where(button, a[href], input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--accent-green);
+  outline-offset: 2px;
+}
+
+/* En superficies claras el verde solo no basta: añade un borde interior. */
+:where(button, a[href], input, select, textarea, summary, [tabindex]):focus-visible {
+  box-shadow: 0 0 0 1.5px var(--border-color);
+}
+
+.btn-pill-header:focus-visible,
+.btn-outline-pill:focus-visible,
+.btn-pill-cta:focus-visible {
+  outline-offset: 3px;
+}
+
+/* Texto solo para lectores de pantalla (etiquetas de contexto). */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* Respeta la preferencia del sistema de reducir animaciones: sin parpadeos,
+   sin desplazamientos suaves y sin transiciones largas. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .loading-text {
+    animation: none !important;
+    opacity: 1;
   }
 }
 

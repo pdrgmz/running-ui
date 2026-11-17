@@ -6,6 +6,7 @@ import {
   ElementRef,
   NgZone,
   OnInit,
+  AfterViewInit,
   computed,
   effect,
   inject,
@@ -85,9 +86,9 @@ const ZONE_DEFS: { key: keyof HrZonesResponseDto['zones']; label: string; cls: s
   templateUrl: './activity-detail.html',
   styleUrl: './activity-detail.css',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '(document:keydown.escape)': 'close.emit()' },
+  host: { '(document:keydown.escape)': 'onEscape()' },
 })
-export class ActivityDetail implements OnInit {
+export class ActivityDetail implements OnInit, AfterViewInit {
   readonly activity = input.required<Activity>();
   readonly close = output<void>();
   readonly deleted = output<string>();
@@ -110,7 +111,10 @@ export class ActivityDetail implements OnInit {
 
   private readonly detailBodyRef = viewChild<ElementRef<HTMLElement>>('detailBody');
   private readonly gpsMapRef = viewChild<ElementRef<HTMLElement>>('gpsMap');
+  private readonly modalPanelRef = viewChild<ElementRef<HTMLElement>>('modalPanel');
   private readonly zone = inject(NgZone);
+  private previouslyFocused: HTMLElement | null = null;
+  private previousBodyOverflow = '';
   private gpsMap: L.Map | null = null;
   private hoverMarker: L.CircleMarker | null = null;
   private gpsResizeObserver: ResizeObserver | null = null;
@@ -218,6 +222,9 @@ export class ActivityDetail implements OnInit {
     });
     inject(DestroyRef).onDestroy(() => {
       this.stopAnalysisPolling();
+      document.body.style.overflow = this.previousBodyOverflow;
+      this.previouslyFocused?.focus?.();
+      this.previouslyFocused = null;
       this.gpsResizeObserver?.disconnect();
       this.gpsResizeObserver = null;
       if (this.gpsWindowListener) {
@@ -259,8 +266,58 @@ export class ActivityDetail implements OnInit {
   });
 
   ngOnInit(): void {
+    this.previouslyFocused =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    this.previousBodyOverflow = document.body.style.overflow;
+    // Evita que el panel de fondo se desplace mientras el diálogo está abierto.
+    document.body.style.overflow = 'hidden';
     this.loadDetail();
     this.ensureAiAnalysis();
+  }
+
+  ngAfterViewInit(): void {
+    // Foco inicial en el diálogo: los lectores de pantalla anuncian su título.
+    this.modalPanelRef()?.nativeElement.focus();
+  }
+
+  /** Escape cierra el diálogo, salvo que haya una confirmación de borrado abierta. */
+  protected onEscape(): void {
+    if (this.confirmingDelete()) {
+      this.confirmingDelete.set(false);
+      return;
+    }
+    this.close.emit();
+  }
+
+  /** Atrapa Tab/Shift+Tab dentro del diálogo (patrón de diálogo modal). */
+  protected onDialogKeydown(event: KeyboardEvent): void {
+    if (event.key !== 'Tab') {
+      return;
+    }
+    const panel = this.modalPanelRef()?.nativeElement;
+    if (!panel) {
+      return;
+    }
+    const focusables = Array.from(
+      panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ),
+    ).filter((element) => element.offsetParent !== null || element === document.activeElement);
+    if (focusables.length === 0) {
+      event.preventDefault();
+      panel.focus();
+      return;
+    }
+    const first = focusables[0];
+    const last = focusables[focusables.length - 1];
+    const active = document.activeElement;
+    if (event.shiftKey && (active === first || active === panel)) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && active === last) {
+      event.preventDefault();
+      first.focus();
+    }
   }
 
   /** Lanza el análisis IA de la actividad. Si `replace` es true, sobreescribe el análisis existente. */

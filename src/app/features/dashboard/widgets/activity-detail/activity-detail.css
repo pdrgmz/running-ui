@@ -1,3 +1,14 @@
+/* Título del diálogo: mismo estilo mono del UI Kit, sin márgenes de heading. */
+.modal-header-bar .card-title-mono {
+  margin: 0;
+  line-height: 1.25;
+}
+
+/* El panel recibe foco al abrirse; no necesita anillo visible. */
+.modal-panel:focus {
+  outline: none;
+}
+
 /* Perfiles sincronizados: ocupan el alto restante de la tarjeta */
 app-activity-profiles {
   display: flex;

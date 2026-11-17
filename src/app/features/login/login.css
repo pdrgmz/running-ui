@@ -30,6 +30,29 @@
   background: rgba(201, 79, 69, 0.08);
 }
 
+/* El acceso principal ocupa el espacio disponible; la alternativa se adapta. */
+.login-actions {
+  flex-wrap: wrap;
+}
+
+.login-actions .btn-pill-header {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.login-actions .btn-outline-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+@media (max-width: 420px) {
+  .login-actions > button {
+    flex: 1 1 100%;
+    justify-content: center;
+  }
+}
+
 .login-form button[disabled] {
   opacity: 0.55;
   cursor: wait;

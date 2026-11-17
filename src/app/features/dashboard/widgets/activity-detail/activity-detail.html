@@ -1,8 +1,16 @@
 <div class="modal-overlay" (click)="onOverlayClick($event)">
-  <div class="modal-panel">
+  <div
+    class="modal-panel"
+    #modalPanel
+    role="dialog"
+    aria-modal="true"
+    aria-labelledby="activity-detail-title"
+    tabindex="-1"
+    (keydown)="onDialogKeydown($event)"
+  >
     <div class="modal-header-bar">
       <div class="detail-title-block">
-        <span class="card-title-mono">{{ activity().name || 'Carrera' }}</span>
+        <h2 class="card-title-mono" id="activity-detail-title">{{ activity().name || 'Carrera' }}</h2>
         <span class="detail-subtitle">
           {{ activity().startTime | date: 'EEEE d MMM y, HH:mm' }} ·
           <span class="kv-val--token">{{ activity().id }}</span>

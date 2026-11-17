@@ -28,22 +28,46 @@
   min-height: 400px;
 }
 
-.record-card:hover {
-  background: var(--bg-card-hover);
-}
-
-/* Marcas con PB: la card entera es un botón que abre el detalle. */
-button.record-card {
+/* Acción explícita: el minimapa conserva sus controles y ya no queda
+   anidado dentro de otro botón (contenido interactivo dentro de interactivo). */
+.record-open-btn {
+  margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   width: 100%;
-  font: inherit;
-  color: inherit;
-  text-align: left;
+  background: var(--bg-card);
+  color: var(--text-main);
+  border: 1.5px solid var(--border-color);
+  border-radius: var(--radius-pill);
+  padding: 7px 14px;
+  font-family: var(--font-mono);
+  font-size: 0.66rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
   cursor: pointer;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    transform var(--transition-fast);
 }
 
-button.record-card:focus-visible {
-  outline: 1.5px solid var(--border-color);
-  outline-offset: 2px;
+.record-open-btn svg {
+  transition: transform var(--transition-fast);
+}
+
+.record-open-btn:hover {
+  background: var(--bg-dark-panel);
+  color: var(--text-inverse);
+}
+
+.record-open-btn:hover svg {
+  transform: translateX(3px);
+}
+
+.record-open-btn:active {
+  transform: scale(0.98);
 }
 
 .record-card--empty {

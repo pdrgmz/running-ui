@@ -79,8 +79,9 @@
         </div>
         <div class="terminal-lines-container">
           <div><span class="t-ok">$</span> running-tracker --auth=jwt</div>
-          <div>[INFO] Esquema OpenAPI 3.0.1 cargado (v1.4.0)</div>
+          <div>[INFO] Esquema OpenAPI 3.0.1 cargado (v1.8.0)</div>
           <div>[INFO] Endpoints del usuario: /auth · /stats · /analytics · /activities</div>
+          <div>[INFO] Perfil de zonas del corredor: /zones</div>
           <div>[READY] Introduce tus credenciales para abrir el panel del corredor…</div>
         </div>
       </div>
@@ -123,45 +124,45 @@
           </div>
 
           @if (inlineError()) {
-            <p class="login-error">✖ {{ inlineError() }}</p>
+            <p class="login-error" role="alert" aria-live="assertive">✖ {{ inlineError() }}</p>
           }
 
-          <div class="panel-actions-row">
+          <div class="panel-actions-row login-actions">
             <button
               type="submit"
-              class="btn-pill-header btn-icon-only"
+              class="btn-pill-header"
               [disabled]="busy()"
               [title]="busy() ? 'Autenticando…' : mode === 'login' ? 'Acceder al panel' : 'Registrar y acceder'"
-              [attr.aria-label]="busy() ? 'Autenticando…' : mode === 'login' ? 'Acceder al panel' : 'Registrar y acceder'"
             >
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
                 <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4" />
                 <polyline points="10 17 15 12 10 7" />
                 <line x1="15" y1="12" x2="3" y2="12" />
               </svg>
+              <span>{{ busy() ? 'CONECTANDO…' : mode === 'login' ? 'ENTRAR AL PANEL' : 'CREAR CUENTA' }}</span>
             </button>
 
             <button
               type="button"
-              class="btn-outline-pill btn-icon-only"
+              class="btn-outline-pill btn-compact"
               [title]="mode === 'login' ? 'Crear cuenta nueva' : 'Ya tengo cuenta'"
-              [attr.aria-label]="mode === 'login' ? 'Crear cuenta nueva' : 'Ya tengo cuenta'"
               (click)="setMode(mode === 'login' ? 'register' : 'login')"
             >
               @if (mode === 'login') {
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                   <circle cx="8.5" cy="7" r="4" />
                   <line x1="20" y1="8" x2="20" y2="14" />
                   <line x1="23" y1="11" x2="17" y2="11" />
                 </svg>
               } @else {
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
                   <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2" />
                   <circle cx="8.5" cy="7" r="4" />
                   <polyline points="17 11 19 13 23 9" />
                 </svg>
               }
+              <span>{{ mode === 'login' ? 'CREAR CUENTA' : 'YA TENGO CUENTA' }}</span>
             </button>
           </div>
         </form>

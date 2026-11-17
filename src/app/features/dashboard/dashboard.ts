@@ -301,16 +301,48 @@ export class Dashboard implements OnInit {
   }
 
   protected setTab(tab: Tab): void {
+    const changed = this.activeTab() !== tab;
     this.activeTab.set(tab);
     if (tab === 'activities' && this.calendarActivities().length === 0 && !this.calendarError()) {
       this.loadCalendarPage();
     }
+    if (changed) {
+      this.scrollPageTop();
+    }
+  }
+
+  /** Flechas/Home/End mueven el foco entre pestañas (patrón WAI-ARIA). */
+  protected onTabKeydown(event: KeyboardEvent, index: number): void {
+    const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End'];
+    if (!keys.includes(event.key)) {
+      return;
+    }
+    event.preventDefault();
+    let next = index;
+    if (event.key === 'ArrowRight') {
+      next = (index + 1) % this.tabs.length;
+    } else if (event.key === 'ArrowLeft') {
+      next = (index - 1 + this.tabs.length) % this.tabs.length;
+    } else if (event.key === 'Home') {
+      next = 0;
+    } else if (event.key === 'End') {
+      next = this.tabs.length - 1;
+    }
+    const target = this.tabs[next];
+    this.setTab(target.id);
+    queueMicrotask(() => document.getElementById(`dashboard-tab-${target.id}`)?.focus());
   }
 
   protected scrollMobileTop(): void {
-    if (typeof window !== 'undefined') {
-      window.scrollTo({ top: 0, behavior: 'smooth' });
+    this.scrollPageTop();
+  }
+
+  private scrollPageTop(): void {
+    if (typeof window === 'undefined') {
+      return;
     }
+    const reduceMotion = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
+    window.scrollTo({ top: 0, behavior: reduceMotion ? 'auto' : 'smooth' });
   }
 
   protected openActivity(activity: Activity): void {
